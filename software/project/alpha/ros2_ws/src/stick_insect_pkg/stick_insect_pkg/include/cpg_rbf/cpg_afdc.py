@@ -46,13 +46,30 @@ class CPG_AFDC:
 
         self.w20_t1 = 0.0
         self.w02_t1 = 0.0
+        self.s = 1.0
 
     # Only CPG
     def update_cpg_so2(self, phi):
-        self.out0_t1 = np.tanh(self.w00*self.out0_t + self.w01*self.out1_t)
-        self.out1_t1 = np.tanh(self.w10*self.out0_t + self.w11*self.out1_t)
+        self.phi = phi
+        
+        self.out0_t1 = self.s * np.tanh(self.w00*self.out0_t + self.w01*self.out1_t)
+        self.out1_t1 = self.s * np.tanh(self.w10*self.out0_t + self.w11*self.out1_t)
 
-        self.update_cpg_weights_with_phi(phi)
+        # self.w00 = self.alpha * np.cos(np.pi/2)
+        # self.w01 = self.alpha * np.sin(np.pi/2) 
+        # self.w10 = self.alpha * (-np.sin(np.pi/2)) 
+        # self.w11 = self.alpha * np.cos(np.pi/2)  
+
+        # self.w00 = self.alpha * np.cos(np.pi/2)
+        # self.w01 = self.alpha * np.sin(0) 
+        # self.w10 = self.alpha * (-np.sin(0)) 
+        # self.w11 = self.alpha * np.cos(np.pi/2) 
+
+        # # update cpg weight 
+        # self.w00 = self.alpha * np.cos(1.47)
+        # self.w01 = self.alpha * np.sin(0) 
+        # self.w10 = self.alpha * (-np.sin(0)) 
+        # self.w11 = self.alpha * np.cos(1.47)  
 
         # save for next iteration
         self.out0_t = self.out0_t1
@@ -60,13 +77,7 @@ class CPG_AFDC:
         self.w20_t = self.w20_t1
         self.w02_t = self.w02_t1
         
-    def update_cpg_weights_with_phi(self, phi):
-        self.phi = phi
-        # update cpg weight 
-        self.w00 = self.alpha * np.cos(self.phi)
-        self.w01 = self.alpha * np.sin(self.phi) 
-        self.w10 = self.alpha * (-np.sin(self.phi)) 
-        self.w11 = self.alpha * np.cos(self.phi)  
+
 
     # CPG-AFDC
     def update_adaptive_cpg_with_synaptic_plasticity(self, perturbation):
@@ -132,21 +143,21 @@ class CPG_AFDC:
             self.update_cpg_so2(phi)
         self.discretize_count += 1
 
-    def generate_cpg_finite_size(self, cpg_length = 100000):
+    def generate_cpg_finite_size(self, phi, cpg_length = 100000):
         # increase cpg length size and decrease 
         self.out0       = np.empty((1, cpg_length))
         self.out1       = np.empty((1, cpg_length))
         self.outFreq    = np.empty((1, cpg_length))
 
         for idx in range(cpg_length):
-            self.update_cpg_with_discretize_factor(0.001, 1)       # not consider the perturbation
+            self.update_cpg_so2(phi)       # not consider the perturbation
             self.out0[0][idx]    = self.get_out0() 
             self.out1[0][idx]    = self.get_out1()
         return {'out0':self.out0[0],
                 'out1':self.out1[0]}
 
-    def generate_cpg_one_cycle(self):
-        self.generate_cpg_finite_size()
+    def generate_cpg_one_cycle(self, phi):
+        self.generate_cpg_finite_size(phi)
         cpg_cycle_index = self.zero_crossing_one_period(self.out0[0])
 
         out0_cpg_one_cycle = self.out0[0][cpg_cycle_index[0]:cpg_cycle_index[1]]
@@ -155,31 +166,31 @@ class CPG_AFDC:
         return {'out0_cpg_one_cycle': out0_cpg_one_cycle,
                 'out1_cpg_one_cycle': out1_cpg_one_cycle}
 
-    def zero_crossing_one_period(self, signal):
+    def zero_crossing_one_period(self, signal , value = 0.0):
         """
-        Extract specific cycles (from start_cycle to end_cycle, inclusive) of a signal.
+        Extract specific cycles (from start_cycle to end_cycle, inclusive) of a signal,
+        based on crossings at a specific value.
 
         Parameters:
             signal (numpy array): The input signal array.
-            start_cycle (int): The first cycle to extract.
-            end_cycle (int): The last cycle to extract.
-
+            value (float): The value at which to detect crossings. Default is 0.
+            
         Returns:
-            numpy array: The portion of the signal corresponding to the specified cycles,
-                         or None if the cycles don't exist.
+            list: The start and end indices corresponding to the specified cycles,
+                or None if the cycles don't exist.
         """
         start_cycle = 3 
         end_cycle = 4
         
-        # Identify the sign of the signal
-        sign_signal = np.sign(signal)
+        # Identify if signal is above or below the crossing value
+        sign_signal = np.sign(signal - value)
 
-        # Find zero-crossing indices
-        crossings = np.where(np.diff(sign_signal) != 0)[0]
+        # Find value-crossing indices
+        crossings = np.where(np.diff(sign_signal) != 0.0)[0]
 
         # Check if enough crossings exist
         if len(crossings) < end_cycle:
-            return None  # Not enough zero crossings to extract the requested cycles
+            return None  # Not enough crossings to extract the requested cycles
 
         # Extract the indices for the requested cycles
         start_index = crossings[start_cycle - 1]
@@ -188,7 +199,7 @@ class CPG_AFDC:
         # Return the signal corresponding to the specified cycles
         return [start_index, end_index + 1]
 
-    
+        
     def get_out0(self):
         return self.out0_t
     

@@ -16,6 +16,8 @@ class RBF:
         self.M_stack = []
 
         self.error = []
+        self.error_new_traj = []
+
         self.error_stack = []
         self.error_max = 0
         self.error_max_stack = []
@@ -24,6 +26,7 @@ class RBF:
 
         self.learning_iteration = 0
         self.learning_rate = 0.25
+        self.learning_rate_2 = 0.5
 
     # Record
     def construct_kernels_with_cpg_one_cycle(self, O0_cpg_one_cycle, O1_cpg_one_cycle, target_length):
@@ -56,13 +59,13 @@ class RBF:
         self.learning_rate = learning_rate
 
         # self.M_stack = [] # Comment to see the evolution across the learning serveral paths
-        # self.error_stack = [] # Comment to see the evolution across the learning serveral paths
+        # self.error_stack, error_max_stack = [] # Comment to see the evolution across the learning serveral paths
         for i in range(self.learning_iteration):
             self.M = np.matmul(self.W, self.K)           
             
             self.error = (target_traj[self.ci] - self.M[self.ci])
             
-            self.W = self.W + learning_rate * self.error   # [where is the point of has much error --> adjust weight??]
+            self.W = self.W + learning_rate * self.error   # [where is the point of has much error --> adjust weight]
 
             # Investigate path learning evolution
             self.M_stack.append(self.M)
@@ -72,7 +75,46 @@ class RBF:
             self.error_max = np.mean(abs(self.error))  # Get the maximum absolute error --> [should change to average error along path]  --> error 10% of first iteration is defined as converge.
             self.error_max_stack.append(self.error_max)
             self.error_stack.append(self.error)
+            if self.error_max < 0.01:
+                print(f'last iteration: {i}')
+                break
         return self.M  
+    
+    def adapt_imitate_path(self, qd_old, q_old, max_learning_iteration = 10, learning_rate = 0.05):
+        '''
+        qd_old :    old desired (traj.) gait cycle (length 10000 samples)
+        q_old  :    old actual (traj.) gait cycle (length 10000 samples)
+        '''
+
+        self.learning_iteration = max_learning_iteration
+        self.learning_rate_2 = learning_rate
+
+        # if qd_old != self.target_length and q_old != self.target_length:
+        #     print('length is not match, please check the length of traj.')
+        #     return
+        
+    
+        # # Solution 1
+        # for i in range(self.learning_iteration):
+        #     self.M = np.matmul(self.W, self.K)           
+        #     self.error = (qd_old[self.ci] - self.M[self.ci] + q_old[self.ci] )
+        #     self.W = self.W + learning_rate * self.error  
+            
+        # Solution 2
+        self.error_new_traj = qd_old[self.ci] - q_old[self.ci]
+        self.W = self.W + self.learning_rate_2 * self.error_new_traj  
+        self.M = np.matmul(self.W, self.K)
+            
+        return self.M 
+
+
+    def calualate_weight_mul_kernel(self):
+        return np.matmul(self.W, self.K)
+    def update_rbf_weigt(self, new_weight):
+        self.W = new_weight
+    def get_imitated_path(self):
+        return self.M
+
 
     def get_rbf_weight(self):
         return self.W
@@ -91,7 +133,7 @@ class RBF:
         '''
         reconstruct_kernels_with_cpg on time step
         '''
-        self.K = np.zeros((self.nc,1))
+        # self.K = np.zeros((self.nc,1))
         for i in range(self.nc):
             b = np.exp(-(np.power((O0_cpg_t - self.cx[i]), 2) + np.power((O1_cpg_t - self.cy[i]), 2)) / self.variance_gaussian) # b is a normalized gaussian distribution
             self.K[i] = b
