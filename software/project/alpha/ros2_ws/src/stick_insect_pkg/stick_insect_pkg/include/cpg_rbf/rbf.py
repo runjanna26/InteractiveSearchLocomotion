@@ -1,7 +1,14 @@
 import numpy as np
 
+'''
+Parameters:
+    nc (int)                    : Number of centers. Default is 100.
+    variance_gaussian (float)   : Variance of the Gaussian distribution. Default is 0.01.
+    nM (int)                    : Number of samples in the target trajectory. Default is 500.
+    alpha (float)               : Learning rate. Default is 0.25.
+'''
 class RBF:
-    def __init__(self, nc = 100, variance_gaussian = 0.01, nM = 500, alpha = 0.25): 
+    def __init__(self, nc = 50, variance_gaussian = 0.01, nM = 500, alpha = 0.25): 
         self.nc = nc
         self.variance_gaussian = variance_gaussian
         self.nM = nM
@@ -28,9 +35,18 @@ class RBF:
         self.learning_rate = 0.25
         self.learning_rate_2 = 0.5
 
-    # Record
+    ######################################################################## 
+    #                        Record the trajectory
+    # [1] Construct the kernels with CPG one cycle
+    # [2] Imitate the path by learning
+    ######################################################################## 
     def construct_kernels_with_cpg_one_cycle(self, O0_cpg_one_cycle, O1_cpg_one_cycle, target_length):
-        
+        '''
+        Parameters:
+            O0_cpg_one_cycle : output 0 of CPG one cycle
+            O1_cpg_one_cycle : output 1 of CPG one cycle
+            target_length : target length of the trajectory
+        '''
         if target_length is None:
             print('please input target length')
             return 
@@ -53,6 +69,13 @@ class RBF:
         return self.K
     
     def imitate_path_by_learning(self, target_traj, max_learning_iteration = 500, learning_rate = 0.05):
+        '''
+        Parameters:
+            target_traj : target trajectory (length 10000 samples)
+            max_learning_iteration : maximum learning iteration. Default is 500.
+            learning_rate : learning rate. Default is 0.05.
+        '''
+        
         ''' learning rate 0.25 is too high '''
 
         self.learning_iteration = max_learning_iteration
@@ -128,12 +151,16 @@ class RBF:
         return np.asarray(self.W_stack)
 
     
-    # Replay
-    def regenerate_target_traj(self, O0_cpg_t, O1_cpg_t, weight):
+    ######################################################################## 
+    #                        Replay the trajectory
+    # [1] Regenerate the target trajectory
+    ######################################################################## 
+    def regenerate_target_traj(self, O0_cpg_t, O1_cpg_t, weight):  
         '''
-        reconstruct_kernels_with_cpg on time step
+        Reconstruct kernels with CPG on time step using vectorized operations
         '''
-        # self.K = np.zeros((self.nc,1))
+
+        self.K = np.zeros((self.nc,1))
         for i in range(self.nc):
             b = np.exp(-(np.power((O0_cpg_t - self.cx[i]), 2) + np.power((O1_cpg_t - self.cy[i]), 2)) / self.variance_gaussian) # b is a normalized gaussian distribution
             self.K[i] = b
