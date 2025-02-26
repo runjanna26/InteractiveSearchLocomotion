@@ -2,9 +2,9 @@ import numpy as np
 
 class CPG_SO2:
     def __init__(self,
-                 o0_init    = 0.2, 
-                 o1_init    = 0.2, 
-                 ϕ_init   = 0.01 * 2 * np.pi, 
+                 o0_init    = 0.14, 
+                 o1_init    = 0.14, 
+                 ϕ_init     = 0.01 * 2 * np.pi, 
                  _alpha     = 1.01):
         '''
         Parameters:
@@ -29,8 +29,16 @@ class CPG_SO2:
         self.w10 = self.alpha * (-np.sin(self.ϕ))
         self.w11 = self.alpha * np.cos(self.ϕ)
         
+        self.a0_t = 0.0
+        self.a1_t = 0.0
+     
+        self.a0_t1 = 0.0
+        self.a1_t1 = 0.0   
         # Initialize output weights for the CPG neurons
         self.output_cpg_weight = 1.0
+        
+        self.s0 = 0.0
+        self.s1 = 0.0
     
     def update_cpg(self, ϕ):
         '''
@@ -47,15 +55,17 @@ class CPG_SO2:
             self.w11 = self.alpha *   np.cos(self.ϕ) 
         
         # Calculate the new output for neuron 0 and neuron 1
-        self.out0_t1 = self.output_cpg_weight * np.tanh(self.w00*self.out0_t + self.w01*self.out1_t)
-        self.out1_t1 = self.output_cpg_weight * np.tanh(self.w10*self.out0_t + self.w11*self.out1_t)
+        self.a0_t1    = self.w00*self.out0_t + self.w01*self.out1_t - self.s0 * np.cos(self.a0_t)
+        self.a1_t1    = self.w10*self.out0_t + self.w11*self.out1_t - self.s1 * np.sin(self.a1_t)
+        self.out0_t1 = self.output_cpg_weight * np.tanh(self.a0_t1)
+        self.out1_t1 = self.output_cpg_weight * np.tanh(self.a1_t1)
 
  
-
-
         # Save outputs for the next iteration
         self.out0_t = self.out0_t1
         self.out1_t = self.out1_t1
+        self.a0_t = self.a0_t1
+        self.a1_t = self.a1_t1
         
     ######################################################################## 
     #               API for generating CPG one cycle
@@ -146,25 +156,30 @@ class CPG_LOCO:
     def __init__(self):
         self.cpg = CPG_SO2()
     
-    def modulate_cpg(self, ϕ, pause_input, rewind_input):
+    def modulate_cpg(self, ϕ, α, β):
+        '''
+        Parameters:
+            ϕ  (float): Frequency of CPG outputs.
+            α  (float): Pause input for the CPG {0,1}. Default is 0.0.
+            β  (float): Rewind input for the CPG {-1,1}. Default is 0.0.
+        '''
         
-        # if pause_input == 1.0:
-        #     self.cpg.output_cpg_weight = 1000.0
-        #     self.cpg.w00 = 0.001
-        #     self.cpg.w01 = 0 
-        #     self.cpg.w10 = 0 
-        #     self.cpg.w11 = 0.001 
-        #     self.cpg.update_cpg(None)
-        # elif pause_input == 0.0:
-        #     self.cpg.output_cpg_weight = 1.0
-        #     self.cpg.update_cpg(ϕ)  
-               
-        if rewind_input == 1.0:         # rewind trajectory
-            self.cpg.output_cpg_weight = 1.0
-            self.cpg.update_cpg(-ϕ)
-        elif rewind_input == 0.0:       # un-rewind trajectory
-            self.cpg.output_cpg_weight = 1.0
-            self.cpg.update_cpg(ϕ)  
+        # Adaptive Weights
+        ϕ00 = (α * np.pi/2.01) + ((1 - α) * β *  ϕ)
+        ϕ01 = (1 - α) * β *  ϕ
+        ϕ10 = (1 - α) * β *  ϕ
+        ϕ11 = (α * np.pi/2.01) + ((1 - α) * β *  ϕ)
+        
+        self.cpg.w00 = self.cpg.alpha *  np.cos(ϕ00)
+        self.cpg.w01 = self.cpg.alpha *  np.sin(ϕ01)
+        self.cpg.w10 = self.cpg.alpha * -np.sin(ϕ10)
+        self.cpg.w11 = self.cpg.alpha *  np.cos(ϕ11)
+        
+        self.cpg.output_cpg_weight = (α  / (self.cpg.alpha * np.cos(np.pi/2.01))) + (1 - α) * (np.abs(β))
+        
+
+        # Update CPG outputs
+        self.cpg.update_cpg(None)
             
         return {'cpg_output_0': self.cpg.out0_t,
                 'cpg_output_1': self.cpg.out1_t}
