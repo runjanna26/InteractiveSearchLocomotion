@@ -57,6 +57,7 @@ class RBF:
         self.W = np.zeros((self.nc))
         self.M = np.zeros((self.target_length))
 
+        # Centerize the kernel by using a CPG one cycle
         self.ci = np.linspace(0, O0_cpg_one_cycle.shape[0]-1, num = self.nc, dtype = int) # self.ci is the indices of raw data center at each sampling point
         self.cx = O0_cpg_one_cycle[self.ci]
         self.cy = O1_cpg_one_cycle[self.ci]
