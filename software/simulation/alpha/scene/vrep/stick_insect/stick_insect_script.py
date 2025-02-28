@@ -36,7 +36,12 @@ def sysCall_init():
 
     # Objects
     stick_insect_joint_obj      = {'TR': [],'CR': [],'FR': [],'TL': [],'CL': [],'FL': []}
-    stick_insect_foot_force_obj = {'R': [], 'L': []}
+    stick_insect_foot_force_obj = {'F_R0': 0.0, 
+                                   'F_R1': 0.0, 
+                                   'F_R2': 0.0,  
+                                   'F_L0': 0.0,
+                                   'F_L1': 0.0,
+                                   'F_L2': 0.0}
     stick_insect_body_obj       = sim.getObject('..')
     for i in range(3):
         stick_insect_joint_obj['TR'].append(sim.getObject('../TR'+str(i)))
@@ -45,10 +50,15 @@ def sysCall_init():
         stick_insect_joint_obj['TL'].append(sim.getObject('../TL'+str(i)))
         stick_insect_joint_obj['CL'].append(sim.getObject('../CL'+str(i)))
         stick_insect_joint_obj['FL'].append(sim.getObject('../FL'+str(i)))
-        stick_insect_foot_force_obj['R'].append(sim.getObject('../R'+str(i)+'_fs'))
-        stick_insect_foot_force_obj['L'].append(sim.getObject('../L'+str(i)+'_fs'))
+        
+    stick_insect_foot_force_obj['F_R0'] = sim.getObject('../R0' + '_fs')
+    stick_insect_foot_force_obj['F_R1'] = sim.getObject('../R1' + '_fs')
+    stick_insect_foot_force_obj['F_R2'] = sim.getObject('../R2' + '_fs')
+    stick_insect_foot_force_obj['F_L0'] = sim.getObject('../L0' + '_fs')
+    stick_insect_foot_force_obj['F_L1'] = sim.getObject('../L1' + '_fs')
+    stick_insect_foot_force_obj['F_L2'] = sim.getObject('../L2' + '_fs')
     # print(stick_insect_joint_obj)
-    # print(stick_insect_foot_force_obj)
+    print(stick_insect_foot_force_obj)
     
     global stick_insect_joint_fb
     stick_insect_joint_fb      = {'TR': [0.0 ,0.0 ,0.0],
@@ -58,8 +68,12 @@ def sysCall_init():
                                   'CL': [0.0 ,0.0 ,0.0],
                                   'FL': [0.0 ,0.0 ,0.0]}
     global stick_insect_foot_force_fb
-    stick_insect_foot_force_fb = {'R': [0.0, 0.0, 0.0], 
-                                  'L': [0.0, 0.0, 0.0]}
+    stick_insect_foot_force_fb = {'F_R0': [0.0 ,0.0 ,0.0],  # x, y, z
+                                  'F_R1': [0.0 ,0.0 ,0.0], 
+                                  'F_R2': [0.0 ,0.0 ,0.0],  
+                                  'F_L0': [0.0 ,0.0 ,0.0],
+                                  'F_L1': [0.0 ,0.0 ,0.0],
+                                  'F_L2': [0.0 ,0.0 ,0.0]}
 
     # Setup simulation
     # sim.setObjectInt32Parameter(stick_insect_body_obj, sim.shapeintparam_static, 0) 
@@ -91,11 +105,13 @@ def sysCall_sensing():
     msg_float32.data = conv2float_arr(stick_insect_joint_fb)
     self.ros2_node.pub_q_fb.publish(msg_float32)
     # ================ publish foot force feedback ================
-    for group in stick_insect_foot_force_fb:
-        _, stick_insect_foot_force_fb[group], _ = sim.readForceSensor(stick_insect_foot_force_obj[group][0])
-        _, stick_insect_foot_force_fb[group], _ = sim.readForceSensor(stick_insect_foot_force_obj[group][1])
-        _, stick_insect_foot_force_fb[group], _ = sim.readForceSensor(stick_insect_foot_force_obj[group][2])
+    # _, x, _ = sim.readForceSensor(stick_insect_foot_force_obj['F_R0'])
+    # print(x)
+    for col in stick_insect_foot_force_obj:
+        _, stick_insect_foot_force_fb[col], _ = sim.readForceSensor(stick_insect_foot_force_obj[col]) # R0
+
     # print(stick_insect_foot_force_fb)
+    # print(conv2float_arr(stick_insect_foot_force_fb))
     msg_float32 = Float32MultiArray()
     msg_float32.data = conv2float_arr(stick_insect_foot_force_fb)
     self.ros2_node.pub_foot_force.publish(msg_float32)    
