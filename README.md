@@ -12,6 +12,7 @@ The diagram below consists of three main modules: Adaptive Locomotion, Locomotio
 ![alt text](/pic/conceptual_control.png)
 
 This figure below show the goal features:
+
 ![alt text](/pic/conceptual_control_2.png)
 
 - Locomotion Learning: The robot can learn the desired joint trajectory through human demonstration within a few seconds.
