@@ -105,10 +105,10 @@ def sysCall_sensing():
     msg_float32.data = conv2float_arr(stick_insect_joint_fb)
     self.ros2_node.pub_q_fb.publish(msg_float32)
     # ================ publish foot force feedback ================
-    # _, x, _ = sim.readForceSensor(stick_insect_foot_force_obj['F_R0'])
-    # print(x)
     for col in stick_insect_foot_force_obj:
-        _, stick_insect_foot_force_fb[col], _ = sim.readForceSensor(stick_insect_foot_force_obj[col]) # R0
+        _, force_fb, _ = sim.readForceSensor(stick_insect_foot_force_obj[col])  # Read the force sensor
+        stick_insect_foot_force_fb[col] = [value * 10 for value in force_fb]  # Multiply each element by 2
+
 
     # print(stick_insect_foot_force_fb)
     # print(conv2float_arr(stick_insect_foot_force_fb))

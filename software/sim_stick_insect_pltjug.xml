@@ -8,7 +8,7 @@
       <DockSplitter sizes="0.248894;0.251106;0.25;0.25" orientation="-" count="4">
        <DockArea name="TR0">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="0.908769" bottom="0.097408" left="3.653884"/>
+         <range right="5753.942436" top="0.909670" bottom="0.098269" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[0]" color="#17becf"/>
          <curve name="/stick_insect/joint_angle_feedback/data[0]" color="#bcbd22"/>
@@ -16,7 +16,7 @@
        </DockArea>
        <DockArea name="CR0">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="1.041276" bottom="0.295954" left="3.653884"/>
+         <range right="5753.942436" top="1.044694" bottom="0.294578" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[3]" color="#d62728"/>
          <curve name="/stick_insect/joint_angle_feedback/data[3]" color="#1ac938"/>
@@ -24,7 +24,7 @@
        </DockArea>
        <DockArea name="FR0">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="-1.309549" bottom="-2.072518" left="3.653884"/>
+         <range right="5753.942436" top="-1.306065" bottom="-2.069378" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[6]" color="#f14cc1"/>
          <curve name="/stick_insect/joint_angle_feedback/data[6]" color="#9467bd"/>
@@ -32,17 +32,17 @@
        </DockArea>
        <DockArea name="F_R0">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="1.062856" bottom="-0.262960" left="3.653884"/>
+         <range right="5753.942436" top="1.059915" bottom="-0.061397" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/expected_foot_force/data[0]" color="#1f77b4"/>
-         <curve name="/stick_insect/foot_force_feedback/data[0]" color="#ff7f0e"/>
+         <curve name="/stick_insect/foot_force_feedback/data[2]" color="#1f77b4"/>
         </plot>
        </DockArea>
       </DockSplitter>
       <DockSplitter sizes="0.25;0.25;0.25;0.25" orientation="-" count="4">
        <DockArea name="TR1">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="0.561304" bottom="-0.534181" left="3.653884"/>
+         <range right="5753.942436" top="0.560618" bottom="-0.533621" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[1]" color="#bcbd22"/>
          <curve name="/stick_insect/joint_angle_feedback/data[1]" color="#1f77b4"/>
@@ -50,7 +50,7 @@
        </DockArea>
        <DockArea name="CR1">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="0.753903" bottom="-0.086593" left="3.653884"/>
+         <range right="5753.942436" top="0.752247" bottom="-0.086624" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[4]" color="#1ac938"/>
          <curve name="/stick_insect/joint_angle_feedback/data[4]" color="#ff7f0e"/>
@@ -58,7 +58,7 @@
        </DockArea>
        <DockArea name="FR1">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="-0.776298" bottom="-1.651694" left="3.653884"/>
+         <range right="5753.942436" top="-0.772611" bottom="-1.649036" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[7]" color="#9467bd"/>
          <curve name="/stick_insect/joint_angle_feedback/data[7]" color="#17becf"/>
@@ -66,17 +66,17 @@
        </DockArea>
        <DockArea name="F_R1">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="1.056579" bottom="-0.063425" left="3.653884"/>
+         <range right="5753.942436" top="1.058766" bottom="-0.060821" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/expected_foot_force/data[1]" color="#d62728"/>
-         <curve name="/stick_insect/foot_force_feedback/data[1]" color="#f14cc1"/>
+         <curve name="/stick_insect/foot_force_feedback/data[5]" color="#d62728"/>
         </plot>
        </DockArea>
       </DockSplitter>
       <DockSplitter sizes="0.25;0.25;0.25;0.25" orientation="-" count="4">
        <DockArea name="TR2">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="-0.173745" bottom="-0.952752" left="3.653884"/>
+         <range right="5753.942436" top="-0.172584" bottom="-0.950252" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[2]" color="#1f77b4"/>
          <curve name="/stick_insect/joint_angle_feedback/data[2]" color="#d62728"/>
@@ -84,7 +84,7 @@
        </DockArea>
        <DockArea name="CR2">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="0.649971" bottom="0.024565" left="3.653884"/>
+         <range right="5753.942436" top="0.651342" bottom="0.024133" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[5]" color="#ff7f0e"/>
          <curve name="/stick_insect/joint_angle_feedback/data[5]" color="#f14cc1"/>
@@ -92,7 +92,7 @@
        </DockArea>
        <DockArea name="FR2">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="-0.623158" bottom="-1.850355" left="3.653884"/>
+         <range right="5753.942436" top="-0.621342" bottom="-1.847871" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[8]" color="#17becf"/>
          <curve name="/stick_insect/joint_angle_feedback/data[8]" color="#bcbd22"/>
@@ -100,10 +100,10 @@
        </DockArea>
        <DockArea name="F_R2">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="1.065252" bottom="-0.483901" left="3.653884"/>
+         <range right="5753.942436" top="1.057592" bottom="-0.073388" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/expected_foot_force/data[2]" color="#1ac938"/>
-         <curve name="/stick_insect/foot_force_feedback/data[2]" color="#9467bd"/>
+         <curve name="/stick_insect/foot_force_feedback/data[8]" color="#1ac938"/>
         </plot>
        </DockArea>
       </DockSplitter>
@@ -114,11 +114,11 @@
   <Tab containers="1" tab_name="Left Legs">
    <Container>
     <DockSplitter sizes="1" orientation="-" count="1">
-     <DockSplitter sizes="0.333542;0.332915;0.333542" orientation="|" count="3">
-      <DockSplitter sizes="0.25;0.25;0.25;0.25" orientation="-" count="4">
+     <DockSplitter sizes="0.333333;0.333333;0.333333" orientation="|" count="3">
+      <DockSplitter sizes="0.249671;0.250986;0.249671;0.249671" orientation="-" count="4">
        <DockArea name="TL0">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="0.908769" bottom="0.097408" left="3.653884"/>
+         <range right="5753.942436" top="0.909670" bottom="0.098269" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[9]" color="#17becf"/>
          <curve name="/stick_insect/joint_angle_feedback/data[9]" color="#bcbd22"/>
@@ -126,7 +126,7 @@
        </DockArea>
        <DockArea name="CL0">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="1.041276" bottom="0.295954" left="3.653884"/>
+         <range right="5753.942436" top="1.044694" bottom="0.294578" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[12]" color="#d62728"/>
          <curve name="/stick_insect/joint_angle_feedback/data[12]" color="#1ac938"/>
@@ -134,7 +134,7 @@
        </DockArea>
        <DockArea name="FL0">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="-1.309549" bottom="-2.072518" left="3.653884"/>
+         <range right="5753.942436" top="-1.306065" bottom="-2.069378" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[15]" color="#f14cc1"/>
          <curve name="/stick_insect/joint_angle_feedback/data[15]" color="#9467bd"/>
@@ -142,17 +142,17 @@
        </DockArea>
        <DockArea name="F_L0">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="1.058066" bottom="-0.066561" left="3.653884"/>
+         <range right="5753.942436" top="1.059915" bottom="-0.061397" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/expected_foot_force/data[3]" color="#1f77b4"/>
-         <curve name="/stick_insect/foot_force_feedback/data[3]" color="#ff7f0e"/>
+         <curve name="/stick_insect/foot_force_feedback/data[11]" color="#ff7f0e"/>
         </plot>
        </DockArea>
       </DockSplitter>
-      <DockSplitter sizes="0.25;0.25;0.25;0.25" orientation="-" count="4">
+      <DockSplitter sizes="0.249671;0.250986;0.249671;0.249671" orientation="-" count="4">
        <DockArea name="TL1">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="0.561304" bottom="-0.534181" left="3.653884"/>
+         <range right="5753.942436" top="0.560618" bottom="-0.533621" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[10]" color="#bcbd22"/>
          <curve name="/stick_insect/joint_angle_feedback/data[10]" color="#1f77b4"/>
@@ -160,7 +160,7 @@
        </DockArea>
        <DockArea name="CL1">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="0.753903" bottom="-0.086593" left="3.653884"/>
+         <range right="5753.942436" top="0.752247" bottom="-0.086624" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[13]" color="#1ac938"/>
          <curve name="/stick_insect/joint_angle_feedback/data[13]" color="#ff7f0e"/>
@@ -168,7 +168,7 @@
        </DockArea>
        <DockArea name="FL1">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="-0.776298" bottom="-1.651694" left="3.653884"/>
+         <range right="5753.942436" top="-0.772611" bottom="-1.649036" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[16]" color="#9467bd"/>
          <curve name="/stick_insect/joint_angle_feedback/data[16]" color="#17becf"/>
@@ -176,17 +176,17 @@
        </DockArea>
        <DockArea name="F_L1">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="1.056824" bottom="-0.073477" left="3.653884"/>
+         <range right="5753.942436" top="1.058766" bottom="-0.060821" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/expected_foot_force/data[4]" color="#d62728"/>
-         <curve name="/stick_insect/foot_force_feedback/data[4]" color="#f14cc1"/>
+         <curve name="/stick_insect/foot_force_feedback/data[14]" color="#f14cc1"/>
         </plot>
        </DockArea>
       </DockSplitter>
-      <DockSplitter sizes="0.25;0.25;0.25;0.25" orientation="-" count="4">
+      <DockSplitter sizes="0.249671;0.250986;0.249671;0.249671" orientation="-" count="4">
        <DockArea name="TL2">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="-0.173745" bottom="-0.952752" left="3.653884"/>
+         <range right="5753.942436" top="-0.172584" bottom="-0.950252" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[11]" color="#1f77b4"/>
          <curve name="/stick_insect/joint_angle_feedback/data[11]" color="#d62728"/>
@@ -194,7 +194,7 @@
        </DockArea>
        <DockArea name="CL2">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="0.649971" bottom="0.024565" left="3.653884"/>
+         <range right="5753.942436" top="0.651342" bottom="0.024133" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[14]" color="#ff7f0e"/>
          <curve name="/stick_insect/joint_angle_feedback/data[14]" color="#f14cc1"/>
@@ -202,7 +202,7 @@
        </DockArea>
        <DockArea name="FL2">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="-0.623158" bottom="-1.850355" left="3.653884"/>
+         <range right="5753.942436" top="-0.621342" bottom="-1.847871" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/joint_angle_commands/data[17]" color="#17becf"/>
          <curve name="/stick_insect/joint_angle_feedback/data[17]" color="#bcbd22"/>
@@ -210,10 +210,10 @@
        </DockArea>
        <DockArea name="F_L2">
         <plot style="LinesAndDots" mode="TimeSeries" flip_y="false" flip_x="false">
-         <range right="13.665442" top="1.060963" bottom="-0.308057" left="3.653884"/>
+         <range right="5753.942436" top="1.057592" bottom="-0.073388" left="3193.633313"/>
          <limitY/>
          <curve name="/stick_insect/expected_foot_force/data[5]" color="#1ac938"/>
-         <curve name="/stick_insect/foot_force_feedback/data[5]" color="#9467bd"/>
+         <curve name="/stick_insect/foot_force_feedback/data[17]" color="#9467bd"/>
         </plot>
        </DockArea>
       </DockSplitter>
@@ -221,7 +221,7 @@
     </DockSplitter>
    </Container>
   </Tab>
-  <currentTabIndex index="0"/>
+  <currentTabIndex index="1"/>
  </tabbed_widget>
  <use_relative_time_offset enabled="1"/>
  <!-- - - - - - - - - - - - - - - -->

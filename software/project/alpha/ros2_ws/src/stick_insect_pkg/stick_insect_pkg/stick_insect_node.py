@@ -14,7 +14,7 @@ import time
 from include.cpg_rbf.cpg_so2 import CPG_SO2
 from include.cpg_rbf.rbf import RBF
 from include.cpg_rbf.cpg_so2 import CPG_LOCO
-
+from include.cpg_rbf.dual_learner import DIL
 
 
 class StickInsectNode(Node):
@@ -39,6 +39,9 @@ class StickInsectNode(Node):
         # ROS2 publishers and subscribers
         self.pub_jcmd               = self.create_publisher(Float32MultiArray, '/stick_insect/joint_angle_commands', 1)
         self.pub_expected_force     = self.create_publisher(Float32MultiArray, '/stick_insect/expected_foot_force', 1)
+        self.pub_foot_force_error   = self.create_publisher(Float32MultiArray, '/stick_insect/foot_force_error', 1)
+        self.pub_phi_cmd            = self.create_publisher(Float32MultiArray, '/stick_insect/phi_cmd', 1)
+        self.pub_phi_walk           = self.create_publisher(Float32MultiArray, '/stick_insect/phi_walk', 1)
         
         self.sub_js                 = self.create_subscription(Joy, '/joy', self.Joy_set, 1)
         self.sub_foot_force         = self.create_subscription(Float32MultiArray, '/stick_insect/foot_force_feedback', self.FootForceFeedback, 1)
@@ -59,19 +62,21 @@ class StickInsectNode(Node):
                                  'TL': [0.0, 0.0 ,0.0],
                                  'CL': [0.0, 0.0 ,0.0],
                                  'FL': [0.0, 0.0 ,0.0]}
-        self.expected_foot_forces = {'R_Z0': [0.0],
-                                     'R_Z1': [0.0],
-                                     'R_Z2': [0.0],
-                                     'L_Z0': [0.0],
-                                     'L_Z1': [0.0],
-                                     'L_Z2': [0.0]}
-        self.foot_force_fb = {'R_Z0': [0.0],
-                              'R_Z1': [0.0],
-                              'R_Z2': [0.0],
-                              'L_Z0': [0.0],
-                              'L_Z1': [0.0],
-                              'L_Z2': [0.0]}
+        self.expected_foot_forces = {'R_Z0': 0.0,
+                                     'R_Z1': 0.0,
+                                     'R_Z2': 0.0,
+                                     'L_Z0': 0.0,
+                                     'L_Z1': 0.0,
+                                     'L_Z2': 0.0}
         # Feedback variables
+        self.foot_force_fb = {'F_R0': [0.0, 0.0, 0.0],
+                              'F_R1': [0.0, 0.0, 0.0],
+                              'F_R2': [0.0, 0.0, 0.0],
+                              'F_L0': [0.0, 0.0, 0.0],
+                              'F_L1': [0.0, 0.0, 0.0],
+                              'F_L2': [0.0, 0.0, 0.0]}
+        self.foot_force_error = self.expected_foot_forces.copy() # only z-axis
+        
         self.axes_js = np.zeros(8)
         self.btn_js = np.zeros(8)
 
@@ -80,12 +85,20 @@ class StickInsectNode(Node):
         self.timer = self.create_timer((1/ros_node_freq), self.timer_callback)
         
         
+        # Control variables
         self.cpg_loco_leg_R0 = CPG_LOCO()
         self.cpg_loco_leg_R1 = CPG_LOCO()
         self.cpg_loco_leg_R2 = CPG_LOCO()
         self.cpg_loco_leg_L0 = CPG_LOCO()
         self.cpg_loco_leg_L1 = CPG_LOCO()
         self.cpg_loco_leg_L2 = CPG_LOCO()
+        
+        self.dual_learner_leg_R0 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_R1 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_R2 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_L0 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_L1 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_L2 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
         
         self.cpg_output_leg_R0 = self.cpg_loco_leg_R0.modulate_cpg(0.05, 0.0, 1.0)
         self.cpg_output_leg_R1 = self.cpg_loco_leg_R1.modulate_cpg(0.05, 0.0, 1.0)
@@ -100,8 +113,13 @@ class StickInsectNode(Node):
                             'L0': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},
                             'L1': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},
                             'L2': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},}
-        
-
+        self.cpg_phi_leg_des = {'R0': 0.05,
+                                'R1': 0.05,
+                                'R2': 0.05,
+                                'L0': 0.05,
+                                'L1': 0.05,
+                                'L2': 0.05}
+        self.cpg_phi_leg_adapt = self.cpg_phi_leg_des.copy()
         
         self.cpg_phi_cmd = 0.0
         self.cpg_pause_cmd = 0.0
@@ -114,12 +132,12 @@ class StickInsectNode(Node):
         # print(self.axes_js)
         # print(self.btn_js)
     def FootForceFeedback(self, msg):
-        self.foot_force_fb['R_Z0'] = msg.data[0:3]  # x, y, z
-        self.foot_force_fb['R_Z1'] = msg.data[3:6]
-        self.foot_force_fb['R_Z2'] = msg.data[6:9]
-        self.foot_force_fb['L_Z0'] = msg.data[9:12]
-        self.foot_force_fb['L_Z1'] = msg.data[12:15]
-        self.foot_force_fb['L_Z2'] = msg.data[15:18]
+        self.foot_force_fb['F_R0'] = msg.data[0:3]  # x, y, z
+        self.foot_force_fb['F_R1'] = msg.data[3:6]
+        self.foot_force_fb['F_R2'] = msg.data[6:9]
+        self.foot_force_fb['F_L0'] = msg.data[9:12]
+        self.foot_force_fb['F_L1'] = msg.data[12:15]
+        self.foot_force_fb['F_L2'] = msg.data[15:18]
         # print(self.foot_force_fb)
         
     # ==============================================
@@ -130,10 +148,40 @@ class StickInsectNode(Node):
     def timer_callback(self):
         ...
         
+        # Manual shift phase
+        if self.btn_js[0] == 1: # A button
+            self.cpg_mod_cmd['R0']['phi'] = 0.01
+            self.cpg_mod_cmd['R1']['phi'] = 0.08
+            self.cpg_mod_cmd['R2']['phi'] = 0.01
+
+            self.cpg_mod_cmd['L0']['phi'] = 0.08
+            self.cpg_mod_cmd['L1']['phi'] = 0.01
+            self.cpg_mod_cmd['L2']['phi'] = 0.08
+        else:
+            self.cpg_mod_cmd['R0']['phi'] = 0.08
+            self.cpg_mod_cmd['R1']['phi'] = 0.08
+            self.cpg_mod_cmd['R2']['phi'] = 0.08
+
+            self.cpg_mod_cmd['L0']['phi'] = 0.08
+            self.cpg_mod_cmd['L1']['phi'] = 0.08
+            self.cpg_mod_cmd['L2']['phi'] = 0.08
+            
         # if self.btn_js[0] == 1: # A button
-        #     self.cpg_phi_cmd = 0.1
-        #     self.cpg_pause_cmd = 0.0
-        #     self.cpg_rewind_cmd = 1.0
+        #     self.cpg_mod_cmd['R0']['pause_input'] = 1.0
+        #     self.cpg_mod_cmd['R1']['pause_input'] = 0.0
+        #     self.cpg_mod_cmd['R2']['pause_input'] = 1.0
+
+        #     self.cpg_mod_cmd['L0']['pause_input'] = 0.0
+        #     self.cpg_mod_cmd['L1']['pause_input'] = 1.0
+        #     self.cpg_mod_cmd['L2']['pause_input'] = 0.0
+        # else:
+        #     self.cpg_mod_cmd['R0']['pause_input'] = 0.0
+        #     self.cpg_mod_cmd['R1']['pause_input'] = 0.0
+        #     self.cpg_mod_cmd['R2']['pause_input'] = 0.0
+
+        #     self.cpg_mod_cmd['L0']['pause_input'] = 0.0
+        #     self.cpg_mod_cmd['L1']['pause_input'] = 0.0
+        #     self.cpg_mod_cmd['L2']['pause_input'] = 0.0
         # if self.btn_js[1] == 1: # B button
         #     self.cpg_phi_cmd = 0.1
         #     self.cpg_pause_cmd = 0.0
@@ -144,6 +192,38 @@ class StickInsectNode(Node):
         
         # Self-orgnization for walking pattern
         
+        for col_fb, col_expec in zip(self.foot_force_fb, self.expected_foot_forces):
+            # print(col_fb, col_expec)
+            self.foot_force_error[col_expec] =  self.expected_foot_forces[col_expec] - (-self.foot_force_fb[col_fb][2]) # z-axis
+        self.pub_foot_force_error.publish(Float32MultiArray(data = list(self.foot_force_error.values())))
+        
+        self.cpg_phi_leg_adapt['R_Z0'], _, _ = self.dual_learner_leg_R0.calculate_DIL(self.foot_force_error['R_Z0'])
+        self.cpg_phi_leg_adapt['R_Z1'], _, _ = self.dual_learner_leg_R1.calculate_DIL(self.foot_force_error['R_Z1'])
+        self.cpg_phi_leg_adapt['R_Z2'], _, _ = self.dual_learner_leg_R2.calculate_DIL(self.foot_force_error['R_Z2'])
+        self.cpg_phi_leg_adapt['L_Z0'], _, _ = self.dual_learner_leg_L0.calculate_DIL(self.foot_force_error['L_Z0'])
+        self.cpg_phi_leg_adapt['L_Z1'], _, _ = self.dual_learner_leg_L1.calculate_DIL(self.foot_force_error['L_Z1'])
+        self.cpg_phi_leg_adapt['L_Z2'], _, _ = self.dual_learner_leg_L2.calculate_DIL(self.foot_force_error['L_Z2'])
+        
+        self.cpg_mod_cmd['R0']['phi'] = self.cpg_phi_leg_adapt['R_Z0'] + self.cpg_phi_leg_des['R0']
+        self.cpg_mod_cmd['R1']['phi'] = self.cpg_phi_leg_adapt['R_Z1'] + self.cpg_phi_leg_des['R1']
+        self.cpg_mod_cmd['R2']['phi'] = self.cpg_phi_leg_adapt['R_Z2'] + self.cpg_phi_leg_des['R2']
+        self.cpg_mod_cmd['L0']['phi'] = self.cpg_phi_leg_adapt['L_Z0'] + self.cpg_phi_leg_des['L0']
+        self.cpg_mod_cmd['L1']['phi'] = self.cpg_phi_leg_adapt['L_Z1'] + self.cpg_phi_leg_des['L1']
+        self.cpg_mod_cmd['L2']['phi'] = self.cpg_phi_leg_adapt['L_Z2'] + self.cpg_phi_leg_des['L2']
+        self.pub_phi_cmd.publish(Float32MultiArray(data = [self.cpg_mod_cmd['R0']['phi'], 
+                                                           self.cpg_mod_cmd['R1']['phi'], 
+                                                           self.cpg_mod_cmd['R2']['phi'], 
+                                                           self.cpg_mod_cmd['L0']['phi'], 
+                                                           self.cpg_mod_cmd['L1']['phi'], 
+                                                           self.cpg_mod_cmd['L2']['phi']]))
+        
+        
+        self.pub_phi_walk.publish(Float32MultiArray(data = [self.cpg_phi_leg_des ['R0'],
+                                                            self.cpg_phi_leg_des ['R1'],
+                                                            self.cpg_phi_leg_des ['R2'],
+                                                            self.cpg_phi_leg_des ['L0'],
+                                                            self.cpg_phi_leg_des ['L1'],
+                                                            self.cpg_phi_leg_des ['L2']]))
         
                
         # CPF modulation layer       
@@ -194,24 +274,7 @@ class StickInsectNode(Node):
             msg_float32 = Float32MultiArray()
             msg_float32.data = [float(x) for x in self.initial_joint_angles]
             self.pub_jcmd.publish(msg_float32)
-        elif time.time() - self.start_time < 3:     # Shift phase
-            self.cpg_mod_cmd['R0']['pause_input'] = 1.0
-        #     self.cpg_mod_cmd['R1']['pause_input'] = 0.0
-        #     self.cpg_mod_cmd['R2']['pause_input'] = 1.0
-
-        #     self.cpg_mod_cmd['L0']['pause_input'] = 0.0
-        #     self.cpg_mod_cmd['L1']['pause_input'] = 1.0
-        #     self.cpg_mod_cmd['L2']['pause_input'] = 0.0
-        elif time.time() - self.start_time < 3.36:
-            self.cpg_mod_cmd['R0']['pause_input'] = 0.0
-            self.cpg_mod_cmd['R1']['pause_input'] = 0.0
-            self.cpg_mod_cmd['R2']['pause_input'] = 0.0
-
-            self.cpg_mod_cmd['L0']['pause_input'] = 0.0
-            self.cpg_mod_cmd['L1']['pause_input'] = 0.0
-            self.cpg_mod_cmd['L2']['pause_input'] = 0.0
-        else:
-
+        elif time.time() - self.start_time >= 2:
             msg_float32 = Float32MultiArray()
             
             msg_float32.data = self.conv2float_arr(self.joint_angles_cmd)
