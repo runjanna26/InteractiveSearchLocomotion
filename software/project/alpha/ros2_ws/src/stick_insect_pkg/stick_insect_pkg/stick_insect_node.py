@@ -92,6 +92,8 @@ class StickInsectNode(Node):
         self.cpg_loco_leg_L0 = CPG_LOCO()
         self.cpg_loco_leg_L1 = CPG_LOCO()
         self.cpg_loco_leg_L2 = CPG_LOCO()
+
+        
         
         self.dual_learner_leg_R0 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
         self.dual_learner_leg_R1 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
