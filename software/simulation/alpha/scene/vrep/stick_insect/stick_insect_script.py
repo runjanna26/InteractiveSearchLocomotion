@@ -107,7 +107,8 @@ def sysCall_sensing():
     # ================ publish foot force feedback ================
     for col in stick_insect_foot_force_obj:
         _, force_fb, _ = sim.readForceSensor(stick_insect_foot_force_obj[col])  # Read the force sensor
-        stick_insect_foot_force_fb[col] = [value * 10 for value in force_fb]  # Multiply each element by 2
+        stick_insect_foot_force_fb[col] = [value for value in force_fb]  # Multiply each element by 2
+        # stick_insect_foot_force_fb[col] = [value * 10 for value in force_fb]  # Multiply each element by 2
 
 
     # print(stick_insect_foot_force_fb)

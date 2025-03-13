@@ -15,6 +15,7 @@ from include.cpg_rbf.cpg_so2 import CPG_SO2
 from include.cpg_rbf.rbf import RBF
 from include.cpg_rbf.cpg_so2 import CPG_LOCO
 from include.cpg_rbf.dual_learner import DIL
+from include.lowpass_filter import LPF
 
 
 class StickInsectNode(Node):
@@ -39,6 +40,7 @@ class StickInsectNode(Node):
         # ROS2 publishers and subscribers
         self.pub_jcmd               = self.create_publisher(Float32MultiArray, '/stick_insect/joint_angle_commands', 1)
         self.pub_expected_force     = self.create_publisher(Float32MultiArray, '/stick_insect/expected_foot_force', 1)
+        self.pub_foot_force         = self.create_publisher(Float32MultiArray, '/stick_insect/resultant_foot_force_feedback', 1)
         self.pub_foot_force_error   = self.create_publisher(Float32MultiArray, '/stick_insect/foot_force_error', 1)
         self.pub_phi_cmd            = self.create_publisher(Float32MultiArray, '/stick_insect/phi_cmd', 1)
         self.pub_phi_walk           = self.create_publisher(Float32MultiArray, '/stick_insect/phi_walk', 1)
@@ -69,13 +71,14 @@ class StickInsectNode(Node):
                                      'L_Z1': 0.0,
                                      'L_Z2': 0.0}
         # Feedback variables
-        self.foot_force_fb = {'F_R0': [0.0, 0.0, 0.0],
-                              'F_R1': [0.0, 0.0, 0.0],
-                              'F_R2': [0.0, 0.0, 0.0],
-                              'F_L0': [0.0, 0.0, 0.0],
-                              'F_L1': [0.0, 0.0, 0.0],
-                              'F_L2': [0.0, 0.0, 0.0]}
+        self.foot_force_fb = {'F_R0': 0.0,
+                              'F_R1': 0.0,
+                              'F_R2': 0.0,
+                              'F_L0': 0.0,
+                              'F_L1': 0.0,
+                              'F_L2': 0.0}
         self.foot_force_error = self.expected_foot_forces.copy() # only z-axis
+        self.foot_force_tau   = self.expected_foot_forces.copy() # only z-axis
         
         self.axes_js = np.zeros(8)
         self.btn_js = np.zeros(8)
@@ -95,12 +98,20 @@ class StickInsectNode(Node):
 
         
         
-        self.dual_learner_leg_R0 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_R1 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_R2 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_L0 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_L1 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_L2 = DIL(0.9, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        # First Params: work!
+        # self.dual_learner_leg_R0 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        # self.dual_learner_leg_R1 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        # self.dual_learner_leg_R2 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        # self.dual_learner_leg_L0 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        # self.dual_learner_leg_L1 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        # self.dual_learner_leg_L2 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
+        
+        self.dual_learner_leg_R0 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_R1 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_R2 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_L0 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_L1 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
+        self.dual_learner_leg_L2 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
         
         self.cpg_output_leg_R0 = self.cpg_loco_leg_R0.modulate_cpg(0.05, 0.0, 1.0)
         self.cpg_output_leg_R1 = self.cpg_loco_leg_R1.modulate_cpg(0.05, 0.0, 1.0)
@@ -121,12 +132,34 @@ class StickInsectNode(Node):
                                 'L0': 0.05,
                                 'L1': 0.05,
                                 'L2': 0.05}
-        self.cpg_phi_leg_adapt = self.cpg_phi_leg_des.copy()
+        self.cpg_phi_leg_adapt = {'R0': 0.0,
+                                  'R1': 0.0,
+                                  'R2': 0.0,
+                                  'L0': 0.0,
+                                  'L1': 0.0,
+                                  'L2': 0.0}
         
         self.cpg_phi_cmd = 0.0
         self.cpg_pause_cmd = 0.0
         self.cpg_rewind_cmd = 1.0
-
+        
+        self.lpf_R0 = LPF(0.9)
+        self.lpf_R1 = LPF(0.9)
+        self.lpf_R2 = LPF(0.9)
+        self.lpf_L0 = LPF(0.9)
+        self.lpf_L1 = LPF(0.9)
+        self.lpf_L2 = LPF(0.9)
+        
+        self.sig_1 = 0.0
+        self.sig_2 = 0.0
+        self.sig_1_list = []
+        self.sig_2_list = []
+        self.tau_1 = None
+        self.tau_2 = None
+        self.tau = 0.0
+        self.start_flag = False
+        self.end_flag = False
+        
     # =============== Joy Stick ====================
     def Joy_set(self, msg):
         self.axes_js = msg.axes
@@ -134,19 +167,80 @@ class StickInsectNode(Node):
         # print(self.axes_js)
         # print(self.btn_js)
     def FootForceFeedback(self, msg):
-        self.foot_force_fb['F_R0'] = msg.data[0:3]  # x, y, z
-        self.foot_force_fb['F_R1'] = msg.data[3:6]
-        self.foot_force_fb['F_R2'] = msg.data[6:9]
-        self.foot_force_fb['F_L0'] = msg.data[9:12]
-        self.foot_force_fb['F_L1'] = msg.data[12:15]
-        self.foot_force_fb['F_L2'] = msg.data[15:18]
+        scaling_factor = 10
+        offset_factor = 0.15
+        self.foot_force_fb['F_R0'] = np.clip(self.lpf_R0.filter(scaling_factor * np.linalg.norm(msg.data[0:3]))   - offset_factor, 0.0, 1.0)  # x, y, z
+        self.foot_force_fb['F_R1'] = np.clip(self.lpf_R1.filter(scaling_factor * np.linalg.norm(msg.data[3:6]))   - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_R2'] = np.clip(self.lpf_R2.filter(scaling_factor * np.linalg.norm(msg.data[6:9]))   - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_L0'] = np.clip(self.lpf_L0.filter(scaling_factor * np.linalg.norm(msg.data[9:12]))  - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_L1'] = np.clip(self.lpf_L1.filter(scaling_factor * np.linalg.norm(msg.data[12:15])) - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_L2'] = np.clip(self.lpf_L2.filter(scaling_factor * np.linalg.norm(msg.data[15:18])) - offset_factor, 0.0, 1.0)
         # print(self.foot_force_fb)
         
     # ==============================================
     def conv2float_arr(self,  input_dict):
         # return [float(value) for value in input_dict.values()]
         return [float(angle) for angles in input_dict.values() for angle in angles]
+    
+    # def cross_correlation(self, in_1, in_2):
+    #     current_time = time.time()  # Get current timestamp in seconds
+        
+        
+        
+    #     th = 0.2
+    #     if in_1 >= th and self.in_1_prev < th:  # signal cross the threshold
+    #         self.start_flag = True
+    #     elif in_1 <= th and self.in_1_prev > th:
 
+        
+        
+        
+    #     self.sig_1_list.append(in_1)
+    #     self.sig_2_list.append(in_2)       
+         
+         
+         
+         
+         
+            
+    #     if in_2 >= th and self.in_2_prev < th:  # signal cross the threshold
+    #         # self.tau_2 = current_time
+    #         # print(self.tau_2)
+        
+    #     if in_1 >= th and in_2 >= th:
+    #         print(self.tau_1 - self.tau_2)
+            
+    #     self.in_1_prev = in_1
+    #     self.in_2_prev = in_2
+            
+    def get_phase_shift_time(self, in_1, in_2):
+        current_time = time.time()  # Get current timestamp in seconds
+        self.threshold = 0.15
+        # Detect when in_1 crosses the threshold
+        if in_1 >= self.threshold:
+            self.tau_1 = current_time
+
+        # Detect when in_2 crosses the threshold
+        if in_2 >= self.threshold:
+            self.tau_2 = current_time
+
+        # Compute time delay when both timestamps are available
+        if self.tau_1 is not None and self.tau_2 is not None:
+            
+            self.tau = self.tau_2 - self.tau_1  # Compute time delay (+ lead, - lag)
+            
+            if np.abs(self.tau) > 0.0:
+                ...
+                # print(f"Phase Shift (Tau): {self.tau:.6f} s")
+            
+            # Reset timestamps for the next cycle
+            self.tau_1 = None
+            self.tau_2 = None
+        return np.sign(self.tau)
+        
+        
+
+    # ==============================================
     def timer_callback(self):
         ...
         
@@ -196,8 +290,16 @@ class StickInsectNode(Node):
         
         for col_fb, col_expec in zip(self.foot_force_fb, self.expected_foot_forces):
             # print(col_fb, col_expec)
-            self.foot_force_error[col_expec] =  self.expected_foot_forces[col_expec] - (-self.foot_force_fb[col_fb][2]) # z-axis
+            self.foot_force_tau[col_expec]   = self.get_phase_shift_time(self.expected_foot_forces[col_expec], self.foot_force_fb[col_fb])
+            
+            # if self.foot_force_tau[col_expec] is not None:
+            # print()
+            
+            self.foot_force_error[col_expec] =  self.foot_force_tau[col_expec] * np.abs(self.foot_force_fb[col_fb] - self.expected_foot_forces[col_expec])
+        self.pub_foot_force.publish(Float32MultiArray(data = list(self.foot_force_fb.values())))
         self.pub_foot_force_error.publish(Float32MultiArray(data = list(self.foot_force_error.values())))
+        
+        
         
         self.cpg_phi_leg_adapt['R_Z0'], _, _ = self.dual_learner_leg_R0.calculate_DIL(self.foot_force_error['R_Z0'])
         self.cpg_phi_leg_adapt['R_Z1'], _, _ = self.dual_learner_leg_R1.calculate_DIL(self.foot_force_error['R_Z1'])
