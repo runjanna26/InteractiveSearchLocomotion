@@ -1,35 +1,3 @@
-'''
-Credit: https://github.com/neurobionics/TMotorCANControl
-[0.1] Install can-utils on linux
-$ sudo apt-get intsall can-utils
-[0.2] Install python-can
-$ sudo apt update
-$ pip3 install python-can
-
-[1] Upload firmware with ST-Link v.2 by STM32Programmer:
-candleLight firmware (canable2_fw-ba6b1dd.bin)
-
-[2] check canable board was connected with Canable v2.0 firmware
-$ lsusb
-
-[3] Set bitrate 1Mbps
-$ sudo ip link set can0 type can bitrate 1000000
-[4] Set can0 up
-$ sudo ip link set can0 up
-[5] Check status can0
-$ ip a
-
-
-
-# [] Install SocketCAN driver
-# $ make clean
-# $ make NET=NETDEV_SUPPORT
-# $ sudo make install
-# $ sudo modprobe pcan
-'''
-
-robot_pwd = '916269'
-
 import can
 import time
 import csv
@@ -75,9 +43,7 @@ MIT_Params = {
             'GEAR_RATIO': 9.0, # hence the 9 in the name
             'Use_derived_torque_constants': True, # true if you have a better model
             'a_hat' : [0.0, 1.15605006e+00, 4.17389589e-04, 2.68556072e-01, 4.90424140e-02]
-            #'a_hat' : [0.0,  8.23741648e-01, 4.57963164e-04,     2.96032614e-01, 9.31279510e-02]
-                     # [7.35415941e-02, 6.26896231e-01, 2.65240487e-04,     2.96032614e-01,  7.08736309e-02]
-                     # [-5.86860385e-02,6.50840079e-01,3.47461078e-04,8.58635580e-01,2.93809281e-01]
+            #'a_hat' : [0.0,  8.23741648e-01, 4.57963164e-04,     2.96032614e-01, 9.31279510e-02]# [7.35415941e-02, 6.26896231e-01, 2.65240487e-04,     2.96032614e-01,  7.08736309e-02]# [-5.86860385e-02,6.50840079e-01,3.47461078e-04,8.58635580e-01,2.93809281e-01]
         },
         'AK10-9':{
             'P_min' : -12.5,
@@ -150,10 +116,10 @@ MIT_Params = {
         'AK80-64':{
             'P_min' : -12.5,
             'P_max' : 12.5,
-            'V_min' : -8.0,     # old: -8.0
-            'V_max' : 8.0,      # old: 8.0
-            'T_min' : -120.0,
-            'T_max' : 120.0,
+            'V_min' : -8.0,
+            'V_max' : 8.0,
+            'T_min' : -144.0,
+            'T_max' : 144.0,
             'Kp_min': 0.0,
             'Kp_max': 500.0,
             'Kd_min': 0.0,
@@ -189,6 +155,7 @@ with the following values:
     - v = velocity
     - ϵ = signum velocity threshold
 """
+
 
 
 class motor_state:
@@ -313,11 +280,9 @@ class CAN_Manager(object):
             cls._instance = super(CAN_Manager, cls).__new__(cls)
             print("Initializing CAN Manager")
             # verify the CAN bus is currently down
-            os.system( f'echo {robot_pwd} | sudo -S /sbin/ip link set can0 down' )
+            os.system( 'sudo /sbin/ip link set can0 down' )
             # start the CAN bus back up
             os.system( 'sudo /sbin/ip link set can0 up type can bitrate 1000000' )
-            
-
             # create a python-can bus object
             cls._instance.bus = can.interface.Bus(channel='can0', bustype='socketcan')# bustype='socketcan_native')
             # create a python-can notifier object, which motors can later subscribe to
@@ -578,7 +543,7 @@ class TMotorManager_mit_can():
     used in the context of a with as block, in order to safely enter/exit
     control of the motor.
     """
-    def __init__(self, motor_type='AK80-9', motor_ID=1, max_mosfett_temp=100, CSV_file=None, log_vars = LOG_VARIABLES):
+    def __init__(self, motor_type='AK80-9', motor_ID=1, max_mosfett_temp=50, CSV_file=None, log_vars = LOG_VARIABLES):
         """
         Sets up the motor manager. Note the device will not be powered on by this method! You must
         call __enter__, mostly commonly by using a with block, before attempting to control the motor.
@@ -661,8 +626,6 @@ class TMotorManager_mit_can():
         self._entered = True
         if not self.check_can_connection():
             raise RuntimeError("Device not connected: " + str(self.device_info_string()))
-        else:
-            print('[CAN Connected]', self.device_info_string())
         return self
 
     def __exit__(self, etype, value, tb):
@@ -730,14 +693,14 @@ class TMotorManager_mit_can():
         if not self._entered:
             raise RuntimeError("Tried to update motor state before safely powering on for device: " + self.device_info_string())
 
-        if self.get_temperature_celsius() > self.max_temp:
-            raise RuntimeError("Temperature greater than {}C for device: {}".format(self.max_temp, self.device_info_string()))
+        # if self.get_temperature_celsius() > self.max_temp:
+        #     raise RuntimeError("Temperature greater than {}C for device: {}".format(self.max_temp, self.device_info_string()))
 
         # check that the motor data is recent
+        # print(self._command_sent)
         now = time.time()
-        
-        if (now - self._last_command_time) < 0.25 and ( (now - self._last_update_time) > 0.1): # send_command period < 0.25 sec. and update time async loop > 0.1 sec.
-            print(f'{self.device_info_string()}, {now - self._last_command_time} and {now - self._last_update_time}')
+        if (now - self._last_command_time) < 0.25 and ( (now - self._last_update_time) > 0.1):
+            # print("State update requested but no data recieved from motor. Delay longer after zeroing, decrease frequency, or check connection.")
             warnings.warn("State update requested but no data from motor. Delay longer after zeroing, decrease frequency, or check connection. " + self.device_info_string(), RuntimeWarning)
         else:
             self._command_sent = False
@@ -825,7 +788,7 @@ class TMotorManager_mit_can():
     # sends a command to the motor depending on whats controlm mode the motor is in
     def _send_command(self):
         """
-        Sends a command to the motor depending on whats control mode the motor is in. This method
+        Sends a command to the motor depending on whats controlm mode the motor is in. This method
         is called by update(), and should only be called on its own if you don't want to update the motor state info.
 
         Notably, the current is converted to amps from the reported 'torque' value, which is i*Kt. 
@@ -855,7 +818,6 @@ class TMotorManager_mit_can():
     def power_off(self):
         """Powers off the motor."""
         self._canman.power_off(self.ID)
-        print('[Disable]', self.device_info_string())
 
     # zeros the position, like a scale you have to wait about a second before you can
     # use the motor again. This responsibility is on the user!!
@@ -945,7 +907,7 @@ class TMotorManager_mit_can():
         self._command.velocity = 0.0
         self._control_state = _TMotorManState.IMPEDANCE
     
-    # uses full MIT mode, will send whatever current command is set.
+    # uses full MIT mode, will send whatever current command is set. 
     def set_impedance_gains_real_unit_full_state_feedback(self, kp=0, ki=0, K=0.08922, B=0.0038070, ff=0):
         """"
         Uses full state feedback mode, will send whatever current command is set in addition to position request.

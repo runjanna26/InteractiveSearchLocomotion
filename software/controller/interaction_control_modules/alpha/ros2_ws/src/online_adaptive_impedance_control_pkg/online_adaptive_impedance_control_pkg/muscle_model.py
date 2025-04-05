@@ -76,61 +76,71 @@ class MuscleModel:
     Muscle model for one limb
     '''
     def __init__(self, _a:float, _b:float, _beta:float, _init_pos, number_motor):
-        self.pos_init           = np.matrix(_init_pos).transpose()
+        self.pos_init           = _init_pos
         
         self.a                  = _a
         self.b                  = _b
         self.β                  = _beta
         self.γ                  = 0.0
 
-        self.pos_des            = np.matrix(np.zeros((number_motor, 1)))        
-        self.pos_fb             = np.matrix(np.zeros((number_motor, 1)))
-        self.pos_des_prev       = np.matrix(np.zeros((number_motor, 1))) 
+        self.pos_des            = 0.0        
+        self.pos_fb             = 0.0
+        self.pos_des_prev       = 0.0 
 
-        self.vel_des            = np.matrix(np.zeros((number_motor, 1)))
-        self.vel_fb             = np.matrix(np.zeros((number_motor, 1)))
+        self.vel_des            = 0.0
+        self.vel_fb             = 0.0
 
-        self.K                  = np.matrix(np.zeros((number_motor, number_motor)))
-        self.D                  = np.matrix(np.zeros((number_motor, number_motor)))
-        self.F                  = np.matrix(np.zeros((number_motor, 1)))
-        self.tau                = np.matrix(np.zeros((number_motor, 1)))
+        self.K                  = 0.0
+        self.D                  = 0.0
+        self.F                  = 0.0
+        self.tau                = 0.0
         
-        self.tau_limit          = 3
 
         self.timestamp_now      = 0.0 
         self.timestamp_prev     = 0.0
+        self.timestamp_now = time.time() 
+
+        self.transient_flag = True
 
     def calculate(self, pos_des, pos_fb, vel_fb):
-        self.pos_des = np.matrix(pos_des).transpose()
-        self.pos_fb  = np.matrix(pos_fb).transpose()
-        self.vel_fb  = np.matrix(vel_fb).transpose()
+        self.pos_des = pos_des
+        self.pos_fb  = pos_fb
+        self.vel_fb  = vel_fb
     
 
         self.timestamp_now = time.time() 
         Ts = (self.timestamp_now - self.timestamp_prev) 
         if Ts <= 0 or Ts > 0.5:
-            Ts = 1e-3 
+            Ts = 1e-3
         self.vel_des = (self.pos_des - self.pos_des_prev) / Ts
+        # print(self.pos_des, self.pos_des_prev)
+        # print(self.vel_des)
+        # self.vel_des = 0.0
         
+        # if self.vel_des > 0.0:
+
+
+
 
         # Torque oscillate
         self.F = self.gen_track_error() / self.gen_adapt_scalar()
-        self.K = self.F @ self.gen_pos_error().transpose()
-        self.D = self.F @ self.gen_vel_error().transpose()
+        self.K = self.F * self.gen_pos_error()
+        self.D = self.F * self.gen_vel_error()
 
         # Torque smooth
-        # self.K = np.diag([50,50,50])
-        # self.D = np.diag([1,1,1])
+        # self.K = np.diag([1])
+        # self.D = np.diag([0.1])
         
 
-        self.tau = - self.F - self.K @ self.gen_pos_error() - self.D @ self.gen_vel_error()
+        # self.tau = - self.F - self.K * self.gen_pos_error() - self.D * self.gen_vel_error()
+
 
 
         self.timestamp_prev = self.timestamp_now
         self.pos_des_prev   = self.pos_des
 
 
-        self.tau = np.clip(self.tau, -35, 35)
+        self.tau = np.clip(self.tau, -15, 15)
         # print('tau_sp: ', self.tau)
 
         return self.tau 
@@ -156,11 +166,27 @@ class MuscleModel:
         return (self.gen_pos_error() + self.β * self.gen_vel_error())
 
     def gen_adapt_scalar(self):
-        return self.a / (1.0 + (self.b * (np.linalg.norm(self.gen_track_error()))**2))
+        return self.a / (1.0 + (self.b * (np.abs(self.gen_track_error()))**2))
     
     def get_stiffness(self):
-        return self.K
+        return np.float64(self.limit_value(self.K, 0.0, 500.0))
     def get_damping(self):
-        return self.D
+        return np.float64(self.limit_value(self.D, 0.0, 5.0))
     def get_feedforward_force(self):
-        return self.F
+        return -np.float64(self.limit_value(self.F, -15.0, 15.0))
+    
+    def limit_value(self, value, min, max):
+        """
+        Limits value to be between min and max
+
+        Args:
+            value: The value to be limited.
+            min: The lowest number allowed (inclusive) for value
+            max: The highest number allowed (inclusive) for value
+        """
+        if value >= max:
+            return max
+        elif value <= min:
+            return min
+        else:
+            return value

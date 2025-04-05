@@ -10,8 +10,6 @@ from std_msgs.msg import Float64MultiArray, Float32MultiArray, UInt16MultiArray,
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy,Imu
 
-from tutorial_interfaces.srv import GetInitialPosition    
-
 
 from mit_can import TMotorManager_mit_can
 
@@ -38,7 +36,6 @@ class MinimalPublisher(Node):
         # self.sub_jc         = self.create_subscription (Float32MultiArray, "/HERO/LegModule/JointCompliance", self.JointComplianceCallback, 1)
         # self.sub_qdd_cmd    = self.create_subscription (Float32MultiArray, "/HERO/LegModule/JointVelocityCommands", self.JointVelocityCmdCallback, 1)
 
-        self.motor              = []
         self.muscle             = []
         self.init_pos           = [0.0, 0.0, 0.0, 0.0]
         self.current_pos        = [0, 0, 0, 0]
@@ -47,16 +44,23 @@ class MinimalPublisher(Node):
         self.JointVelocityCmd   = [0, 0, 0, 0]
         self.JointCompliance    = [0, 0, 0, 0]
 
-        for i in range(4):
-            self.motor.append(TMotorManager_mit_can(motor_type='AK60-6', motor_ID=i+1))
-            self.motor[i].set_zero_position()
+        self.motor_id    = [4, 5, 6]
+
+        # 1st inter-limb
+        self.limb_0      = []
+        for id in self.motor_id[0:3]:
+            print(id)
+            self.limb_0.append(TMotorManager_mit_can(motor_type='AK60-6', motor_ID=id))
             time.sleep(3)
-            self.motor[i].set_impedance_gains_real_unit_full_state_feedback(K=0.0, B=0.0)
-            self.motor[i].__enter__()
-            # self.motor[i].update()
-            self.init_pos[i] = self.motor[i].get_output_angle_radians()
-            # self.muscle.append(MuscleModel(_init_pos=self.init_pos[i]))
-        print('initial position', [self.muscle[0].pos_init, self.muscle[1].pos_init, self.muscle[2].pos_init, self.muscle[3].pos_init])
+
+
+            # self.motor[i].set_zero_position()
+            # self.motor[i].set_impedance_gains_real_unit_full_state_feedback(K=0.0, B=0.0)
+            # self.motor[i].__enter__()
+            # # self.motor[i].update()
+            # self.init_pos[i] = self.motor[i].get_output_angle_radians()
+            # # self.muscle.append(MuscleModel(_init_pos=self.init_pos[i]))
+        # print('initial position', [self.muscle[0].pos_init, self.muscle[1].pos_init, self.muscle[2].pos_init, self.muscle[3].pos_init])
         time.sleep(1.5)
         self.current_pos = self.init_pos
 
