@@ -13,6 +13,7 @@ from mit_can import TMotorManager_mit_can
 from lowpass_filter import LPF
 # from muscle_model import MuscleModel
 from muscle_model_new import MuscleModel
+# from muscle_model_new_2 import MuscleModel
 
 class MainNode(Node):
     def __init__(self):
@@ -86,6 +87,7 @@ class MainNode(Node):
 
 
         # Set motion command
+        # self.motor_1.set_output_angle_radians(pos = 0.0)
         self.motor_1.set_output_angle_radians(pos = pos)
         self.motor_1.set_output_velocity_radians_per_second(vel = self.muscle.vel_des)
 
@@ -111,6 +113,7 @@ class MainNode(Node):
         self.pub_q_dot.publish(self.msg_f32)
 
         # Joint angle command
+        # self.msg_f32.data = [np.float64(self.muscle.x_r)]
         self.msg_f32.data = [np.float64(pos)]
         self.pub_qd.publish(self.msg_f32)
 

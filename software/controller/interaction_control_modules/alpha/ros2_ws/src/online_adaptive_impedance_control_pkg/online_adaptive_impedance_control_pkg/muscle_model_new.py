@@ -102,9 +102,6 @@ class MuscleModel:
         self.QD = 10.0
         self.QF = 5.0
 
-        # self.QK = 8.0
-        # self.QD = 1.0
-        # self.QF = 0.5
 
         self.tau                = 0.0
         
