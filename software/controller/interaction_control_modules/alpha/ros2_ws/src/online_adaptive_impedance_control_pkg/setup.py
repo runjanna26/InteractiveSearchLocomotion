@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'online_adaptive_impedance_control_node = online_adaptive_impedance_control_pkg.online_adaptive_impedance_control_node:main'
+            'online_adaptive_impedance_control_node = online_adaptive_impedance_control_pkg.online_adaptive_impedance_control_node:main',
+            'muscle_learning_node = online_adaptive_impedance_control_pkg.muscle_learning:main',
         ],
     },
 )

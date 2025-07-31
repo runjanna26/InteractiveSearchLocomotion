@@ -3,54 +3,37 @@
  <tabbed_widget parent="main_window" name="Main Window">
   <Tab tab_name="tab1" containers="1">
    <Container>
-    <DockSplitter sizes="0.250821;0.248631;0.250821;0.249726" count="4" orientation="-">
+    <DockSplitter orientation="-" count="4" sizes="0.249716;0.250851;0.249716;0.249716">
      <DockArea name="...">
-      <plot flip_x="false" flip_y="false" mode="TimeSeries" style="LinesAndDots">
-       <range left="1743857442.222285" top="1.574917" right="1743857452.221478" bottom="-1.574925"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range top="1.576344" left="1753973662.488600" right="1753973762.487007" bottom="-1.633415"/>
        <limitY/>
-       <curve color="#1f77b4" name="/JointAngles/data.0"/>
-       <curve color="#d62728" name="/JointCommands/data.0"/>
-       <curve color="#f14cc1" name="/JointAngleErrors/data.0"/>
+       <curve color="#1f77b4" name="/JointAngles/data[0]"/>
+       <curve color="#d62728" name="/JointCommands/data[0]"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" flip_y="false" mode="TimeSeries" style="LinesAndDots">
-       <range left="1743857442.222285" top="6.097680" right="1743857452.221478" bottom="-6.415140"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range top="6.069597" left="1753973662.488600" right="1753973762.487007" bottom="-6.289377"/>
        <limitY/>
-       <curve color="#ff7f0e" name="/JointVelocities/data.0"/>
-       <curve color="#1f77b4" name="/JointVelocityCommands/data.0"/>
+       <curve color="#f14cc1" name="/JointVelocities/data[0]"/>
+       <curve color="#9467bd" name="/JointVelocityCommands/data[0]"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" flip_y="false" mode="TimeSeries" style="LinesAndDots">
-       <range left="1743857442.222285" top="0.217608" right="1743857452.221478" bottom="-0.212078"/>
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range top="0.293047" left="1753973662.488600" right="1753973762.487007" bottom="-0.008869"/>
        <limitY/>
-       <curve color="#1ac938" name="/JointTorques/data.0"/>
+       <curve color="#ff7f0e" name="/JointStiffness/data[0]"/>
       </plot>
      </DockArea>
-     <DockSplitter sizes="0.333578;0.332843;0.333578" count="3" orientation="|">
-      <DockArea name="...">
-       <plot flip_x="false" flip_y="false" mode="TimeSeries" style="Lines">
-        <range left="1743857442.222285" top="0.018059" right="1743857452.221478" bottom="-0.000778"/>
-        <limitY/>
-        <curve color="#9467bd" name="/JointStiffness/data.0"/>
-       </plot>
-      </DockArea>
-      <DockArea name="...">
-       <plot flip_x="false" flip_y="false" mode="TimeSeries" style="Lines">
-        <range left="1743857442.222285" top="0.142253" right="1743857452.221478" bottom="-0.043834"/>
-        <limitY/>
-        <curve color="#17becf" name="/JointDamping/data.0"/>
-       </plot>
-      </DockArea>
-      <DockArea name="...">
-       <plot flip_x="false" flip_y="false" mode="TimeSeries" style="Lines">
-        <range left="1743857442.222285" top="0.064591" right="1743857452.221478" bottom="-0.063725"/>
-        <limitY/>
-        <curve color="#bcbd22" name="/JointFeedForwardTorque/data.0"/>
-       </plot>
-      </DockArea>
-     </DockSplitter>
+     <DockArea name="...">
+      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
+       <range top="0.507864" left="1753973662.488600" right="1753973762.487007" bottom="-0.354459"/>
+       <limitY/>
+       <curve color="#1ac938" name="/JointDamping/data[0]"/>
+      </plot>
+     </DockArea>
     </DockSplitter>
    </Container>
   </Tab>
@@ -61,7 +44,7 @@
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <default delimiter="0" time_axis=""/>
+   <parameters time_axis="" delimiter="0"/>
   </plugin>
   <plugin ID="DataLoad MCAP"/>
   <plugin ID="DataLoad ROS2 bags">
@@ -70,6 +53,7 @@
    <max_array_size value="100"/>
    <boolean_strings_to_number value="true"/>
    <remove_suffix_from_strings value="true"/>
+   <selected_topics value=""/>
   </plugin>
   <plugin ID="DataLoad ULog"/>
   <plugin ID="ROS2 Topic Subscriber">
@@ -78,6 +62,7 @@
    <max_array_size value="100"/>
    <boolean_strings_to_number value="true"/>
    <remove_suffix_from_strings value="true"/>
+   <selected_topics value="/JointAngleErrors;/JointAngles;/JointCommands;/JointDamping;/JointFeedForwardTorque;/JointStiffness;/JointTorques;/JointVelocities;/JointVelocityCommands"/>
   </plugin>
   <plugin ID="UDP Server"/>
   <plugin ID="WebSocket Server"/>

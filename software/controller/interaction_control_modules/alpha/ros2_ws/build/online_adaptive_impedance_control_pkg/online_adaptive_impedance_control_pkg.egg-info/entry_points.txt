@@ -1,0 +1,4 @@
+[console_scripts]
+muscle_learning_node = online_adaptive_impedance_control_pkg.muscle_learning:main
+online_adaptive_impedance_control_node = online_adaptive_impedance_control_pkg.online_adaptive_impedance_control_node:main
+
