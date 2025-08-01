@@ -37,7 +37,7 @@ class MainNode(Node):
         self.current_pos        = 0.0
 
 
-        motor_id    = 1
+        motor_id    = 5
         self.motor_1 = TMotorManager_mit_can(motor_type='AK60-6', motor_ID=motor_id)
         self.motor_1.set_zero_position() # has a delay!
         time.sleep(1) # wait for the motor to zero (~1 second)
@@ -56,7 +56,7 @@ class MainNode(Node):
 
         ros_node_freq = 1000 #Hz Less is better for CAN bus [50, 100] Hz
         self.timer = self.create_timer((1/ros_node_freq), self.MainLoop)
-        self.max_runtime = 100.0  # seconds
+        self.max_runtime = 15  # seconds
 
 
         self.LPF_vel = LPF(1.0)
@@ -70,10 +70,11 @@ class MainNode(Node):
         t = current_time - self.start_time  # Elapsed time since start
 
         # Sinusoidal position and velocity
-        A_max = 1.5
-        ramp_time = 10
+        A_max = 0.75
+        frequency = 3                                             # Frequency in Hz
+        
+        ramp_time = 2
         amplitude = A_max * (1 - np.exp(-t / ramp_time))                # Amplitude of position sine wave (radians)
-        frequency = 0.5                                                # Frequency in Hz
         omega = 2 * np.pi * frequency                                   # Angular frequency
         
         pos = amplitude * np.sin(omega * t )  # Position (sine wave)

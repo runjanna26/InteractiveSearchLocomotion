@@ -1,37 +1,44 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
  <tabbed_widget parent="main_window" name="Main Window">
-  <Tab tab_name="tab1" containers="1">
+  <Tab containers="1" tab_name="tab1">
    <Container>
-    <DockSplitter orientation="-" count="4" sizes="0.249716;0.250851;0.249716;0.249716">
+    <DockSplitter orientation="-" count="5" sizes="0.2;0.2;0.2;0.2;0.2">
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
-       <range top="1.576344" left="1753973662.488600" right="1753973762.487007" bottom="-1.633415"/>
+      <plot flip_y="false" flip_x="false" style="Lines" mode="TimeSeries">
+       <range left="1754019963.166734" top="0.944950" right="1754020159.698124" bottom="-0.944955"/>
        <limitY/>
-       <curve color="#1f77b4" name="/JointAngles/data[0]"/>
-       <curve color="#d62728" name="/JointCommands/data[0]"/>
+       <curve name="/JointAngles/data[0]" color="#1f77b4"/>
+       <curve name="/JointCommands/data[0]" color="#d62728"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
-       <range top="6.069597" left="1753973662.488600" right="1753973762.487007" bottom="-6.289377"/>
+      <plot flip_y="false" flip_x="false" style="Lines" mode="TimeSeries">
+       <range left="1754019963.166734" top="0.389831" right="1754020159.698124" bottom="-0.336027"/>
        <limitY/>
-       <curve color="#f14cc1" name="/JointVelocities/data[0]"/>
-       <curve color="#9467bd" name="/JointVelocityCommands/data[0]"/>
+       <curve name="/JointAngleErrors/data[0]" color="#1f77b4"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
-       <range top="0.293047" left="1753973662.488600" right="1753973762.487007" bottom="-0.008869"/>
+      <plot flip_y="false" flip_x="false" style="Lines" mode="TimeSeries">
+       <range left="1754019963.166734" top="6.324856" right="1754020159.698124" bottom="-7.588314"/>
        <limitY/>
-       <curve color="#ff7f0e" name="/JointStiffness/data[0]"/>
+       <curve name="/JointVelocities/data[0]" color="#f14cc1"/>
+       <curve name="/JointVelocityCommands/data[0]" color="#9467bd"/>
       </plot>
      </DockArea>
      <DockArea name="...">
-      <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
-       <range top="0.507864" left="1753973662.488600" right="1753973762.487007" bottom="-0.354459"/>
+      <plot flip_y="false" flip_x="false" style="Lines" mode="TimeSeries">
+       <range left="1754019963.166734" top="0.047004" right="1754020159.698124" bottom="-0.001826"/>
        <limitY/>
-       <curve color="#1ac938" name="/JointDamping/data[0]"/>
+       <curve name="/JointStiffness/data[0]" color="#ff7f0e"/>
+      </plot>
+     </DockArea>
+     <DockArea name="...">
+      <plot flip_y="false" flip_x="false" style="Lines" mode="TimeSeries">
+       <range left="1754019963.166734" top="0.173376" right="1754020159.698124" bottom="-0.056547"/>
+       <limitY/>
+       <curve name="/JointDamping/data[0]" color="#1ac938"/>
       </plot>
      </DockArea>
     </DockSplitter>
@@ -44,7 +51,7 @@
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <parameters time_axis="" delimiter="0"/>
+   <parameters delimiter="0" time_axis=""/>
   </plugin>
   <plugin ID="DataLoad MCAP"/>
   <plugin ID="DataLoad ROS2 bags">
