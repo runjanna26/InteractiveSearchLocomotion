@@ -106,44 +106,22 @@ class MuscleModel:
         self.pos_des = pos_des
         self.pos_fb  = pos_fb
         self.vel_fb  = vel_fb
-    
 
         self.timestamp_now = time.time() 
         Ts = (self.timestamp_now - self.timestamp_prev) 
         if Ts <= 0 or Ts > 0.5:
             Ts = 1e-3
         self.vel_des = (self.pos_des - self.pos_des_prev) / Ts
-        # print(self.pos_des, self.pos_des_prev)
-        # print(self.vel_des)
-        # self.vel_des = 0.0
-        
-        # if self.vel_des > 0.0:
 
-
-
-
-        # Torque oscillate
+        # Adaptive Impedance Control
         self.F = self.gen_track_error() / self.gen_adapt_scalar()
         self.K = self.F * self.gen_pos_error()
         self.D = self.F * self.gen_vel_error()
-
-        # Torque smooth
-        # self.K = np.diag([1])
-        # self.D = np.diag([0.1])
-        
-
-        # self.tau = - self.F - self.K * self.gen_pos_error() - self.D * self.gen_vel_error()
-
 
 
         self.timestamp_prev = self.timestamp_now
         self.pos_des_prev   = self.pos_des
 
-
-        self.tau = np.clip(self.tau, -15, 15)
-        # print('tau_sp: ', self.tau)
-
-        return self.tau 
 
     def gen_pos_error(self):
         '''
