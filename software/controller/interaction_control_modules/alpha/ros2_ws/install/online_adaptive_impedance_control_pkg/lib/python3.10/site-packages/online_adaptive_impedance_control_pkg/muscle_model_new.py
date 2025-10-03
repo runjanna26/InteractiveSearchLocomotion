@@ -90,17 +90,17 @@ class MuscleModel:
         self.vel_des            = 0.0
         self.vel_fb             = 0.0
 
-        self.K  = 0.0
-        self.D  = 0.0
-        self.F  = 0.0
+        self.K                  = 0.0
+        self.D                  = 0.0
+        self.F                  = 0.0
 
-        self.dK = 0.0
-        self.dD = 0.0
-        self.dF = 0.0
+        self.dK                 = 0.0
+        self.dD                 = 0.0
+        self.dF                 = 0.0
         
-        self.QK = 80.0
-        self.QD = 10.0
-        self.QF = 5.0
+        self.QK                 = 80.0
+        self.QD                 = 10.0
+        self.QF                 = 5.0
 
 
         self.tau                = 0.0

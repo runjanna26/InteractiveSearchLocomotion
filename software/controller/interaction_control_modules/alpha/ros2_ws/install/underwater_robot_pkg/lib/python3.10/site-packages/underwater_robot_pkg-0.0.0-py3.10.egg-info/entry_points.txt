@@ -1,0 +1,3 @@
+[console_scripts]
+underwater_robot_node = underwater_robot_pkg.underwater_robot_node:main
+
