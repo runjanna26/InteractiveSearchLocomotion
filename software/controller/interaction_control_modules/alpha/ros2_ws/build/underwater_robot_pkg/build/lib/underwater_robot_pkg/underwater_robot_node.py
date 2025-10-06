@@ -59,9 +59,9 @@ class RobotNode(Node):
         self.LPF_vel = LPF(0.5)
 
         self.init_pos           = 0.0
-        self.muscle = MuscleModel(_a            = 1.0,
+        self.muscle = MuscleModel(_a            = 0.5,
                                   _b            = 10.0,
-                                  _beta         = 0.5,
+                                  _beta         = 0.25,             # made motor oscillation smaller after holding
                                   _init_pos     = self.init_pos,
                                   number_motor = 1)
 
@@ -96,16 +96,17 @@ class RobotNode(Node):
         # ======================= Start ROS Loop ========================= #
 
         # Setup sinusoidal oscillation parameters 
-        A_max = 0.75                                        # Amplitude (radians)
+        A_max = np.pi/3                                        # Amplitude (radians)
         frequency = 1                                       # Frequency (Hz)
         ramp_time = 2                                       # Ramp time constant
         amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
         omega = 2 * np.pi * frequency    
 
-        pos_des = 0.0
+        # pos_des = 0.0
+        # vel_des = 0.0
 
-        # pos_des_sin = amplitude * np.sin(omega * t)
-        # vel_des_sin = amplitude * omega * np.cos(omega * t)
+        pos_des = amplitude * np.sin(omega * t)
+        vel_des= amplitude * omega * np.cos(omega * t)
         
 
 
@@ -117,17 +118,22 @@ class RobotNode(Node):
 
         # ======================= Set motor command ======================= #
 
-        # self.motor.set_desired_position_radian(pos_des_sin)
-        # self.motor.set_desired_velocity_radian_per_second(self.muscle.vel_des)
+        self.motor.set_desired_position_radian(pos_des)
+        self.motor.set_desired_velocity_radian_per_second(vel_des)
 
-        # self.motor.set_desired_stiffness(self.muscle.get_stiffness())
-        # self.motor.set_desired_damping(self.muscle.get_damping())
-        # self.motor.set_desired_torque(self.muscle.get_feedforward_force())
+        # self.motor.set_desired_stiffness(10)
+        # self.motor.set_desired_damping(1)
+        # self.motor.set_desired_torque(0)
 
+
+        self.motor.set_desired_stiffness(self.muscle.get_stiffness())
+        self.motor.set_desired_damping(self.muscle.get_damping())
+        self.motor.set_desired_torque(self.muscle.get_feedforward_force())
 
         # Direct torque control (No limit stiffness and damping)
         # self.motor.set_desired_torque(np.sign(self.motor.feedback_velocity)*0.2)  # Add friction compensation
-        self.motor.set_desired_torque(self.muscle.tau + np.sign(self.motor.feedback_velocity)*0.2) 
+        # self.motor.set_desired_torque(self.muscle.tau + np.sign(self.motor.feedback_velocity)*0.2) 
+        # self.motor.set_desired_torque(self.muscle.tau) 
 
 
 

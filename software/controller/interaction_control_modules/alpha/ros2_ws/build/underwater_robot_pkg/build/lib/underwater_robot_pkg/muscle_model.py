@@ -113,10 +113,14 @@ class MuscleModel:
             Ts = 1e-3
         self.vel_des = (self.pos_des - self.pos_des_prev) / Ts
 
-        # Adaptive Impedance Control
+        # # Adaptive Impedance Control
         self.F = self.gen_track_error() / self.gen_adapt_scalar()
         self.K = self.F * self.gen_pos_error()
         self.D = self.F * self.gen_vel_error()
+
+        # self.F = 0.0
+        # self.K = 10.0
+        # self.D = 0.0
 
         self.tau = - (self.K * self.gen_pos_error() + self.D * self.gen_vel_error() + self.F)
 
