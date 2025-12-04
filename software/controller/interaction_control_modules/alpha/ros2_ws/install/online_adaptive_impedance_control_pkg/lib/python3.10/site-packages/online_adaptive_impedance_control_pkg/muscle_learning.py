@@ -38,7 +38,7 @@ class MainNode(Node):
         self.current_pos        = 0.0
 
 
-        motor_id    = 1
+        motor_id    = 5 # 5
         self.motor_1 = TMotorManager_mit_can(motor_type='AK60-6', motor_ID=motor_id)
         self.motor_1.set_zero_position() # has a delay!
         time.sleep(1) # wait for the motor to zero (~1 second)
@@ -63,9 +63,7 @@ class MainNode(Node):
 
         ros_node_freq = 1000 #Hz Less is better for CAN bus [50, 100] Hz
         self.timer = self.create_timer((1/ros_node_freq), self.MainLoop)
-        self.max_runtime = 15  # seconds
-        self.iteration = 1
-        # self.max_runtime = -1  # loop forever
+        self.max_runtime = 60  # seconds
 
 
 
@@ -77,20 +75,16 @@ class MainNode(Node):
         current_time = self.get_clock().now().nanoseconds / 1e9  # Convert nanoseconds to seconds
         t = current_time - self.start_time  # Elapsed time since start
 
-        # ======================= Start ROS Loop ========================= #
-
-        # Setup sinusoidal oscillation parameters 
-        A_max = 0.75                                        # Amplitude (radians)
-        frequency = 3                                       # Frequency (Hz)
-        ramp_time = 2                                       # Ramp time constant
-        amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
-        omega = 2 * np.pi * frequency                      
+        # Sinusoidal position and velocity
+        A_max = 1.3                                             # Amplitude in rad (max. 1 rad)
+        frequency = 0.7                                            # Frequency in Hz (max. 3 hz)
         
-        # Sinusoidal position and velocity generation
-        pos = amplitude * np.sin(omega * t) 
-
-        # Filter velocity feedback
-        self.vel_fb = self.LPF_vel.filter(self.motor_1.get_output_velocity_radians_per_second())
+        ramp_time = 1
+        amplitude = A_max * (1 - np.exp(-t / ramp_time))                # Amplitude of position sine wave (radians)
+        omega = 2 * np.pi * frequency                                   # Angular frequency
+        
+        pos = amplitude * np.sin(omega * t)  # Position (sine wave)
+        # vel = amplitude * omega * np.cos(omega * t)  # Velocity (derivative of sine wave)
 
         # Online Adaptive Impedance Control
         self.muscle.calculate(pos_des = pos, 

@@ -28,7 +28,7 @@ $ ip a
 # $ sudo modprobe pcan
 '''
 
-robot_pwd = 'exvis123'
+robot_pwd = '916269'
 
 import can
 import time

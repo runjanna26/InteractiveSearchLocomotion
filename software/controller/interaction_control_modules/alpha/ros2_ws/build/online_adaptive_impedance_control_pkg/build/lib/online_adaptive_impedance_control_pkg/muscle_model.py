@@ -113,10 +113,21 @@ class MuscleModel:
             Ts = 1e-3
         self.vel_des = (self.pos_des - self.pos_des_prev) / Ts
 
-        # Adaptive Impedance Control
-        self.F = self.gen_track_error() / self.gen_adapt_scalar()
-        self.K = self.F * self.gen_pos_error()
-        self.D = self.F * self.gen_vel_error()
+
+
+
+        # Torque oscillate
+        # self.F = self.gen_track_error() / self.gen_adapt_scalar()
+        # self.K = self.F * self.gen_pos_error()
+        # self.D = self.F * self.gen_vel_error()
+
+        # Torque smooth
+        self.K = np.diag([1])
+        self.D = np.diag([0.1])
+        
+
+        # self.tau = - self.F - self.K * self.gen_pos_error() - self.D * self.gen_vel_error()
+
 
 
         self.timestamp_prev = self.timestamp_now

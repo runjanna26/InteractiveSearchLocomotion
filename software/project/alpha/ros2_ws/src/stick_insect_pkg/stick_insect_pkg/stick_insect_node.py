@@ -286,7 +286,7 @@ class StickInsectNode(Node):
         #     self.cpg_phi_cmd = 0.1
         #     self.cpg_pause_cmd = 1.0
         
-        # Self-orgnization for walking pattern
+        # ==================== Self-orgnization for walking pattern ====================
         
         for col_fb, col_expec in zip(self.foot_force_fb, self.expected_foot_forces):
             # print(col_fb, col_expec)
@@ -330,7 +330,7 @@ class StickInsectNode(Node):
                                                             self.cpg_phi_leg_des ['L2']]))
         
                
-        # CPF modulation layer       
+        # ==================== CPF modulation layer ====================   
         self.cpg_output_leg_R0 = self.cpg_loco_leg_R0.modulate_cpg(self.cpg_mod_cmd['R0']['phi'] , self.cpg_mod_cmd['R0']['pause_input'], self.cpg_mod_cmd['R0']['rewind_input'])
         self.cpg_output_leg_R1 = self.cpg_loco_leg_R1.modulate_cpg(self.cpg_mod_cmd['R1']['phi'] , self.cpg_mod_cmd['R1']['pause_input'], self.cpg_mod_cmd['R1']['rewind_input'])
         self.cpg_output_leg_R2 = self.cpg_loco_leg_R2.modulate_cpg(self.cpg_mod_cmd['R2']['phi'] , self.cpg_mod_cmd['R2']['pause_input'], self.cpg_mod_cmd['R2']['rewind_input'])
@@ -339,7 +339,7 @@ class StickInsectNode(Node):
         self.cpg_output_leg_L2 = self.cpg_loco_leg_L2.modulate_cpg(self.cpg_mod_cmd['L2']['phi'] , self.cpg_mod_cmd['L2']['pause_input'], self.cpg_mod_cmd['L2']['rewind_input'])
         
         
-        # RBF layer
+        # ==================== RBF layer ====================
         # Right legs
         self.joint_angles_cmd['TR'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_weights['TR0'])         
         self.joint_angles_cmd['CR'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_weights['CR0'])

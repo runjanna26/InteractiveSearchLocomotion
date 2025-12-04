@@ -61,7 +61,7 @@ class RobotNode(Node):
         self.init_pos           = 0.0
         self.muscle = MuscleModel(_a            = 0.5,
                                   _b            = 10.0,
-                                  _beta         = 0.25,             # made motor oscillation smaller after holding
+                                  _beta         = 0.05,             # made motor oscillation smaller after holding
                                   _init_pos     = self.init_pos,
                                   number_motor = 1)
 
@@ -96,7 +96,7 @@ class RobotNode(Node):
         # ======================= Start ROS Loop ========================= #
 
         # Setup sinusoidal oscillation parameters 
-        A_max = np.pi/3                                        # Amplitude (radians)
+        A_max = np.pi/3                                     # Amplitude (radians)
         frequency = 1                                       # Frequency (Hz)
         ramp_time = 2                                       # Ramp time constant
         amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
@@ -121,8 +121,8 @@ class RobotNode(Node):
         self.motor.set_desired_position_radian(pos_des)
         self.motor.set_desired_velocity_radian_per_second(vel_des)
 
-        # self.motor.set_desired_stiffness(10)
-        # self.motor.set_desired_damping(1)
+        # self.motor.set_desired_stiffness(20)
+        # self.motor.set_desired_damping(5)
         # self.motor.set_desired_torque(0)
 
 
