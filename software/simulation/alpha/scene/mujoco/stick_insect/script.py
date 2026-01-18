@@ -117,6 +117,19 @@ def get_grf(model, data, foot_geom_ids):
 # ======================================================
 # MAIN SIMULATION
 # ======================================================
+joint_angle_fb = []
+joint_velocity_fb = []
+joint_stiffness_fb = []
+joint_damping_fb = []
+joint_torque_feedforward_fb = []
+joint_torque_output_fb = []
+joint_names = []    
+# ['TR0', 'CR0', 'FR0', 
+#  'TR1', 'CR1', 'FR1', 
+#  'TR2', 'CR2', 'FR2', 
+#  'TL0', 'CL0', 'FL0', 
+#  'TL1', 'CL1', 'FL1', 
+#  'TL2', 'CL2', 'FL2']
 
 def main(args=None):
     rclpy.init(args=args)
@@ -149,6 +162,33 @@ def main(args=None):
 
                 ctrl.calculate(target, q, dq, model.opt.timestep)
                 data.ctrl[actuator_ids[name]] = ctrl.get_torque()
+
+                joint_angle_fb.append(q)
+                joint_velocity_fb.append(dq)
+                joint_stiffness_fb.append(ctrl.K)
+                joint_damping_fb.append(ctrl.D)
+                joint_torque_feedforward_fb.append(ctrl.F)
+                joint_torque_output_fb.append(ctrl.get_torque())
+                joint_names.append(name)
+            # print(joint_names)
+
+                
+
+            # --- FEEDBACK ---
+            ros_node.publish_joint_angle(joint_angle_fb)
+            ros_node.publish_joint_velocity(joint_velocity_fb)
+            ros_node.publish_joint_stiffness(joint_stiffness_fb)
+            ros_node.publish_joint_damping(joint_damping_fb)
+            ros_node.publish_joint_torque_ff(joint_torque_feedforward_fb)
+            ros_node.publish_joint_torque_output(joint_torque_output_fb)
+            joint_angle_fb.clear()
+            joint_velocity_fb.clear()
+            joint_stiffness_fb.clear()
+            joint_damping_fb.clear()
+            joint_torque_feedforward_fb.clear()
+            joint_torque_output_fb.clear()
+            joint_names.clear()
+                
 
             # --- GRF FEEDBACK ---
             grf_data = get_grf(model, data, foot_geom_ids)

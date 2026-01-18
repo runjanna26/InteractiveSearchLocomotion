@@ -102,7 +102,7 @@
                     conaffinity="0" />
                 <body name="FEMUR_R1" pos="0 -0.0223 0"
                     quat="-0.707107 2.42558e-06 0.707106 -2.42558e-06">
-                    <inertial pos="0 -0.053926 0" mass="0.1906"
+                    <inertial pos="0 -0.053926 0" mass="0.2926"
                         diaginertia="0.00243968 0.00243968 0.00121984" />
                     <joint name="CR1" pos="0 0 0" axis="0 0 1" 
                         actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
@@ -133,7 +133,7 @@
                     conaffinity="0" />
                 <body name="FEMUR_L1" pos="0 0.0223 0"
                     quat="-0.707107 9.18448e-06 0.707107 -9.18448e-06">
-                    <inertial pos="0 0.053925 0" mass="0.1906"
+                    <inertial pos="0 0.053925 0" mass="0.2926"
                         diaginertia="0.00243968 0.00243968 0.00121984" />
                     <joint name="CL1" pos="0 0 0" axis="0 0 1" 
                         actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
@@ -164,7 +164,7 @@
                     conaffinity="0" />
                 <body name="FEMUR_R2" pos="-0.009867 -0.011759 0"
                     quat="-0.640857 0.183015 0.683013 0.298834">
-                    <inertial pos="0.011487 -0.065145 0" mass="0.2338"
+                    <inertial pos="0.011487 -0.065145 0" mass="0.2926"
                         diaginertia="0.00299264 0.00299264 0.00149632" />
                     <joint name="CR2" pos="0 0 0" axis="0 0 1" 
                         actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
@@ -196,7 +196,7 @@
                     conaffinity="0" />
                 <body name="FEMUR_L2" pos="0.009867 0.011759 0"
                     quat="-0.640855 0.183011 0.683014 0.298838">
-                    <inertial pos="-0.011487 0.065145 0" mass="0.2338"
+                    <inertial pos="-0.011487 0.065145 0" mass="0.2926"
                         diaginertia="0.00299264 0.00299264 0.00149632" />
                     <joint name="CL2" pos="0 0 0" axis="0 0 1" 
                         actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
