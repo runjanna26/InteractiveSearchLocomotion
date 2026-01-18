@@ -1,0 +1,30 @@
+<mujoco model="triple_pendulum">
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+
+  <worldbody>
+    <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1"/>
+    <geom type="plane" size="1 1 0.1" rgba=".9 .9 .9 1"/>
+
+    <body pos="0 0 2" euler="0 1.57 0">
+      <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0" damping="0.1"/>
+      <geom type="capsule" size="0.05" fromto="0 0 0 0 0 -0.5" rgba="0.8 0.2 0.2 1" mass="1"/>
+      
+      <body pos="0 0 -0.5">
+        <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 0" damping="0.1"/>
+        <geom type="capsule" size="0.04" fromto="0 0 0 0 0 -0.5" rgba="0.2 0.8 0.2 1" mass="1"/>
+        
+        <body pos="0 0 -0.5">
+          <joint name="joint3" type="hinge" axis="0 1 0" pos="0 0 0" damping="0.1"/>
+          <geom type="capsule" size="0.03" fromto="0 0 0 0 0 -0.5" rgba="0.2 0.2 0.8 1" mass="1"/>
+          <site name="tip" pos="0 0 -0.5"/>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="torque1" joint="joint1" gear="1"/>
+    <motor name="torque2" joint="joint2" gear="1"/>
+    <motor name="torque3" joint="joint3" gear="1"/>
+  </actuator>
+</mujoco>

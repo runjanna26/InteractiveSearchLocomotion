@@ -61,7 +61,7 @@ class RobotNode(Node):
         self.init_pos           = 0.0
         self.muscle = MuscleModel(_a            = 0.5,
                                   _b            = 10.0,
-                                  _beta         = 0.05,             # made motor oscillation smaller after holding
+                                  _beta         = 1.5,             # made motor oscillation smaller after holding
                                   _init_pos     = self.init_pos,
                                   number_motor = 1)
 

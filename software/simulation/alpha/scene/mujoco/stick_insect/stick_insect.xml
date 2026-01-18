@@ -1,0 +1,258 @@
+<mujoco>
+    <compiler meshdir="asset" texturedir="asset" />
+    <statistic extent="1.5" meansize=".05" />
+
+    <option timestep="0.005" jacobian="sparse" />
+
+    <visual>
+        <rgba haze="0.15 0.25 0.35 1" />
+        <quality shadowsize="4096" />
+        <map stiffness="700" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3" />
+    </visual>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512"
+            height="512" />
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
+            width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
+        <material name="matplane" reflectance="0.3" texture="texplane" texrepeat="1 1"
+            texuniform="true" />
+    </asset>
+
+
+    <worldbody>
+        <body name="stick_insect_robot" pos="0 0 0.5">
+            <freejoint name="space" />
+            <inertial pos="0.004237 -0.007339 0" mass="0.253323"
+                diaginertia="0.01521 0.01521 9.453e-05" />
+
+            <geom name="Stick_insect" size="0.01375 0.21325" pos="0 0 0.225002"
+                quat="-0.5 -0.5 0.5 0.5"
+                type="cylinder" contype="1" conaffinity="1" />
+            
+            <body name="COXA_R0" pos="-0.17975 0.014997 0.225" quat="0.258819 2.51884e-07 2.70831e-07 0.965926">
+                <inertial pos="0.004237 -0.007339 0" mass="0.1"
+                    diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TR0" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_R0" size="0.0075 0.008475" pos="0.004237 -0.007339 0"
+                    quat="0.683005 0.68302 0.183015 0.18301" type="cylinder" contype="0"
+                    conaffinity="0" />
+                <body name="FEMUR_R0" pos="0.008475 -0.014679 -1e-06"
+                    quat="-0.696364 -0.241844 0.664464 -0.122789">
+                    <inertial pos="0.014378 -0.081542 -1e-06" mass="0.2926"
+                        diaginertia="0.00374528 0.00374528 0.00187264" />
+                    <joint name="CR0" pos="0 0 0" axis="0 0 1" 
+                        actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                    <geom name="FEMUR_R0" size="0.0075 0.0828" pos="0.014378 -0.081542 -1e-06"
+                        quat="0.45452 -0.541675 0.454519 0.541675" type="cylinder" contype="0"
+                        conaffinity="0" />
+                    <body name="TIBIA_R0" pos="0.028756 -0.163084 -1e-06"
+                        quat="0.819152 8.0253e-08 4.55137e-07 0.573576">
+                        <inertial pos="-0.150745 -0.0870406 1e-06"
+                            quat="0.353539 0.353539 0.612381 0.612381" mass="0.13539"
+                            diaginertia="0.00751012 0.00524516 0.00488992" />
+                        <joint name="FR0" pos="0 0 0" axis="0 0 1" 
+                            actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                        <geom name="TIBIA_R0" size="0.0075 0.100125" pos="-0.086705 -0.050063 1e-06"
+                            quat="0.683008 -0.183029 0.683008 0.183029" type="cylinder" />
+                        <geom name="FOOT_R0" size="0.0075" pos="-0.173409 -0.100127 1e-06"
+                            quat="0.0944753 0.662691 -0.0871658 0.737778" friction="1.5 0.005 0.0001"/>
+                    </body>
+                </body>
+            </body>
+
+            <body name="COXA_L0" pos="-0.17975 -0.015004 0.225" quat="-0.000166961 -0.258819 0.965926 4.48143e-05">
+                <inertial pos="0.004238 -0.00734 0" mass="0.1" diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TL0" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_L0" size="0.0075 0.008475" pos="0.004238 -0.00734 0"
+                    quat="-0.183013 -0.183013 0.683013 0.683013" type="cylinder" contype="0"
+                    conaffinity="0" />
+                <body name="FEMUR_L0" pos="0.008475 -0.01468 0"
+                    quat="-0.122797 0.664467 0.241836 0.696362">
+                    <inertial pos="-0.014378 0.081542 0" mass="0.2926"
+                        diaginertia="0.00374528 0.00374528 0.00187264" />
+                    <joint name="CL0" pos="0 0 0" axis="0 0 1" 
+                        actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                    <geom name="FEMUR_L0" size="0.0075 0.0828" pos="-0.014378 0.081542 0"
+                        quat="0.45452 -0.541675 0.454519 0.541675" type="cylinder" contype="0"
+                        conaffinity="0" />
+                    <body name="TIBIA_L0" pos="-0.028756 0.163084 0"
+                        quat="-0.819152 5.77925e-07 6.16111e-07 -0.573576">
+                        <inertial pos="0.150754 0.0870357 1e-06"
+                            quat="0.353553 0.353553 0.612373 0.612373" mass="0.13539"
+                            diaginertia="0.00859011 0.00632515 0.00596992" />
+                        <joint name="FL0" pos="0 0 0" axis="0 0 1" 
+                            actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                        <geom name="TIBIA_L0" size="0.0075 0.100125" pos="0.086712 0.050061 1e-06"
+                            quat="0.683012 -0.183015 0.683012 0.183014" type="cylinder" />
+                        <geom name="FOOT_L0" size="0.0075" pos="0.173418 0.100121 1e-06"
+                            quat="-0.683013 0.183014 -0.683012 -0.183014" friction="1.5 0.005 0.0001"/>
+                    </body>
+                </body>
+            </body>
+
+            <body name="COXA_R1" pos="-0.09725 0.014998 0.225" quat="0 1.73205e-07 3.26795e-07 1">
+                <inertial pos="0 -0.01115 0" mass="0.1" diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TR1" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_R1" size="0.0075 0.01115" pos="0 -0.01115 0"
+                    quat="0.7071 0.707114 1.08608e-07 3.53552e-07" type="cylinder" contype="0"
+                    conaffinity="0" />
+                <body name="FEMUR_R1" pos="0 -0.0223 0"
+                    quat="-0.707107 2.42558e-06 0.707106 -2.42558e-06">
+                    <inertial pos="0 -0.053926 0" mass="0.1906"
+                        diaginertia="0.00243968 0.00243968 0.00121984" />
+                    <joint name="CR1" pos="0 0 0" axis="0 0 1" 
+                        actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                    <geom name="FEMUR_R1" size="0.0075 0.053925" pos="0 -0.053926 0"
+                        quat="0.5 -0.5 0.499999 0.5" type="cylinder" contype="0" conaffinity="0" />
+                    <body name="TIBIA_R1" pos="0 -0.107851 0"
+                        quat="-0.866025 1.9641e-07 3.13398e-07 -0.5">
+                        <inertial pos="-0.11837 -0.0683332 7.87216e-07"
+                            quat="0.500017 -8.38036e-06 -1.45146e-05 0.866016" mass="0.13539"
+                            diaginertia="0.0050643 0.00381984 0.00333438" />
+                        <joint name="FR1" pos="0 0 0" axis="0 0 1" 
+                            actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                        <geom name="TIBIA_R1" size="0.0075 0.076475" pos="-0.066232 -0.038234 0"
+                            quat="0.683017 -0.182997 0.683017 0.182997" type="cylinder" />
+                        <geom name="FOOT_R1" size="0.0075" pos="-0.132463 -0.076469 1e-06"
+                            quat="-0.182997 -0.683017 -0.182997 0.683017" friction="1.5 0.005 0.0001"/>
+                    </body>
+                </body>
+            </body>
+
+            <body name="COXA_L1" pos="-0.097249 -0.015002 0.225"
+                quat="5e-07 1 3.26795e-07 -3.26795e-07">
+                <inertial pos="0 0.01115 0" mass="0.1" diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TL1" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_L1" size="0.0075 0.01115" pos="0 0.01115 0"
+                    quat="0.707107 0.707107 -2.44949e-07 0" type="cylinder" contype="0"
+                    conaffinity="0" />
+                <body name="FEMUR_L1" pos="0 0.0223 0"
+                    quat="-0.707107 9.18448e-06 0.707107 -9.18448e-06">
+                    <inertial pos="0 0.053925 0" mass="0.1906"
+                        diaginertia="0.00243968 0.00243968 0.00121984" />
+                    <joint name="CL1" pos="0 0 0" axis="0 0 1" 
+                        actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                    <geom name="FEMUR_L1" size="0.0075 0.053925" pos="0 0.053925 0"
+                        quat="0.5 -0.5 0.499999 0.5" type="cylinder" contype="0" conaffinity="0" />
+                    <body name="TIBIA_L1" pos="0 0.10785 0"
+                        quat="0.866025 -6.33973e-08 -2.36603e-07 0.5">
+                        <inertial pos="0.11871 0.068529 1.48077e-10" quat="0.500017 0 0 0.866016"
+                            mass="0.13539" diaginertia="0.00508063 0.00381984 0.00335071" />
+                        <joint name="FL1" pos="0 0 0" axis="0 0 1" 
+                            actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                        <geom name="TIBIA_L1" size="0.0075 0.076475" pos="0.066231 0.038233 0"
+                            quat="0.683016 -0.182999 0.683016 0.183" type="cylinder" />
+                        <geom name="FOOT_L1" size="0.0075" pos="0.132895 0.076718 1.88102e-10"
+                            quat="-0.683016 0.182998 -0.683016 -0.183" friction="1.5 0.005 0.0001"/>
+                    </body>
+                </body>
+            </body>
+
+            <body name="COXA_R2" pos="-0.032748 0.014996 0.224999"
+                quat="-0.340226 5.16883e-08 3.66228e-07 0.940344">
+                <inertial pos="-0.004934 -0.005879 0" mass="0.1"
+                    diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TR2" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_R2" size="0.0075 0.007675" pos="-0.004934 -0.005879 0"
+                    quat="-0.664457 -0.664469 0.241847 0.241842" type="cylinder" contype="0"
+                    conaffinity="0" />
+                <body name="FEMUR_R2" pos="-0.009867 -0.011759 0"
+                    quat="-0.640857 0.183015 0.683013 0.298834">
+                    <inertial pos="0.011487 -0.065145 0" mass="0.2338"
+                        diaginertia="0.00299264 0.00299264 0.00149632" />
+                    <joint name="CR2" pos="0 0 0" axis="0 0 1" 
+                        actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                    <geom name="FEMUR_R2" size="0.0075 0.06615" pos="0.011487 -0.065145 0"
+                        quat="0.454519 -0.541676 0.454519 0.541676" type="cylinder" contype="0"
+                        conaffinity="0" />
+                    <body name="TIBIA_R2" pos="0.022974 -0.13029 0"
+                        quat="0.819152 -4.25348e-08 -2.41228e-07 0.573577">
+                        <inertial pos="-0.157195 -0.09074 0"
+                            quat="0.353579 0.353579 0.612357 0.612357"
+                            mass="0.13539" diaginertia="0.0080875 0.00571374 0.00510752" />
+                        <joint name="FR2" pos="0 0 0" axis="0 0 1"
+                            actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                        <geom name="TIBIA_R2" size="0.0075 0.10495" pos="-0.090893 -0.052468 0"
+                            quat="0.68302 -0.182987 0.68302 0.182986" type="cylinder" />
+                        <geom name="FOOT_R2" size="0.0075" pos="-0.181786 -0.104935 0"
+                            quat="0.182986 0.68302 0.182986 -0.68302" friction="1.5 0.005 0.0001"/>
+                    </body>
+                </body>
+            </body>
+
+            <body name="COXA_L2" pos="-0.032749 -0.015004 0.225"
+                quat="-5.29069e-07 -0.939038 0.343813 9.26051e-09">
+                <inertial pos="0.004934 0.005879 0" mass="0.1" diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TL2" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_L2" size="0.0075 0.007675" pos="0.004934 0.005879 0"
+                    quat="-0.664453 -0.664473 0.241849 0.241841" type="cylinder" contype="0"
+                    conaffinity="0" />
+                <body name="FEMUR_L2" pos="0.009867 0.011759 0"
+                    quat="-0.640855 0.183011 0.683014 0.298838">
+                    <inertial pos="-0.011487 0.065145 0" mass="0.2338"
+                        diaginertia="0.00299264 0.00299264 0.00149632" />
+                    <joint name="CL2" pos="0 0 0" axis="0 0 1" 
+                        actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                    <geom name="FEMUR_L2" size="0.0075 0.06615" pos="-0.011487 0.065145 0"
+                        quat="0.454519 -0.541675 0.454519 0.541675" type="cylinder" contype="0"
+                        conaffinity="0" />
+                    <body name="TIBIA_L2" pos="-0.022974 0.13029 0"
+                        quat="-0.819152 4.55137e-07 -8.02528e-08 -0.573577">
+                        <inertial pos="0.157193 0.0907439 0"
+                            quat="0.353566 0.353566 0.612365 0.612365"
+                            mass="0.13539" diaginertia="0.00808748 0.00571372 0.00510752" />
+                        <joint name="FL2" pos="0 0 0" axis="0 0 1" 
+                            actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                        <geom name="TIBIA_L2" size="0.0075 0.10495" pos="0.090893 0.052469 0"
+                            quat="0.683017 -0.182998 0.683017 0.182999" type="cylinder" />
+                        <geom name="FOOT_L2" size="0.0075" pos="0.181784 0.10494 0"
+                            quat="-0.683017 0.182998 -0.683016 -0.182999" friction="1.5 0.005 0.0001"/>
+                    </body>
+                </body>
+            </body>
+        </body>
+
+        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
+            dir="0 0 -1" castshadow="false" />
+        <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
+
+        <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001"/>
+        <body mocap="true" pos="-.1 .05 0" zaxis=".5 0 1">
+        </body>
+    </worldbody>
+
+
+<actuator>
+      <motor name="TR0" joint="TR0" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="CR0" joint="CR0" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="FR0" joint="FR0" ctrllimited="true" ctrlrange="-10 10"/>
+
+      <motor name="TR1" joint="TR1" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="CR1" joint="CR1" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="FR1" joint="FR1" ctrllimited="true" ctrlrange="-10 10"/>
+
+      <motor name="TR2" joint="TR2" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="CR2" joint="CR2" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="FR2" joint="FR2" ctrllimited="true" ctrlrange="-10 10"/>
+
+      <motor name="TL0" joint="TL0" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="CL0" joint="CL0" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="FL0" joint="FL0" ctrllimited="true" ctrlrange="-10 10"/>
+
+      <motor name="TL1" joint="TL1" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="CL1" joint="CL1" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="FL1" joint="FL1" ctrllimited="true" ctrlrange="-10 10"/>
+
+      <motor name="TL2" joint="TL2" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="CL2" joint="CL2" ctrllimited="true" ctrlrange="-10 10"/>
+      <motor name="FL2" joint="FL2" ctrllimited="true" ctrlrange="-10 10"/>
+  </actuator>
+</mujoco>

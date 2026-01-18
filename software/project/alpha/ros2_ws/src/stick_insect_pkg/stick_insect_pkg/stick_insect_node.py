@@ -169,12 +169,12 @@ class StickInsectNode(Node):
     def FootForceFeedback(self, msg):
         scaling_factor = 10
         offset_factor = 0.15
-        self.foot_force_fb['F_R0'] = np.clip(self.lpf_R0.filter(scaling_factor * np.linalg.norm(msg.data[0:3]))   - offset_factor, 0.0, 1.0)  # x, y, z
-        self.foot_force_fb['F_R1'] = np.clip(self.lpf_R1.filter(scaling_factor * np.linalg.norm(msg.data[3:6]))   - offset_factor, 0.0, 1.0)
-        self.foot_force_fb['F_R2'] = np.clip(self.lpf_R2.filter(scaling_factor * np.linalg.norm(msg.data[6:9]))   - offset_factor, 0.0, 1.0)
-        self.foot_force_fb['F_L0'] = np.clip(self.lpf_L0.filter(scaling_factor * np.linalg.norm(msg.data[9:12]))  - offset_factor, 0.0, 1.0)
-        self.foot_force_fb['F_L1'] = np.clip(self.lpf_L1.filter(scaling_factor * np.linalg.norm(msg.data[12:15])) - offset_factor, 0.0, 1.0)
-        self.foot_force_fb['F_L2'] = np.clip(self.lpf_L2.filter(scaling_factor * np.linalg.norm(msg.data[15:18])) - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_R0'] = np.clip(self.lpf_R0.filter(scaling_factor * msg.data[0]) - offset_factor, 0.0, 1.0)  # x, y, z
+        self.foot_force_fb['F_R1'] = np.clip(self.lpf_R1.filter(scaling_factor * msg.data[1]) - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_R2'] = np.clip(self.lpf_R2.filter(scaling_factor * msg.data[2]) - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_L0'] = np.clip(self.lpf_L0.filter(scaling_factor * msg.data[3]) - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_L1'] = np.clip(self.lpf_L1.filter(scaling_factor * msg.data[4]) - offset_factor, 0.0, 1.0)
+        self.foot_force_fb['F_L2'] = np.clip(self.lpf_L2.filter(scaling_factor * msg.data[5]) - offset_factor, 0.0, 1.0)
         # print(self.foot_force_fb)
         
     # ==============================================
@@ -185,24 +185,15 @@ class StickInsectNode(Node):
     # def cross_correlation(self, in_1, in_2):
     #     current_time = time.time()  # Get current timestamp in seconds
         
-        
-        
     #     th = 0.2
     #     if in_1 >= th and self.in_1_prev < th:  # signal cross the threshold
     #         self.start_flag = True
     #     elif in_1 <= th and self.in_1_prev > th:
-
-        
         
         
     #     self.sig_1_list.append(in_1)
     #     self.sig_2_list.append(in_2)       
          
-         
-         
-         
-         
-            
     #     if in_2 >= th and self.in_2_prev < th:  # signal cross the threshold
     #         # self.tau_2 = current_time
     #         # print(self.tau_2)
@@ -247,20 +238,20 @@ class StickInsectNode(Node):
         # Manual shift phase
         if self.btn_js[0] == 1: # A button
             self.cpg_mod_cmd['R0']['phi'] = 0.01
-            self.cpg_mod_cmd['R1']['phi'] = 0.08
+            self.cpg_mod_cmd['R1']['phi'] = 0.05
             self.cpg_mod_cmd['R2']['phi'] = 0.01
 
-            self.cpg_mod_cmd['L0']['phi'] = 0.08
+            self.cpg_mod_cmd['L0']['phi'] = 0.05
             self.cpg_mod_cmd['L1']['phi'] = 0.01
-            self.cpg_mod_cmd['L2']['phi'] = 0.08
+            self.cpg_mod_cmd['L2']['phi'] = 0.05
         else:
-            self.cpg_mod_cmd['R0']['phi'] = 0.08
-            self.cpg_mod_cmd['R1']['phi'] = 0.08
-            self.cpg_mod_cmd['R2']['phi'] = 0.08
+            self.cpg_mod_cmd['R0']['phi'] = 0.05
+            self.cpg_mod_cmd['R1']['phi'] = 0.05
+            self.cpg_mod_cmd['R2']['phi'] = 0.05
 
-            self.cpg_mod_cmd['L0']['phi'] = 0.08
-            self.cpg_mod_cmd['L1']['phi'] = 0.08
-            self.cpg_mod_cmd['L2']['phi'] = 0.08
+            self.cpg_mod_cmd['L0']['phi'] = 0.05
+            self.cpg_mod_cmd['L1']['phi'] = 0.05
+            self.cpg_mod_cmd['L2']['phi'] = 0.05
             
         # if self.btn_js[0] == 1: # A button
         #     self.cpg_mod_cmd['R0']['pause_input'] = 1.0
@@ -288,46 +279,46 @@ class StickInsectNode(Node):
         
         # ==================== Self-orgnization for walking pattern ====================
         
-        for col_fb, col_expec in zip(self.foot_force_fb, self.expected_foot_forces):
-            # print(col_fb, col_expec)
-            self.foot_force_tau[col_expec]   = self.get_phase_shift_time(self.expected_foot_forces[col_expec], self.foot_force_fb[col_fb])
+        # for col_fb, col_expec in zip(self.foot_force_fb, self.expected_foot_forces):
+        #     # print(col_fb, col_expec)
+        #     self.foot_force_tau[col_expec]   = self.get_phase_shift_time(self.expected_foot_forces[col_expec], self.foot_force_fb[col_fb])
             
-            # if self.foot_force_tau[col_expec] is not None:
-            # print()
+        #     # if self.foot_force_tau[col_expec] is not None:
+        #     # print()
             
-            self.foot_force_error[col_expec] =  self.foot_force_tau[col_expec] * np.abs(self.foot_force_fb[col_fb] - self.expected_foot_forces[col_expec])
-        self.pub_foot_force.publish(Float32MultiArray(data = list(self.foot_force_fb.values())))
-        self.pub_foot_force_error.publish(Float32MultiArray(data = list(self.foot_force_error.values())))
+        #     self.foot_force_error[col_expec] =  self.foot_force_tau[col_expec] * np.abs(self.foot_force_fb[col_fb] - self.expected_foot_forces[col_expec])
+        # self.pub_foot_force.publish(Float32MultiArray(data = list(self.foot_force_fb.values())))
+        # self.pub_foot_force_error.publish(Float32MultiArray(data = list(self.foot_force_error.values())))
         
         
         
-        self.cpg_phi_leg_adapt['R_Z0'], _, _ = self.dual_learner_leg_R0.calculate_DIL(self.foot_force_error['R_Z0'])
-        self.cpg_phi_leg_adapt['R_Z1'], _, _ = self.dual_learner_leg_R1.calculate_DIL(self.foot_force_error['R_Z1'])
-        self.cpg_phi_leg_adapt['R_Z2'], _, _ = self.dual_learner_leg_R2.calculate_DIL(self.foot_force_error['R_Z2'])
-        self.cpg_phi_leg_adapt['L_Z0'], _, _ = self.dual_learner_leg_L0.calculate_DIL(self.foot_force_error['L_Z0'])
-        self.cpg_phi_leg_adapt['L_Z1'], _, _ = self.dual_learner_leg_L1.calculate_DIL(self.foot_force_error['L_Z1'])
-        self.cpg_phi_leg_adapt['L_Z2'], _, _ = self.dual_learner_leg_L2.calculate_DIL(self.foot_force_error['L_Z2'])
+        # self.cpg_phi_leg_adapt['R_Z0'], _, _ = self.dual_learner_leg_R0.calculate_DIL(self.foot_force_error['R_Z0'])
+        # self.cpg_phi_leg_adapt['R_Z1'], _, _ = self.dual_learner_leg_R1.calculate_DIL(self.foot_force_error['R_Z1'])
+        # self.cpg_phi_leg_adapt['R_Z2'], _, _ = self.dual_learner_leg_R2.calculate_DIL(self.foot_force_error['R_Z2'])
+        # self.cpg_phi_leg_adapt['L_Z0'], _, _ = self.dual_learner_leg_L0.calculate_DIL(self.foot_force_error['L_Z0'])
+        # self.cpg_phi_leg_adapt['L_Z1'], _, _ = self.dual_learner_leg_L1.calculate_DIL(self.foot_force_error['L_Z1'])
+        # self.cpg_phi_leg_adapt['L_Z2'], _, _ = self.dual_learner_leg_L2.calculate_DIL(self.foot_force_error['L_Z2'])
         
-        self.cpg_mod_cmd['R0']['phi'] = self.cpg_phi_leg_adapt['R_Z0'] + self.cpg_phi_leg_des['R0']
-        self.cpg_mod_cmd['R1']['phi'] = self.cpg_phi_leg_adapt['R_Z1'] + self.cpg_phi_leg_des['R1']
-        self.cpg_mod_cmd['R2']['phi'] = self.cpg_phi_leg_adapt['R_Z2'] + self.cpg_phi_leg_des['R2']
-        self.cpg_mod_cmd['L0']['phi'] = self.cpg_phi_leg_adapt['L_Z0'] + self.cpg_phi_leg_des['L0']
-        self.cpg_mod_cmd['L1']['phi'] = self.cpg_phi_leg_adapt['L_Z1'] + self.cpg_phi_leg_des['L1']
-        self.cpg_mod_cmd['L2']['phi'] = self.cpg_phi_leg_adapt['L_Z2'] + self.cpg_phi_leg_des['L2']
-        self.pub_phi_cmd.publish(Float32MultiArray(data = [self.cpg_mod_cmd['R0']['phi'], 
-                                                           self.cpg_mod_cmd['R1']['phi'], 
-                                                           self.cpg_mod_cmd['R2']['phi'], 
-                                                           self.cpg_mod_cmd['L0']['phi'], 
-                                                           self.cpg_mod_cmd['L1']['phi'], 
-                                                           self.cpg_mod_cmd['L2']['phi']]))
+        # self.cpg_mod_cmd['R0']['phi'] = self.cpg_phi_leg_adapt['R_Z0'] + self.cpg_phi_leg_des['R0']
+        # self.cpg_mod_cmd['R1']['phi'] = self.cpg_phi_leg_adapt['R_Z1'] + self.cpg_phi_leg_des['R1']
+        # self.cpg_mod_cmd['R2']['phi'] = self.cpg_phi_leg_adapt['R_Z2'] + self.cpg_phi_leg_des['R2']
+        # self.cpg_mod_cmd['L0']['phi'] = self.cpg_phi_leg_adapt['L_Z0'] + self.cpg_phi_leg_des['L0']
+        # self.cpg_mod_cmd['L1']['phi'] = self.cpg_phi_leg_adapt['L_Z1'] + self.cpg_phi_leg_des['L1']
+        # self.cpg_mod_cmd['L2']['phi'] = self.cpg_phi_leg_adapt['L_Z2'] + self.cpg_phi_leg_des['L2']
+        # self.pub_phi_cmd.publish(Float32MultiArray(data = [self.cpg_mod_cmd['R0']['phi'], 
+        #                                                    self.cpg_mod_cmd['R1']['phi'], 
+        #                                                    self.cpg_mod_cmd['R2']['phi'], 
+        #                                                    self.cpg_mod_cmd['L0']['phi'], 
+        #                                                    self.cpg_mod_cmd['L1']['phi'], 
+        #                                                    self.cpg_mod_cmd['L2']['phi']]))
         
         
-        self.pub_phi_walk.publish(Float32MultiArray(data = [self.cpg_phi_leg_des ['R0'],
-                                                            self.cpg_phi_leg_des ['R1'],
-                                                            self.cpg_phi_leg_des ['R2'],
-                                                            self.cpg_phi_leg_des ['L0'],
-                                                            self.cpg_phi_leg_des ['L1'],
-                                                            self.cpg_phi_leg_des ['L2']]))
+        # self.pub_phi_walk.publish(Float32MultiArray(data = [self.cpg_phi_leg_des ['R0'],
+        #                                                     self.cpg_phi_leg_des ['R1'],
+        #                                                     self.cpg_phi_leg_des ['R2'],
+        #                                                     self.cpg_phi_leg_des ['L0'],
+        #                                                     self.cpg_phi_leg_des ['L1'],
+        #                                                     self.cpg_phi_leg_des ['L2']]))
         
                
         # ==================== CPF modulation layer ====================   
