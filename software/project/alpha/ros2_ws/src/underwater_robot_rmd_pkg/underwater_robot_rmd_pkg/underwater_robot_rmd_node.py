@@ -28,8 +28,8 @@ class RobotNode(Node):
 
         ros_node_freq = 100 #Hz
         self.timer = self.create_timer((1/ros_node_freq), self.timer_callback)
-        # self.max_runtime = 15  # seconds
-        self.max_runtime = -1  # loop forever
+        self.max_runtime = 30  # seconds
+        # self.max_runtime = -1  # loop forever
         self.iteration = 1
         self.start_time = self.get_clock().now().nanoseconds / 1e9  # Start time in seconds
         self.get_logger().info(f'Node period {self.max_runtime} seconds, {self.iteration} iterations')
@@ -65,8 +65,9 @@ class RobotNode(Node):
 
         # ======================= Start ROS Loop ========================= #
         # Setup sinusoidal oscillation parameters 
-        A_max = 1.0                                     # Amplitude (radians)
-        frequency = 1                                     # Frequency (Hz)
+        # A_max = 0.0                                         # Amplitude (radians)
+        A_max = 1.4                                     # Amplitude (radians)
+        frequency = 0.9                                       # Frequency (Hz)
         ramp_time = 2                                       # Ramp time constant
         amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
         omega = 2 * np.pi * frequency    
