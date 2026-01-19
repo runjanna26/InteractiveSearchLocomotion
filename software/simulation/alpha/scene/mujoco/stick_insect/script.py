@@ -6,7 +6,7 @@ import rclpy
 
 from ros2_node import StickInsectNode
 from muscle_model import MuscleModel
-
+from buoyancy import BuoyancyPhysics 
 
 # ======================================================
 # CONSTANTS
@@ -137,12 +137,16 @@ def main(args=None):
 
     model = mujoco.MjModel.from_xml_path("./stick_insect.xml")
     data = mujoco.MjData(model)
+    
 
     controllers, actuator_ids, qpos_ids, qvel_ids = init_controllers(model)
     foot_geom_ids = init_foot_sensors(model)
 
     print(f"Controllers: {len(controllers)}")
     print(f"Foot sensors: {len(foot_geom_ids)}")
+
+
+    hydro = BuoyancyPhysics(model, water_level=0.8)
 
     with mujoco.viewer.launch_passive(model, data) as viewer:
         start_time = time.time()
@@ -193,6 +197,9 @@ def main(args=None):
             # --- GRF FEEDBACK ---
             grf_data = get_grf(model, data, foot_geom_ids)
             ros_node.publish_grf(grf_data)
+
+            # --- BUOYANCY PHYSICS ---
+            hydro.apply(data)
 
             # --- PHYSICS STEP ---
             mujoco.mj_step(model, data)
