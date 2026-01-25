@@ -1,9 +1,10 @@
 <mujoco>
     <compiler meshdir="asset" texturedir="asset" />
     <statistic extent="1.5" meansize=".05" />
+    <!-- <option density="1.2" viscosity="0.000018" /> -->
 
-    <!-- <option timestep="0.005" jacobian="sparse" /> -->
-    <option timestep="0.002" integrator="RK4"/>
+    <option timestep="0.005" jacobian="sparse" integrator="implicitfast"/>
+    <!-- <option timestep="0.002" integrator="implicitfast"/> --> 
 
     <visual>
         <rgba haze="0.15 0.25 0.35 1" />
@@ -22,8 +23,9 @@
 
 
     <worldbody>
-        <body name="stick_insect_robot" pos="3 0 1.2">
-            <freejoint name="space" />
+        <!-- Stick Insect Robot -->
+        <body name="stick_insect_robot" pos="0 0 1.2">
+            <freejoint name="space" />  <!-- comment to fixed the robot on the air -->
             <inertial pos="0.004237 -0.007339 0" mass="0.253323"
                 diaginertia="0.01521 0.01521 9.453e-05" />
 
@@ -220,29 +222,29 @@
             </body>
         </body>
 
-        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
-            dir="0 0 -1" castshadow="false" />
-        <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
 
-        <geom name="water_surface" type="box" size="2 2 1" pos="0 0 0.0" 
+
+        <!-- Water Space -->
+        <geom name="water_space" type="box" size="2 2 1" pos="0 0 0.0" 
             rgba="0 0.5 1 0.2" conaffinity="0" contype="0"/>
 
-        <geom name="ground_1" type="box" size="2 2 0.1" pos="4 0 1.1" quat="1 0 0 0" material="matplane"
+        <!-- Environment Ground -->
+        <geom name="ground_1" type="box" size="2 2 0.05" pos="4 0 1.1" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001" contype="1"/>
+        <geom name="ground_2" type="box" size="2 2 0.05" pos="-4 0 1.1" quat="1 0 0 0" material="matplane"
             condim="1" friction="1.5 0.005 0.0001"/>
-        <geom name="ground_2" type="box" size="2 2 0.1" pos="-4 0 1.1" quat="1 0 0 0" material="matplane"
+        <geom name="ground_3" type="box" size="2 2 0.05" pos="0 4 1.1" quat="1 0 0 0" material="matplane"
             condim="1" friction="1.5 0.005 0.0001"/>
-        <geom name="ground_3" type="box" size="2 2 0.1" pos="0 4 1.1" quat="1 0 0 0" material="matplane"
-            condim="1" friction="1.5 0.005 0.0001"/>
-        <geom name="ground_4" type="box" size="2 2 0.1" pos="0 -4 1.1" quat="1 0 0 0" material="matplane"
+        <geom name="ground_4" type="box" size="2 2 0.05" pos="0 -4 1.1" quat="1 0 0 0" material="matplane"
             condim="1" friction="1.5 0.005 0.0001"/>
 
-        <geom name="ground_5" type="box" size="2 2 0.1" pos="4 4 1.1" quat="1 0 0 0" material="matplane"
+        <geom name="ground_5" type="box" size="2 2 0.05" pos="4 4 1.1" quat="1 0 0 0" material="matplane"
             condim="1" friction="1.5 0.005 0.0001"/>
-        <geom name="ground_6" type="box" size="2 2 0.1" pos="-4 4 1.1" quat="1 0 0 0" material="matplane"
+        <geom name="ground_6" type="box" size="2 2 0.05" pos="-4 4 1.1" quat="1 0 0 0" material="matplane"
             condim="1" friction="1.5 0.005 0.0001"/>
-        <geom name="ground_7" type="box" size="2 2 0.1" pos="4 -4 1.1" quat="1 0 0 0" material="matplane"
+        <geom name="ground_7" type="box" size="2 2 0.05" pos="4 -4 1.1" quat="1 0 0 0" material="matplane"
             condim="1" friction="1.5 0.005 0.0001"/>
-        <geom name="ground_8" type="box" size="2 2 0.1" pos="-4 -4 1.1" quat="1 0 0 0" material="matplane"
+        <geom name="ground_8" type="box" size="2 2 0.05" pos="-4 -4 1.1" quat="1 0 0 0" material="matplane"
             condim="1" friction="1.5 0.005 0.0001"/>
 
         <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" 
@@ -251,35 +253,38 @@
         <!-- <geom name="ramp" type="box" size="1.5 1.0 0.1" pos="1.4 0 -0.2" euler="0 15 0" 
                 rgba="0.6 0.4 0.2 1" friction="1.5 0.005 0.0001"/> -->
 
+        <!-- Light settings -->
+        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
+            dir="0 0 -1" castshadow="false" />
+        <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
 
-        <body mocap="true" pos="-.1 .05 0" zaxis=".5 0 1">
-        </body>
+        <!-- <body mocap="true" pos="-.1 .05 0" zaxis=".5 0 1"></body> -->
     </worldbody>
 
 
-<actuator>
-      <motor name="TR0" joint="TR0" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="CR0" joint="CR0" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="FR0" joint="FR0" ctrllimited="true" ctrlrange="-10 10"/>
+    <actuator>
+        <motor name="TR0" joint="TR0" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="CR0" joint="CR0" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FR0" joint="FR0" ctrllimited="true" ctrlrange="-10 10"/>
 
-      <motor name="TR1" joint="TR1" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="CR1" joint="CR1" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="FR1" joint="FR1" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="TR1" joint="TR1" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="CR1" joint="CR1" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FR1" joint="FR1" ctrllimited="true" ctrlrange="-10 10"/>
 
-      <motor name="TR2" joint="TR2" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="CR2" joint="CR2" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="FR2" joint="FR2" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="TR2" joint="TR2" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="CR2" joint="CR2" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FR2" joint="FR2" ctrllimited="true" ctrlrange="-10 10"/>
 
-      <motor name="TL0" joint="TL0" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="CL0" joint="CL0" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="FL0" joint="FL0" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="TL0" joint="TL0" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="CL0" joint="CL0" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FL0" joint="FL0" ctrllimited="true" ctrlrange="-10 10"/>
 
-      <motor name="TL1" joint="TL1" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="CL1" joint="CL1" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="FL1" joint="FL1" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="TL1" joint="TL1" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="CL1" joint="CL1" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FL1" joint="FL1" ctrllimited="true" ctrlrange="-10 10"/>
 
-      <motor name="TL2" joint="TL2" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="CL2" joint="CL2" ctrllimited="true" ctrlrange="-10 10"/>
-      <motor name="FL2" joint="FL2" ctrllimited="true" ctrlrange="-10 10"/>
-  </actuator>
+        <motor name="TL2" joint="TL2" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="CL2" joint="CL2" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FL2" joint="FL2" ctrllimited="true" ctrlrange="-10 10"/>
+    </actuator>
 </mujoco>
