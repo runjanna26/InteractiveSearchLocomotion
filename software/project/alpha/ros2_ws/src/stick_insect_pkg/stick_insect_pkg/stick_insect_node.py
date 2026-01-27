@@ -181,28 +181,6 @@ class StickInsectNode(Node):
     def conv2float_arr(self,  input_dict):
         # return [float(value) for value in input_dict.values()]
         return [float(angle) for angles in input_dict.values() for angle in angles]
-    
-    # def cross_correlation(self, in_1, in_2):
-    #     current_time = time.time()  # Get current timestamp in seconds
-        
-    #     th = 0.2
-    #     if in_1 >= th and self.in_1_prev < th:  # signal cross the threshold
-    #         self.start_flag = True
-    #     elif in_1 <= th and self.in_1_prev > th:
-        
-        
-    #     self.sig_1_list.append(in_1)
-    #     self.sig_2_list.append(in_2)       
-         
-    #     if in_2 >= th and self.in_2_prev < th:  # signal cross the threshold
-    #         # self.tau_2 = current_time
-    #         # print(self.tau_2)
-        
-    #     if in_1 >= th and in_2 >= th:
-    #         print(self.tau_1 - self.tau_2)
-            
-    #     self.in_1_prev = in_1
-    #     self.in_2_prev = in_2
             
     def get_phase_shift_time(self, in_1, in_2):
         current_time = time.time()  # Get current timestamp in seconds
@@ -245,13 +223,13 @@ class StickInsectNode(Node):
             self.cpg_mod_cmd['L1']['phi'] = 0.01
             self.cpg_mod_cmd['L2']['phi'] = 0.05
         else:
-            self.cpg_mod_cmd['R0']['phi'] = 0.05
-            self.cpg_mod_cmd['R1']['phi'] = 0.05
-            self.cpg_mod_cmd['R2']['phi'] = 0.05
+            self.cpg_mod_cmd['R0']['phi'] = 0.08
+            self.cpg_mod_cmd['R1']['phi'] = 0.08
+            self.cpg_mod_cmd['R2']['phi'] = 0.08
 
-            self.cpg_mod_cmd['L0']['phi'] = 0.05
-            self.cpg_mod_cmd['L1']['phi'] = 0.05
-            self.cpg_mod_cmd['L2']['phi'] = 0.05
+            self.cpg_mod_cmd['L0']['phi'] = 0.08
+            self.cpg_mod_cmd['L1']['phi'] = 0.08
+            self.cpg_mod_cmd['L2']['phi'] = 0.08
             
         # if self.btn_js[0] == 1: # A button
         #     self.cpg_mod_cmd['R0']['pause_input'] = 1.0
