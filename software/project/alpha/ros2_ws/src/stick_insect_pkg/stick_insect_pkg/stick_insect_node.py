@@ -26,7 +26,7 @@ class StickInsectNode(Node):
         self.cpg = CPG_SO2()
 
         # It would be centerize the kernel first
-        cpg_one_cycle = self.cpg.generate_cpg_one_cycle(0.05)    # lowest phi value
+        cpg_one_cycle = self.cpg.generate_cpg_one_cycle(0.05)       # lowest phi value
         out0_cpg_one_cycle = cpg_one_cycle['out0_cpg_one_cycle'][:] # Use full cycle of CPG
         out1_cpg_one_cycle = cpg_one_cycle['out1_cpg_one_cycle'][:] # Use full cycle of CPG
         cpg_cycle_length = len(out0_cpg_one_cycle)
@@ -313,33 +313,33 @@ class StickInsectNode(Node):
         self.joint_angles_cmd['TR'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_weights['TR0'])         
         self.joint_angles_cmd['CR'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_weights['CR0'])
         self.joint_angles_cmd['FR'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_weights['FR0'])
-        self.expected_foot_forces['R_Z0'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_forces_weights['F0'])
+        # self.expected_foot_forces['R_Z0'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_forces_weights['F0'])
         
         self.joint_angles_cmd['TR'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_weights['TR1'])         
         self.joint_angles_cmd['CR'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_weights['CR1'])
         self.joint_angles_cmd['FR'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_weights['FR1'])
-        self.expected_foot_forces['R_Z1'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_forces_weights['F1'])
+        # self.expected_foot_forces['R_Z1'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_forces_weights['F1'])
         
         self.joint_angles_cmd['TR'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_weights['TR2'])         
         self.joint_angles_cmd['CR'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_weights['CR2'])
         self.joint_angles_cmd['FR'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_weights['FR2'])
-        self.expected_foot_forces['R_Z2'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_forces_weights['F2'])
+        # self.expected_foot_forces['R_Z2'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_forces_weights['F2'])
         
         # Left legs use the weights of right legs
         self.joint_angles_cmd['TL'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_weights['TR0'])         
         self.joint_angles_cmd['CL'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_weights['CR0'])
         self.joint_angles_cmd['FL'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_weights['FR0'])
-        self.expected_foot_forces['L_Z0'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_forces_weights['F0'])
+        # self.expected_foot_forces['L_Z0'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_forces_weights['F0'])
         
         self.joint_angles_cmd['TL'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_weights['TR1'])         
         self.joint_angles_cmd['CL'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_weights['CR1'])
         self.joint_angles_cmd['FL'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_weights['FR1'])
-        self.expected_foot_forces['L_Z1'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_forces_weights['F1'])
+        # self.expected_foot_forces['L_Z1'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_forces_weights['F1'])
         
         self.joint_angles_cmd['TL'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_weights['TR2'])         
         self.joint_angles_cmd['CL'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_weights['CR2'])
         self.joint_angles_cmd['FL'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_weights['FR2'])
-        self.expected_foot_forces['L_Z2'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_forces_weights['F2'])
+        # self.expected_foot_forces['L_Z2'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_forces_weights['F2'])
         
         
         if time.time() - self.start_time < 2:

@@ -1,0 +1,180 @@
+<mujoco>
+    <compiler meshdir="asset" texturedir="asset" />
+    <statistic extent="1.5" meansize=".05" />
+    <option timestep="0.005"  integrator="implicitfast"/>
+
+    <!-- Float -->
+    <!-- <option density="1000.0" viscosity="10.0" />   -->
+    <!-- <option viscosity="0.089" />   -->
+
+
+
+
+
+    <visual>
+        <rgba haze="1 1 1 1.0" />
+        
+        <quality shadowsize="4096" />
+        <map stiffness="700" shadowscale="0.5" fogstart="10" fogend="15" zfar="40" haze="0.3" />
+    </visual>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512"
+            height="512" />
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
+            width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
+        <material name="matplane" reflectance="0.3" texture="texplane" texrepeat="1 1"
+            texuniform="true" />
+    </asset>
+
+
+    <worldbody>
+
+
+        <!-- Stick Insect Robot -->
+        <body name="stick_insect_robot" pos="1.0 0 1.5">
+            <freejoint name="space" />  comment to fixed the robot on the air
+            <inertial pos="0.004237 -0.007339 0" mass="0.253323"
+                diaginertia="0.01521 0.01521 9.453e-05" />
+
+            <geom name="Stick_insect" size="0.01375 0.21325" pos="0 0 0.225002"
+                quat="-0.5 -0.5 0.5 0.5"
+                type="cylinder" contype="1" conaffinity="1" />
+            
+            <body name="COXA_R0" pos="-0.17975 0.014997 0.225" quat="0.258819 2.51884e-07 2.70831e-07 0.965926">
+                <inertial pos="0.004237 -0.007339 0" mass="0.1"
+                    diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TR0" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_R0" size="0.0075 0.008475" pos="0.004237 -0.007339 0"
+                    quat="0.683005 0.68302 0.183015 0.18301" type="cylinder" contype="0"
+                    conaffinity="0" />
+                
+            </body>
+
+            <body name="COXA_L0" pos="-0.17975 -0.015004 0.225" quat="-0.000166961 -0.258819 0.965926 4.48143e-05">
+                <inertial pos="0.004238 -0.00734 0" mass="0.1" diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TL0" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_L0" size="0.0075 0.008475" pos="0.004238 -0.00734 0"
+                    quat="-0.183013 -0.183013 0.683013 0.683013" type="cylinder" contype="0"
+                    conaffinity="0" />
+                
+            </body>
+
+            <body name="COXA_R1" pos="-0.09725 0.014998 0.225" quat="0 1.73205e-07 3.26795e-07 1">
+                <inertial pos="0 -0.01115 0" mass="0.1" diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TR1" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_R1" size="0.0075 0.01115" pos="0 -0.01115 0"
+                    quat="0.7071 0.707114 1.08608e-07 3.53552e-07" type="cylinder" contype="0"
+                    conaffinity="0" />
+                
+            </body>
+
+            <body name="COXA_L1" pos="-0.097249 -0.015002 0.225"
+                quat="5e-07 1 3.26795e-07 -3.26795e-07">
+                <inertial pos="0 0.01115 0" mass="0.1" diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TL1" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_L1" size="0.0075 0.01115" pos="0 0.01115 0"
+                    quat="0.707107 0.707107 -2.44949e-07 0" type="cylinder" contype="0"
+                    conaffinity="0" />
+                
+            </body>
+
+            <body name="COXA_R2" pos="-0.032748 0.014996 0.224999"
+                quat="-0.340226 5.16883e-08 3.66228e-07 0.940344">
+                <inertial pos="-0.004934 -0.005879 0" mass="0.1"
+                    diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TR2" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_R2" size="0.0075 0.007675" pos="-0.004934 -0.005879 0"
+                    quat="-0.664457 -0.664469 0.241847 0.241842" type="cylinder" contype="0"
+                    conaffinity="0" />
+                
+            </body>
+
+            <body name="COXA_L2" pos="-0.032749 -0.015004 0.225"
+                quat="-5.29069e-07 -0.939038 0.343813 9.26051e-09">
+                <inertial pos="0.004934 0.005879 0" mass="0.1" diaginertia="0.00128 0.00128 0.00064" />
+                <joint name="TL2" pos="0 0 0" axis="0 0 1" 
+                    actuatorfrcrange="-6e+09 6e+09" damping="0.5"/>
+                <geom name="COXA_L2" size="0.0075 0.007675" pos="0.004934 0.005879 0"
+                    quat="-0.664453 -0.664473 0.241849 0.241841" type="cylinder" contype="0"
+                    conaffinity="0" />
+                
+            </body>
+        </body>
+
+
+
+        <!-- Water Space -->
+        <geom name="water_space" type="box" size="4 4 1" pos="-2 -2 0.0" 
+            rgba="0 0.5 1 0.2" conaffinity="0" contype="0"/>
+
+        <!-- Environment Ground -->
+        <!-- <geom name="ground_0" type="box" size="2 2 0.05" pos="0 0 1.1" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001" contype="1"/> -->
+
+        <geom name="ground_1" type="box" size="2 2 1" pos="4 0 0.5" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001" contype="1"/>
+        <!-- <geom name="ground_2" type="box" size="2 2 1" pos="-4 0 0.5" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001"/> -->
+        <geom name="ground_3" type="box" size="2 2 1" pos="0 4 0.5" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001"/>
+        <!-- <geom name="ground_4" type="box" size="2 2 1" pos="0 -4 0.5" quat="1 0 0 0" material="matplane" -->
+            <!-- condim="1" friction="1.5 0.005 0.0001"/> -->
+
+        <geom name="ground_5" type="box" size="2 2 1" pos="4 4 0.5" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001"/>
+        <geom name="ground_6" type="box" size="2 2 1" pos="-4 4 0.5" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001"/>
+        <geom name="ground_7" type="box" size="2 2 1" pos="4 -4 0.5" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001"/>
+        <!-- <geom name="ground_8" type="box" size="2 2 1" pos="-4 -4 0.5" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001"/> -->
+        <geom name="ground_9" type="box" size="2 2 1" pos="6 0 0.5" quat="1 0 0 0" material="matplane"
+            condim="1" friction="1.5 0.005 0.0001"/>        
+
+        <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" 
+            condim="1" friction="1.5 0.005 0.0001" rgba="1 1 1 1"/>
+
+        <geom name="ramp" type="box" size="3.0 1.0 0.1" pos="1.5 0 1.265" euler="0 -15 0" 
+                rgba="0.6 0.4 0.2 1" friction="1.5 0.005 0.0001"/>
+
+        <!-- Light settings -->
+        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0"
+            dir="0 0 -1" castshadow="false" />
+        <light directional="true" diffuse=".6 .6 .6" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />
+
+        <!-- <body mocap="true" pos="-.1 .05 0" zaxis=".5 0 1"></body> -->
+    </worldbody>
+
+
+    <actuator>
+        <motor name="TR0" joint="TR0" ctrllimited="true" ctrlrange="-10 10"/>
+        <!-- <motor name="CR0" joint="CR0" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FR0" joint="FR0" ctrllimited="true" ctrlrange="-10 10"/> -->
+
+        <motor name="TR1" joint="TR1" ctrllimited="true" ctrlrange="-10 10"/> 
+        <!-- <motor name="CR1" joint="CR1" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FR1" joint="FR1" ctrllimited="true" ctrlrange="-10 10"/> -->
+
+        <motor name="TR2" joint="TR2" ctrllimited="true" ctrlrange="-10 10"/>
+        <!-- <motor name="CR2" joint="CR2" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FR2" joint="FR2" ctrllimited="true" ctrlrange="-10 10"/> -->
+
+        <motor name="TL0" joint="TL0" ctrllimited="true" ctrlrange="-10 10"/>
+        <!-- <motor name="CL0" joint="CL0" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FL0" joint="FL0" ctrllimited="true" ctrlrange="-10 10"/> -->
+
+        <motor name="TL1" joint="TL1" ctrllimited="true" ctrlrange="-10 10"/>
+        <!-- <motor name="CL1" joint="CL1" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FL1" joint="FL1" ctrllimited="true" ctrlrange="-10 10"/> -->
+
+        <motor name="TL2" joint="TL2" ctrllimited="true" ctrlrange="-10 10"/>
+        <!-- <motor name="CL2" joint="CL2" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FL2" joint="FL2" ctrllimited="true" ctrlrange="-10 10"/> -->
+    </actuator>
+</mujoco>

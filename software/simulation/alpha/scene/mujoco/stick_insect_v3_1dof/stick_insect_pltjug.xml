@@ -1,0 +1,621 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root>
+ <tabbed_widget parent="main_window" name="Main Window">
+  <Tab containers="1" tab_name="Joint Angles">
+   <Container>
+    <DockSplitter orientation="-" count="3" sizes="0.333707;0.332587;0.333707">
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="R0">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="0.035665" top="0.920507" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[0]" color="#1ac938"/>
+        <curve name="/stick_insect/joint_angle_fb/data[0]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+      <DockArea name="R1">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-0.586838" top="1.062759" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[3]" color="#17becf"/>
+        <curve name="/stick_insect/joint_angle_fb/data[3]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+      <DockArea name="R2">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-2.099494" top="-0.201589" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[6]" color="#d62728"/>
+        <curve name="/stick_insect/joint_angle_fb/data[6]" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L0">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="0.066354" top="1.011390" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[9]" color="#f14cc1"/>
+        <curve name="/stick_insect/joint_angle_fb/data[9]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L1">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-0.621616" top="1.063635" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[12]" color="#bcbd22"/>
+        <curve name="/stick_insect/joint_angle_fb/data[12]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L2">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-2.102834" top="-0.065875" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[15]" color="#1ac938"/>
+        <curve name="/stick_insect/joint_angle_fb/data[15]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-0.546535" top="1.071308" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[1]" color="#f14cc1"/>
+        <curve name="/stick_insect/joint_angle_fb/data[1]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-0.086463" top="0.753957" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[4]" color="#bcbd22"/>
+        <curve name="/stick_insect/joint_angle_fb/data[4]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-1.689230" top="0.762907" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[7]" color="#1ac938"/>
+        <curve name="/stick_insect/joint_angle_fb/data[7]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-0.544846" top="0.998056" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[10]" color="#9467bd"/>
+        <curve name="/stick_insect/joint_angle_fb/data[10]" color="#17becf"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-0.087185" top="0.780435" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[13]" color="#1f77b4"/>
+        <curve name="/stick_insect/joint_angle_fb/data[13]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-1.692537" top="0.903968" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[16]" color="#ff7f0e"/>
+        <curve name="/stick_insect/joint_angle_fb/data[16]" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-2.134152" top="-0.145052" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[2]" color="#9467bd"/>
+        <curve name="/stick_insect/joint_angle_fb/data[2]" color="#17becf"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-1.695890" top="0.691910" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[5]" color="#1f77b4"/>
+        <curve name="/stick_insect/joint_angle_fb/data[5]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-1.855833" top="-0.622939" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[8]" color="#ff7f0e"/>
+        <curve name="/stick_insect/joint_angle_fb/data[8]" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-2.106140" top="-0.145550" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[11]" color="#17becf"/>
+        <curve name="/stick_insect/joint_angle_fb/data[11]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-1.714344" top="0.692365" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[14]" color="#d62728"/>
+        <curve name="/stick_insect/joint_angle_fb/data[14]" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262830" bottom="-1.911034" top="-0.585172" left="7.263517"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_angle_commands/data[17]" color="#f14cc1"/>
+        <curve name="/stick_insect/joint_angle_fb/data[17]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab containers="1" tab_name="Joint Velocities">
+   <Container>
+    <DockSplitter orientation="-" count="3" sizes="0.333707;0.332587;0.333707">
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-4.367420" top="4.845323" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[0]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-8.211839" top="2.601173" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[3]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-2.047517" top="7.106428" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[6]" color="#17becf"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-7.430407" top="1.815788" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[9]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-3.091527" top="9.460711" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[12]" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-5.472036" top="2.322531" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[15]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-3.504964" top="2.118797" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[1]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-13.293274" top="13.166026" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[4]" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-6.651356" top="4.891666" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[7]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-4.564517" top="3.716869" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[10]" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-13.222080" top="12.920341" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[13]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-9.300201" top="5.511317" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[16]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-2.728474" top="3.129761" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[2]" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-16.040804" top="16.430859" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[5]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-6.787961" top="10.485185" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[8]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-4.779731" top="3.366088" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[11]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-16.664720" top="16.520868" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[14]" color="#17becf"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262874" bottom="-6.396381" top="10.040404" left="7.263548"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_velocity_fb/data[17]" color="#d62728"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab containers="1" tab_name="Stiffness">
+   <Container>
+    <DockSplitter orientation="-" count="3" sizes="0.333707;0.332587;0.333707">
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="R0">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.001575" top="0.064579" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[0]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="R1">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.001496" top="0.061326" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[3]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="R2">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.001489" top="0.061034" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[6]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L0">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.002207" top="0.090495" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[9]" color="#17becf"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L1">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.000949" top="0.038917" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[12]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L2">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.001082" top="0.044356" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[15]" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.003104" top="0.127280" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[1]" color="#17becf"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.004903" top="0.201031" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[4]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.003012" top="0.123501" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[7]" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.002680" top="0.109873" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[10]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.009802" top="0.401893" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[13]" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.009390" top="0.384998" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[16]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.001711" top="0.070149" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[2]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.002447" top="0.100343" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[5]" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.000925" top="0.037916" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[8]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.000691" top="0.028339" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[11]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.001796" top="0.073629" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[14]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262859" bottom="-0.000841" top="0.034466" left="7.263541"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_stiffness_fb/data[17]" color="#17becf"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab containers="1" tab_name="Damping">
+   <Container>
+    <DockSplitter orientation="-" count="3" sizes="0.333707;0.332587;0.333707">
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="R0">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-0.941323" top="1.707712" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[0]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="R1">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-2.000399" top="2.927388" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[3]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="R2">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-1.398709" top="1.518805" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[6]" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L0">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-1.598898" top="1.265124" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[9]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L1">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-1.117199" top="1.766450" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[12]" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="L2">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-0.905693" top="1.294507" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[15]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-1.792998" top="1.640992" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[1]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-3.302403" top="4.239349" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[4]" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-1.220106" top="1.640096" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[7]" color="#9467bd"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-1.595565" top="1.252743" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[10]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-4.750181" top="5.223889" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[13]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-3.739481" top="2.403541" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[16]" color="#17becf"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" count="6" sizes="0.166667;0.166667;0.166667;0.166667;0.166667;0.166667">
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-0.997291" top="1.052652" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[2]" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-3.025277" top="6.053547" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[5]" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-0.638584" top="1.920880" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[8]" color="#17becf"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-0.622460" top="1.157313" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[11]" color="#d62728"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-2.475647" top="7.637869" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[14]" color="#f14cc1"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot line_width="1.0" mode="TimeSeries" flip_x="false" flip_y="false">
+        <range right="17.262848" bottom="-1.215730" top="2.112786" left="7.263533"/>
+        <limitY/>
+        <curve name="/stick_insect/joint_damping_fb/data[17]" color="#bcbd22"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="3"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <parameters time_axis="" delimiter="0"/>
+  </plugin>
+  <plugin ID="DataLoad MCAP"/>
+  <plugin ID="DataLoad ROS2 bags">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+   <boolean_strings_to_number value="true"/>
+   <remove_suffix_from_strings value="true"/>
+   <selected_topics value=""/>
+  </plugin>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="ROS2 Topic Subscriber">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+   <boolean_strings_to_number value="true"/>
+   <remove_suffix_from_strings value="true"/>
+   <selected_topics value="/stick_insect/joint_damping_fb;/stick_insect/joint_stiffness_fb;/stick_insect/joint_velocity_fb;/stick_insect/joint_angle_commands;/stick_insect/joint_angle_fb"/>
+  </plugin>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin ID="Fast Fourier Transform"/>
+  <plugin ID="Quaternion to RPY"/>
+  <plugin ID="Reactive Script Editor">
+   <library code="--[[ Helper function to create a series from arrays&#xa;&#xa; new_series: a series previously created with ScatterXY.new(name)&#xa; prefix:     prefix of the timeseries, before the index of the array&#xa; suffix_X:   suffix to complete the name of the series containing the X value. If [nil], use the index of the array.&#xa; suffix_Y:   suffix to complete the name of the series containing the Y value&#xa; timestamp:   usually the tracker_time variable&#xa;              &#xa; Example:&#xa; &#xa; Assuming we have multiple series in the form:&#xa; &#xa;   /trajectory/node.{X}/position/x&#xa;   /trajectory/node.{X}/position/y&#xa;   &#xa; where {N} is the index of the array (integer). We can create a reactive series from the array with:&#xa; &#xa;   new_series = ScatterXY.new(&quot;my_trajectory&quot;) &#xa;   CreateSeriesFromArray( new_series, &quot;/trajectory/node&quot;, &quot;position/x&quot;, &quot;position/y&quot;, tracker_time );&#xa;--]]&#xa;&#xa;function CreateSeriesFromArray( new_series, prefix, suffix_X, suffix_Y, timestamp )&#xa;  &#xa;  --- clear previous values&#xa;  new_series:clear()&#xa;  &#xa;  --- Append points to new_series&#xa;  index = 0&#xa;  while(true) do&#xa;&#xa;    x = index;&#xa;    -- if not nil, get the X coordinate from a series&#xa;    if suffix_X ~= nil then &#xa;      series_x = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_X) )&#xa;      if series_x == nil then break end&#xa;      x = series_x:atTime(timestamp)&#x9; &#xa;    end&#xa;    &#xa;    series_y = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_Y) )&#xa;    if series_y == nil then break end &#xa;    y = series_y:atTime(timestamp)&#xa;    &#xa;    new_series:push_back(x,y)&#xa;    index = index+1&#xa;  end&#xa;end&#xa;&#xa;--[[ Similar to the built-in function GetSeriesNames(), but select only the names with a give prefix. --]]&#xa;&#xa;function GetSeriesNamesByPrefix(prefix)&#xa;  -- GetSeriesNames(9 is a built-in function&#xa;  all_names = GetSeriesNames()&#xa;  filtered_names = {}&#xa;  for i, name in ipairs(all_names)  do&#xa;    -- check the prefix&#xa;    if name:find(prefix, 1, #prefix) then&#xa;      table.insert(filtered_names, name);&#xa;    end&#xa;  end&#xa;  return filtered_names&#xa;end&#xa;&#xa;--[[ Modify an existing series, applying offsets to all their X and Y values&#xa;&#xa; series: an existing timeseries, obtained with TimeseriesView.find(name)&#xa; delta_x: offset to apply to each x value&#xa; delta_y: offset to apply to each y value &#xa;  &#xa;--]]&#xa;&#xa;function ApplyOffsetInPlace(series, delta_x, delta_y)&#xa;  -- use C++ indices, not Lua indices&#xa;  for index=0, series:size()-1 do&#xa;    x,y = series:at(index)&#xa;    series:set(index, x + delta_x, y + delta_y)&#xa;  end&#xa;end&#xa;"/>
+   <scripts/>
+  </plugin>
+  <plugin ID="CSV Exporter"/>
+  <plugin ID="ROS2 Topic Re-Publisher"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles/>
+ <previouslyLoaded_Streamer name="ROS2 Topic Subscriber"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations/>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+
