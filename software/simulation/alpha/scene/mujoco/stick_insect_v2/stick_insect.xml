@@ -33,7 +33,8 @@
 
         <!-- Stick Insect Robot -->
         <body name="stick_insect_robot" pos="-2 0 1.5">
-            <freejoint name="space" />  <!-- comment to fixed the robot on the air -->
+            <!-- comment to fixed the robot on the air -->
+            <freejoint name="space" />  
             <inertial pos="0.004237 -0.007339 0" mass="0.253323"
                 diaginertia="0.01521 0.01521 9.453e-05" />
 

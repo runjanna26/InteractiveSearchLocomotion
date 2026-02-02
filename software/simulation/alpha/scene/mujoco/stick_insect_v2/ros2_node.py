@@ -15,18 +15,18 @@ class StickInsectNode(Node):
         self.joint_damping_pub          = self.create_publisher( Float32MultiArray, '/stick_insect/joint_damping_fb', 1 )
         self.joint_torque_ff_pub        = self.create_publisher( Float32MultiArray, '/stick_insect/joint_torque_feedforward_fb', 1 )
         self.joint_torque_output_pub    = self.create_publisher( Float32MultiArray, '/stick_insect/joint_torque_output_fb', 1 )
-        self.joint_damping_energy_pub   = self.create_publisher( Float32MultiArray, '/stick_insect/joint_damping_energy_fb', 1 )
+        self.joint_damping_power_pub   = self.create_publisher( Float32MultiArray, '/stick_insect/joint_damping_power_fb', 1 )
         self.ros2_node_termiated_pub    = self.create_publisher( Bool, '/stick_insect/terminated_cmd', 1 )
         self.ros2_node_started_pub      = self.create_publisher( Bool, '/stick_insect/started_cmd', 1 )
         self.execute_control_pub        = self.create_publisher( Bool, '/stick_insect/execute_control_cmd', 1 )
         
 
         self.joint_cmd = {'TR': [0.0, 0.0, 0.0],
-                        'CR': [0.0, 0.0, 0.0],
-                        'FR': [0.0, 0.0, 0.0],
-                        'TL': [0.0, 0.0, 0.0],
-                        'CL': [0.0, 0.0, 0.0],
-                        'FL': [0.0, 0.0, 0.0]}
+                          'CR': [0.0, 0.0, 0.0],
+                          'FR': [0.0, 0.0, 0.0],
+                          'TL': [0.0, 0.0, 0.0],
+                          'CL': [0.0, 0.0, 0.0],
+                          'FL': [0.0, 0.0, 0.0]}
         print("ROS 2 Node Started. Subscribed to /joint_commands")
 
     def joint_cmd_callback(self, msg):
@@ -65,10 +65,10 @@ class StickInsectNode(Node):
         msg = Float32MultiArray()
         msg.data = [float(t) for t in torques]
         self.joint_torque_output_pub.publish(msg)
-    def publish_joint_damping_energy(self, energies):
+    def publish_joint_damping_power(self, energies):
         msg = Float32MultiArray()
         msg.data = [float(e) for e in energies]
-        self.joint_damping_energy_pub.publish(msg)
+        self.joint_damping_power_pub.publish(msg)
     def publish_termination_status(self, status):
         msg = Bool()
         msg.data = status

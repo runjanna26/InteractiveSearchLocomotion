@@ -9,6 +9,8 @@ from std_srvs.srv import SetBool, Trigger
 
 import numpy as np
 import time
+from itertools import product
+
 
 
 from include.cpg_rbf.cpg_so2 import CPG_SO2
@@ -17,6 +19,11 @@ from include.cpg_rbf.cpg_so2 import CPG_LOCO
 from include.cpg_rbf.dual_learner import DIL
 from include.lowpass_filter import LPF
 
+LEG_SIDE    = ['R', 'L']
+LEG_INDEX   = [0, 1, 2]
+JOINT_NAMES = ['T', 'C', 'F']
+
+# FOOT_NAMES  = ['R0', 'R1', 'R2', 'L0', 'L1', 'L2']
 
 class StickInsectNode(Node):
     def __init__(self):
@@ -32,24 +39,27 @@ class StickInsectNode(Node):
         cpg_cycle_length = len(out0_cpg_one_cycle)
         self.rbf.construct_kernels_with_cpg_one_cycle(out0_cpg_one_cycle, out1_cpg_one_cycle, cpg_cycle_length) # construct kernels with cpg one cycle
 
-
-        self.imitated_weights = np.load('imitated_stick_insect_right_leg_weights_me.npz')
-        self.imitated_forces_weights = np.load('imitated_stick_insect_right_leg_weights_me_force.npz')
-        # print(np.load('imitated_stick_insect_right_leg_weights_me_force.npz').files)
+        # walking pattern weights
+        # self.imitated_weights = np.load('imitated_stick_insect_walk_weights_me.npz')
+        # self.imitated_forces_weights = np.load('imitated_stick_insect_walk_weights_me_force.npz')
+        
+        self.imitated_weights = np.load('imitated_stick_insect_swim_weights_me.npz')
+        self.imitated_forces_weights = np.load('imitated_stick_insect_swim_weights_me_force.npz')
 
         # ROS2 publishers and subscribers
         self.pub_jcmd               = self.create_publisher(Float32MultiArray, '/stick_insect/joint_angle_commands', 1)
         self.pub_expected_force     = self.create_publisher(Float32MultiArray, '/stick_insect/expected_foot_force', 1)
         self.pub_foot_force         = self.create_publisher(Float32MultiArray, '/stick_insect/resultant_foot_force_feedback', 1)
         self.pub_foot_force_error   = self.create_publisher(Float32MultiArray, '/stick_insect/foot_force_error', 1)
-        self.pub_phi_cmd            = self.create_publisher(Float32MultiArray, '/stick_insect/phi_cmd', 1)
-        self.pub_phi_walk           = self.create_publisher(Float32MultiArray, '/stick_insect/phi_walk', 1)
+        # self.pub_phi_cmd            = self.create_publisher(Float32MultiArray, '/stick_insect/phi_cmd', 1)
+        # self.pub_phi_walk           = self.create_publisher(Float32MultiArray, '/stick_insect/phi_walk', 1)
         
-        self.sub_js                 = self.create_subscription(Joy, '/joy', self.Joy_set, 1)
-        self.sub_foot_force         = self.create_subscription(Float32MultiArray, '/stick_insect/foot_force_feedback', self.FootForceFeedback, 1)
+        self.sub_js                 = self.create_subscription(Joy, '/joy', self.Joy_set, 1)        
         self.sub_terminated_cmd     = self.create_subscription(Bool, '/stick_insect/terminated_cmd', self.TerminatedCmdCallback, 1)
         self.sub_started_cmd        = self.create_subscription(Bool, '/stick_insect/started_cmd', self.StartedCmdCallback, 1)
         self.sub_execute_control_cmd = self.create_subscription(Bool, '/stick_insect/execute_control_cmd', self.ExecuteControlCmdCallback, 1)
+        
+        self.sub_foot_force         = self.create_subscription(Float32MultiArray, '/stick_insect/foot_force_feedback', self.FootForceFeedback, 1)
 
         # Command variables
         self.initial_joint_angles = {'TR': [30,    0, -40],
@@ -59,110 +69,44 @@ class StickInsectNode(Node):
                                      'CL': [ 10,   0,  10],
                                      'FL': [-60, -60, -60]}
         self.initial_joint_angles = np.deg2rad(self.conv2float_arr(self.initial_joint_angles))
-        
-
         self.joint_angles_cmd = {'TR': [0.0, 0.0 ,0.0],
                                  'CR': [0.0, 0.0 ,0.0],
                                  'FR': [0.0, 0.0 ,0.0],
                                  'TL': [0.0, 0.0 ,0.0],
                                  'CL': [0.0, 0.0 ,0.0],
                                  'FL': [0.0, 0.0 ,0.0]}
-        self.expected_foot_forces = {'R_Z0': 0.0,
-                                     'R_Z1': 0.0,
-                                     'R_Z2': 0.0,
-                                     'L_Z0': 0.0,
-                                     'L_Z1': 0.0,
-                                     'L_Z2': 0.0}
-        # Feedback variables
-        self.foot_force_fb = {'F_R0': 0.0,
-                              'F_R1': 0.0,
-                              'F_R2': 0.0,
-                              'F_L0': 0.0,
-                              'F_L1': 0.0,
-                              'F_L2': 0.0}
-        self.foot_force_error = self.expected_foot_forces.copy() # only z-axis
-        self.foot_force_tau   = self.expected_foot_forces.copy() # only z-axis
-        
-        self.axes_js = np.zeros(8)
-        self.btn_js = np.zeros(8)
-
-        self.start_time = time.time()  # Record the start time
-        ros_node_freq = 50 #Hz
-        self.timer = self.create_timer((1/ros_node_freq), self.timer_callback)
-        
         
         # Control variables
-        self.cpg_loco_leg_R0 = CPG_LOCO()
-        self.cpg_loco_leg_R1 = CPG_LOCO()
-        self.cpg_loco_leg_R2 = CPG_LOCO()
-        self.cpg_loco_leg_L0 = CPG_LOCO()
-        self.cpg_loco_leg_L1 = CPG_LOCO()
-        self.cpg_loco_leg_L2 = CPG_LOCO()
+        self.cpg_modulated = {}
+        self.cpg_output = {}
+        self.cpg_mod_cmd = {}
+        for side in LEG_SIDE:
+            for index in LEG_INDEX:
+                self.cpg_modulated[f'{side}{index}']     = CPG_LOCO()
+                self.cpg_output[f'{side}{index}']        = self.cpg_modulated[f'{side}{index}'].modulate_cpg(0.05, 0.0, 1.0)  # initial run to set up internal states
+                self.cpg_mod_cmd[f'{side}{index}']       = {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0}   # initial run to set up internal states
 
+        # Feedback variables
+        self.expected_foot_forces = {}
+        self.foot_force_fb = {}
+        self.foot_force_lpf = {}
+        for side in LEG_SIDE:
+            for index in LEG_INDEX:
+                self.expected_foot_forces[f'{side}{index}']     = 0.0
+                self.foot_force_fb[f'{side}{index}']            = 0.0
+                self.foot_force_lpf[f'{side}{index}']           = LPF(0.9)
         
+        # ------------------------------ Node Setup ------------------------------
+        self.axes_js = np.zeros(8)
+        self.btn_js = np.zeros(8)
         
-        # First Params: work!
-        # self.dual_learner_leg_R0 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        # self.dual_learner_leg_R1 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        # self.dual_learner_leg_R2 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        # self.dual_learner_leg_L0 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        # self.dual_learner_leg_L1 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        # self.dual_learner_leg_L2 = DIL(0.54, 0.004, 0.0, 0.998, 0.0002, 0.0)
-        
-        self.dual_learner_leg_R0 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_R1 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_R2 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_L0 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_L1 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
-        self.dual_learner_leg_L2 = DIL(0.54, 0.006, 0.0, 0.998, 0.0002, 0.0)
-        
-        self.cpg_output_leg_R0 = self.cpg_loco_leg_R0.modulate_cpg(0.05, 0.0, 1.0)
-        self.cpg_output_leg_R1 = self.cpg_loco_leg_R1.modulate_cpg(0.05, 0.0, 1.0)
-        self.cpg_output_leg_R2 = self.cpg_loco_leg_R2.modulate_cpg(0.05, 0.0, 1.0)
-        self.cpg_output_leg_L0 = self.cpg_loco_leg_L0.modulate_cpg(0.05, 0.0, 1.0)
-        self.cpg_output_leg_L1 = self.cpg_loco_leg_L1.modulate_cpg(0.05, 0.0, 1.0)
-        self.cpg_output_leg_L2 = self.cpg_loco_leg_L2.modulate_cpg(0.05, 0.0, 1.0)
-        
-        self.cpg_mod_cmd = {'R0': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},
-                            'R1': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},
-                            'R2': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},
-                            'L0': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},
-                            'L1': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},
-                            'L2': {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0},}
-        self.cpg_phi_leg_des = {'R0': 0.05,
-                                'R1': 0.05,
-                                'R2': 0.05,
-                                'L0': 0.05,
-                                'L1': 0.05,
-                                'L2': 0.05}
-        self.cpg_phi_leg_adapt = {'R0': 0.0,
-                                  'R1': 0.0,
-                                  'R2': 0.0,
-                                  'L0': 0.0,
-                                  'L1': 0.0,
-                                  'L2': 0.0}
-        
-        self.cpg_phi_cmd = 0.0
-        self.cpg_pause_cmd = 0.0
-        self.cpg_rewind_cmd = 1.0
-        
-        self.lpf_R0 = LPF(0.9)
-        self.lpf_R1 = LPF(0.9)
-        self.lpf_R2 = LPF(0.9)
-        self.lpf_L0 = LPF(0.9)
-        self.lpf_L1 = LPF(0.9)
-        self.lpf_L2 = LPF(0.9)
-        
-        self.sig_1 = 0.0
-        self.sig_2 = 0.0
-        self.sig_1_list = []
-        self.sig_2_list = []
-        self.tau_1 = None
-        self.tau_2 = None
-        self.tau = 0.0
         self.start_flag = False
         self.end_flag = False
         self.execute_control_flag = False
+        
+        self.start_time = time.time()  # Record the start time
+        ros_node_freq = 50 #Hz
+        self.timer = self.create_timer((1/ros_node_freq), self.timer_callback)
         
     # =============== Joy Stick ====================
     def Joy_set(self, msg):
@@ -170,16 +114,19 @@ class StickInsectNode(Node):
         self.btn_js = msg.buttons  
         # print(self.axes_js)
         # print(self.btn_js)
+    # =============== Feedback ====================
     def FootForceFeedback(self, msg):
-        scaling_factor = 10
-        offset_factor = 0.15
-        self.foot_force_fb['F_R0'] = np.clip(self.lpf_R0.filter(scaling_factor * msg.data[0]) - offset_factor, 0.0, 1.0)  # x, y, z
-        self.foot_force_fb['F_R1'] = np.clip(self.lpf_R1.filter(scaling_factor * msg.data[1]) - offset_factor, 0.0, 1.0)
-        self.foot_force_fb['F_R2'] = np.clip(self.lpf_R2.filter(scaling_factor * msg.data[2]) - offset_factor, 0.0, 1.0)
-        self.foot_force_fb['F_L0'] = np.clip(self.lpf_L0.filter(scaling_factor * msg.data[3]) - offset_factor, 0.0, 1.0)
-        self.foot_force_fb['F_L1'] = np.clip(self.lpf_L1.filter(scaling_factor * msg.data[4]) - offset_factor, 0.0, 1.0)
-        self.foot_force_fb['F_L2'] = np.clip(self.lpf_L2.filter(scaling_factor * msg.data[5]) - offset_factor, 0.0, 1.0)
+        ...
+        # scaling_factor = 10
+        # offset_factor = 0.15
+        # self.foot_force_fb['F_R0'] = np.clip(self.lpf_R0.filter(scaling_factor * msg.data[0]) - offset_factor, 0.0, 1.0)  # x, y, z
+        # self.foot_force_fb['F_R1'] = np.clip(self.lpf_R1.filter(scaling_factor * msg.data[1]) - offset_factor, 0.0, 1.0)
+        # self.foot_force_fb['F_R2'] = np.clip(self.lpf_R2.filter(scaling_factor * msg.data[2]) - offset_factor, 0.0, 1.0)
+        # self.foot_force_fb['F_L0'] = np.clip(self.lpf_L0.filter(scaling_factor * msg.data[3]) - offset_factor, 0.0, 1.0)
+        # self.foot_force_fb['F_L1'] = np.clip(self.lpf_L1.filter(scaling_factor * msg.data[4]) - offset_factor, 0.0, 1.0)
+        # self.foot_force_fb['F_L2'] = np.clip(self.lpf_L2.filter(scaling_factor * msg.data[5]) - offset_factor, 0.0, 1.0)
         # print(self.foot_force_fb)
+    # =============== Setup Command ====================
     def StartedCmdCallback(self, msg):
         self.start_flag = msg.data
         # if self.start_flag:
@@ -200,100 +147,27 @@ class StickInsectNode(Node):
         # return [float(value) for value in input_dict.values()]
         return [float(angle) for angles in input_dict.values() for angle in angles]
             
-    def get_phase_shift_time(self, in_1, in_2):
-        current_time = time.time()  # Get current timestamp in seconds
-        self.threshold = 0.15
-        # Detect when in_1 crosses the threshold
-        if in_1 >= self.threshold:
-            self.tau_1 = current_time
-
-        # Detect when in_2 crosses the threshold
-        if in_2 >= self.threshold:
-            self.tau_2 = current_time
-
-        # Compute time delay when both timestamps are available
-        if self.tau_1 is not None and self.tau_2 is not None:
-            
-            self.tau = self.tau_2 - self.tau_1  # Compute time delay (+ lead, - lag)
-            
-            if np.abs(self.tau) > 0.0:
-                ...
-                # print(f"Phase Shift (Tau): {self.tau:.6f} s")
-            
-            # Reset timestamps for the next cycle
-            self.tau_1 = None
-            self.tau_2 = None
-        return np.sign(self.tau)
-        
-        
-
     # ==============================================
     def timer_callback(self):
         if self.start_flag:
             self.control_loop()
         
     def control_loop(self):
-        # Manual shift phase
-        if self.btn_js[0] == 1: # A button
-            self.cpg_mod_cmd['R0']['phi'] = 0.01
-            self.cpg_mod_cmd['R1']['phi'] = 0.05
-            self.cpg_mod_cmd['R2']['phi'] = 0.01
 
-            self.cpg_mod_cmd['L0']['phi'] = 0.05
-            self.cpg_mod_cmd['L1']['phi'] = 0.01
-            self.cpg_mod_cmd['L2']['phi'] = 0.05
-        else:
-            self.cpg_mod_cmd['R0']['phi'] = 0.08
-            self.cpg_mod_cmd['R1']['phi'] = 0.08
-            self.cpg_mod_cmd['R2']['phi'] = 0.08
-
-            self.cpg_mod_cmd['L0']['phi'] = 0.08
-            self.cpg_mod_cmd['L1']['phi'] = 0.08
-            self.cpg_mod_cmd['L2']['phi'] = 0.08
             
-        # ==================== CPF modulation layer ====================   
-        self.cpg_output_leg_R0 = self.cpg_loco_leg_R0.modulate_cpg(self.cpg_mod_cmd['R0']['phi'] , self.cpg_mod_cmd['R0']['pause_input'], self.cpg_mod_cmd['R0']['rewind_input'])
-        self.cpg_output_leg_R1 = self.cpg_loco_leg_R1.modulate_cpg(self.cpg_mod_cmd['R1']['phi'] , self.cpg_mod_cmd['R1']['pause_input'], self.cpg_mod_cmd['R1']['rewind_input'])
-        self.cpg_output_leg_R2 = self.cpg_loco_leg_R2.modulate_cpg(self.cpg_mod_cmd['R2']['phi'] , self.cpg_mod_cmd['R2']['pause_input'], self.cpg_mod_cmd['R2']['rewind_input'])
-        self.cpg_output_leg_L0 = self.cpg_loco_leg_L0.modulate_cpg(self.cpg_mod_cmd['L0']['phi'] , self.cpg_mod_cmd['L0']['pause_input'], self.cpg_mod_cmd['L0']['rewind_input'])
-        self.cpg_output_leg_L1 = self.cpg_loco_leg_L1.modulate_cpg(self.cpg_mod_cmd['L1']['phi'] , self.cpg_mod_cmd['L1']['pause_input'], self.cpg_mod_cmd['L1']['rewind_input'])
-        self.cpg_output_leg_L2 = self.cpg_loco_leg_L2.modulate_cpg(self.cpg_mod_cmd['L2']['phi'] , self.cpg_mod_cmd['L2']['pause_input'], self.cpg_mod_cmd['L2']['rewind_input'])
-        
-        
+        # ==================== CPF modulation layer ====================  
+        for side in LEG_SIDE:
+            for index in LEG_INDEX:
+                self.cpg_output[f'{side}{index}'] = self.cpg_modulated[f'{side}{index}'].modulate_cpg(self.cpg_mod_cmd[f'{side}{index}']['phi'], 
+                                                                                                    self.cpg_mod_cmd[f'{side}{index}']['pause_input'], 
+                                                                                                    self.cpg_mod_cmd[f'{side}{index}']['rewind_input'])
         # ==================== RBF layer ====================
-        # Right legs
-        self.joint_angles_cmd['TR'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_weights['TR0'])         
-        self.joint_angles_cmd['CR'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_weights['CR0'])
-        self.joint_angles_cmd['FR'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_weights['FR0'])
-        # self.expected_foot_forces['R_Z0'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R0['cpg_output_0'], self.cpg_output_leg_R0['cpg_output_1'], self.imitated_forces_weights['F0'])
-        
-        self.joint_angles_cmd['TR'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_weights['TR1'])         
-        self.joint_angles_cmd['CR'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_weights['CR1'])
-        self.joint_angles_cmd['FR'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_weights['FR1'])
-        # self.expected_foot_forces['R_Z1'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R1['cpg_output_0'], self.cpg_output_leg_R1['cpg_output_1'], self.imitated_forces_weights['F1'])
-        
-        self.joint_angles_cmd['TR'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_weights['TR2'])         
-        self.joint_angles_cmd['CR'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_weights['CR2'])
-        self.joint_angles_cmd['FR'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_weights['FR2'])
-        # self.expected_foot_forces['R_Z2'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_R2['cpg_output_0'], self.cpg_output_leg_R2['cpg_output_1'], self.imitated_forces_weights['F2'])
-        
-        # Left legs use the weights of right legs
-        self.joint_angles_cmd['TL'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_weights['TR0'])         
-        self.joint_angles_cmd['CL'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_weights['CR0'])
-        self.joint_angles_cmd['FL'][0] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_weights['FR0'])
-        # self.expected_foot_forces['L_Z0'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L0['cpg_output_0'], self.cpg_output_leg_L0['cpg_output_1'], self.imitated_forces_weights['F0'])
-        
-        self.joint_angles_cmd['TL'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_weights['TR1'])         
-        self.joint_angles_cmd['CL'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_weights['CR1'])
-        self.joint_angles_cmd['FL'][1] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_weights['FR1'])
-        # self.expected_foot_forces['L_Z1'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L1['cpg_output_0'], self.cpg_output_leg_L1['cpg_output_1'], self.imitated_forces_weights['F1'])
-        
-        self.joint_angles_cmd['TL'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_weights['TR2'])         
-        self.joint_angles_cmd['CL'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_weights['CR2'])
-        self.joint_angles_cmd['FL'][2] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_weights['FR2'])
-        # self.expected_foot_forces['L_Z2'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_forces_weights['F2'])
-        
-        
+        for side in LEG_SIDE:
+            for joint in JOINT_NAMES:
+                for index in LEG_INDEX:
+                    self.joint_angles_cmd[f'{joint}{side}'][index] = self.rbf.regenerate_target_traj(self.cpg_output[f'{side}{index}']['cpg_output_0'], 
+                                                                                                    self.cpg_output[f'{side}{index}']['cpg_output_1'],
+                                                                                                    self.imitated_weights[f'{joint}{side}{index}'])
         if not self.execute_control_flag:
             # set initial posture
             msg_float32 = Float32MultiArray()
@@ -306,9 +180,7 @@ class StickInsectNode(Node):
             # joint angle command publish
             msg_float32.data = self.conv2float_arr(self.joint_angles_cmd)
             self.pub_jcmd.publish(msg_float32)
-            # expected foot force publish
-            msg_float32.data = list(self.expected_foot_forces.values())
-            self.pub_expected_force.publish(msg_float32)
+
 
 
     

@@ -16,7 +16,11 @@ class MuscleModel:
         self.vel_des = 0.0
         self.vel_fb = 0.0
         
+        self.safe_dt = 1e-3
+        
         self.K, self.D, self.F = 0.0, 0.0, 0.0
+        
+        self.DE = 0.0
 
     def calculate(self, pos_des, pos_fb, vel_fb, dt):
         self.pos_des = pos_des
@@ -24,8 +28,8 @@ class MuscleModel:
         self.vel_fb = vel_fb
         
         # Derivative of desired position
-        safe_dt = dt if dt > 1e-6 else 1e-3
-        self.vel_des = (self.pos_des - self.pos_des_prev) / safe_dt
+        self.safe_dt = dt if dt > 1e-6 else 1e-3
+        self.vel_des = (self.pos_des - self.pos_des_prev) / self.safe_dt
 
         # Adaptive Scalar Law
         adapt_scalar = self.gen_adapt_scalar()
@@ -56,6 +60,9 @@ class MuscleModel:
         # Torque Command
         return -self.F - (self.K * self.gen_pos_error()) - (self.D * self.gen_vel_error())
     
-    def get_energy_damping(self):
-        # Energy dissipated by damping: E_damp = ∫ D * (dq)^2 dt
-        return self.D * (self.vel_fb ** 2)
+    def get_power_damping(self):
+        # Energy dissipated by damping: E_damp = ∫ D(t) * (q(t))^2 dt
+        # self.DE += self.D * (self.vel_fb ** 2) * self.safe_dt
+        
+        self.DE = self.D * (self.vel_fb ** 2) # power damping at current time step
+        return self.DE

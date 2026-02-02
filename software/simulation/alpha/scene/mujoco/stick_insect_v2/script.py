@@ -21,7 +21,7 @@ NUM_JOINTS_PER_GROUP = 3
 
 START_TIME = 5.0
 EXECUTE_CONTROL_TIME = 7.0
-END_TIME = 20.0
+END_TIME = 1000.0
 
 
 # ======================================================
@@ -140,7 +140,7 @@ joint_stiffness_fb = []
 joint_damping_fb = []
 joint_torque_feedforward_fb = []
 joint_torque_output_fb = []
-joint_damping_energy_fb = []
+joint_damping_power_fb = []
 joint_names = []    
 # ['TR0', 'CR0', 'FR0', 
 #  'TR1', 'CR1', 'FR1', 
@@ -203,7 +203,7 @@ def main(args=None):
                 joint_damping_fb.append(ctrl.D)
                 joint_torque_feedforward_fb.append(ctrl.F)
                 joint_torque_output_fb.append(ctrl.get_torque())
-                joint_damping_energy_fb.append(ctrl.get_energy_damping())
+                joint_damping_power_fb.append(ctrl.get_power_damping())
                 joint_names.append(name)
             # print(joint_names)
 
@@ -216,7 +216,7 @@ def main(args=None):
                 ros_node.publish_joint_damping(joint_damping_fb)
                 ros_node.publish_joint_torque_ff(joint_torque_feedforward_fb)
                 ros_node.publish_joint_torque_output(joint_torque_output_fb)
-                ros_node.publish_joint_damping_energy(joint_damping_energy_fb)
+                ros_node.publish_joint_damping_power(joint_damping_power_fb)
                 ros_node.publish_termination_status(False)
                 joint_angle_fb.clear()
                 joint_velocity_fb.clear()
@@ -224,7 +224,7 @@ def main(args=None):
                 joint_damping_fb.clear()
                 joint_torque_feedforward_fb.clear()
                 joint_torque_output_fb.clear()
-                joint_damping_energy_fb.clear()
+                joint_damping_power_fb.clear()
                 joint_names.clear()
                 
 
