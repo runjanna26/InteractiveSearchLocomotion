@@ -19,6 +19,10 @@ FOOT_NAMES = ['foot_r0', 'foot_r1', 'foot_r2',
 JOINT_GROUPS = ['TR', 'CR', 'FR', 'TL', 'CL', 'FL']
 NUM_JOINTS_PER_GROUP = 3
 
+START_TIME = 5.0
+EXECUTE_CONTROL_TIME = 7.0
+END_TIME = 20.0
+
 
 # ======================================================
 # INITIALIZATION UTILITIES
@@ -82,16 +86,28 @@ def init_foot_sensors(model):
 # TARGET GENERATION
 # ======================================================
 
-def get_joint_targets(ros_node, elapsed, controllers):
+def get_joint_targets(ros_node, elapsed, controllers, viewer, end_time=END_TIME):
     targets = {name: 0.0 for name in controllers}
 
-    if elapsed < 5.0:
+    if elapsed < START_TIME:
         return targets
-
+    else:
+        ros_node.publish_start_status(True)
+    if elapsed > EXECUTE_CONTROL_TIME:
+        ros_node.publish_execute_control(True)
+    if elapsed > end_time:
+        ros_node.publish_termination_status(True)
+        # rclpy.spin_once(ros_node, timeout_sec=0.1)
+        rclpy.shutdown()
+        viewer.close()
+        return targets
+    # Receive command from ROS2 node
     for group in JOINT_GROUPS:
         for i in range(NUM_JOINTS_PER_GROUP):
             joint_name = f"{group}{i}"
             targets[joint_name] = ros_node.joint_cmd[group][i]
+            
+
 
     return targets
 
@@ -124,6 +140,7 @@ joint_stiffness_fb = []
 joint_damping_fb = []
 joint_torque_feedforward_fb = []
 joint_torque_output_fb = []
+joint_damping_energy_fb = []
 joint_names = []    
 # ['TR0', 'CR0', 'FR0', 
 #  'TR1', 'CR1', 'FR1', 
@@ -158,16 +175,10 @@ def main(args=None):
     with mujoco.viewer.launch_passive(model, data) as viewer:
         start_time = time.time()
 
-        # 1. Look at specific point (X, Y, Z)
-        viewer.cam.lookat[:] = [-2.0, 0.0, 2.0]
-        
-        # 2. Distance (Zoom)
-        viewer.cam.distance = 5.0
-        
-        # 3. Angle (Azimuth = Left/Right, Elevation = Up/Down)
-        viewer.cam.azimuth = 45   # 45 degrees
+        viewer.cam.lookat[:] = [-2.0, 0.0, 2.0] # Look at specific point (X, Y, Z)
+        viewer.cam.distance = 5.0               # Distance (Zoom)
+        viewer.cam.azimuth = 45   # 45 degrees Angle (Azimuth = Left/Right, Elevation = Up/Down)
         viewer.cam.elevation = -30 # Look down by 30 degrees
-
 
 
         while viewer.is_running():
@@ -175,7 +186,7 @@ def main(args=None):
             rclpy.spin_once(ros_node, timeout_sec=0.0)
 
             elapsed = step_start - start_time
-            targets = get_joint_targets(ros_node, elapsed, controllers)
+            targets = get_joint_targets(ros_node, elapsed, controllers, viewer)
 
             # --- CONTROL UPDATE ---
             for name, ctrl in controllers.items():
@@ -184,7 +195,7 @@ def main(args=None):
                 target = targets[name]
 
                 ctrl.calculate(target, q, dq, model.opt.timestep)
-                data.ctrl[actuator_ids[name]] = ctrl.get_torque()
+                data.ctrl[actuator_ids[name]] = ctrl.get_torque()   # control signal to the actuator mujoco
 
                 joint_angle_fb.append(q)
                 joint_velocity_fb.append(dq)
@@ -192,25 +203,29 @@ def main(args=None):
                 joint_damping_fb.append(ctrl.D)
                 joint_torque_feedforward_fb.append(ctrl.F)
                 joint_torque_output_fb.append(ctrl.get_torque())
+                joint_damping_energy_fb.append(ctrl.get_energy_damping())
                 joint_names.append(name)
             # print(joint_names)
 
                 
-
-            # --- FEEDBACK ---
-            ros_node.publish_joint_angle(joint_angle_fb)
-            ros_node.publish_joint_velocity(joint_velocity_fb)
-            ros_node.publish_joint_stiffness(joint_stiffness_fb)
-            ros_node.publish_joint_damping(joint_damping_fb)
-            ros_node.publish_joint_torque_ff(joint_torque_feedforward_fb)
-            ros_node.publish_joint_torque_output(joint_torque_output_fb)
-            joint_angle_fb.clear()
-            joint_velocity_fb.clear()
-            joint_stiffness_fb.clear()
-            joint_damping_fb.clear()
-            joint_torque_feedforward_fb.clear()
-            joint_torque_output_fb.clear()
-            joint_names.clear()
+            if elapsed > START_TIME:
+                # --- FEEDBACK ---
+                ros_node.publish_joint_angle(joint_angle_fb)
+                ros_node.publish_joint_velocity(joint_velocity_fb)
+                ros_node.publish_joint_stiffness(joint_stiffness_fb)
+                ros_node.publish_joint_damping(joint_damping_fb)
+                ros_node.publish_joint_torque_ff(joint_torque_feedforward_fb)
+                ros_node.publish_joint_torque_output(joint_torque_output_fb)
+                ros_node.publish_joint_damping_energy(joint_damping_energy_fb)
+                ros_node.publish_termination_status(False)
+                joint_angle_fb.clear()
+                joint_velocity_fb.clear()
+                joint_stiffness_fb.clear()
+                joint_damping_fb.clear()
+                joint_torque_feedforward_fb.clear()
+                joint_torque_output_fb.clear()
+                joint_damping_energy_fb.clear()
+                joint_names.clear()
                 
 
             # --- GRF FEEDBACK ---

@@ -55,3 +55,7 @@ class MuscleModel:
         
         # Torque Command
         return -self.F - (self.K * self.gen_pos_error()) - (self.D * self.gen_vel_error())
+    
+    def get_energy_damping(self):
+        # Energy dissipated by damping: E_damp = ∫ D * (dq)^2 dt
+        return self.D * (self.vel_fb ** 2)

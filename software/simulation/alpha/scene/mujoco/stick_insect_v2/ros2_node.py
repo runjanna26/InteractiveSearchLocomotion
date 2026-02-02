@@ -1,5 +1,5 @@
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, Bool
 
 class StickInsectNode(Node):
     def __init__(self):
@@ -15,14 +15,18 @@ class StickInsectNode(Node):
         self.joint_damping_pub          = self.create_publisher( Float32MultiArray, '/stick_insect/joint_damping_fb', 1 )
         self.joint_torque_ff_pub        = self.create_publisher( Float32MultiArray, '/stick_insect/joint_torque_feedforward_fb', 1 )
         self.joint_torque_output_pub    = self.create_publisher( Float32MultiArray, '/stick_insect/joint_torque_output_fb', 1 )
+        self.joint_damping_energy_pub   = self.create_publisher( Float32MultiArray, '/stick_insect/joint_damping_energy_fb', 1 )
+        self.ros2_node_termiated_pub    = self.create_publisher( Bool, '/stick_insect/terminated_cmd', 1 )
+        self.ros2_node_started_pub      = self.create_publisher( Bool, '/stick_insect/started_cmd', 1 )
+        self.execute_control_pub        = self.create_publisher( Bool, '/stick_insect/execute_control_cmd', 1 )
         
 
         self.joint_cmd = {'TR': [0.0, 0.0, 0.0],
-                          'CR': [0.0, 0.0, 0.0],
-                          'FR': [0.0, 0.0, 0.0],
-                          'TL': [0.0, 0.0, 0.0],
-                          'CL': [0.0, 0.0, 0.0],
-                          'FL': [0.0, 0.0, 0.0]}
+                        'CR': [0.0, 0.0, 0.0],
+                        'FR': [0.0, 0.0, 0.0],
+                        'TL': [0.0, 0.0, 0.0],
+                        'CL': [0.0, 0.0, 0.0],
+                        'FL': [0.0, 0.0, 0.0]}
         print("ROS 2 Node Started. Subscribed to /joint_commands")
 
     def joint_cmd_callback(self, msg):
@@ -34,30 +38,46 @@ class StickInsectNode(Node):
         self.joint_cmd['FL'] = msg.data[15:18]
 
     def publish_grf(self, forces):
-            msg = Float32MultiArray()
-            msg.data = [float(f) for f in forces]
-            self.grf_pub.publish(msg)
+        msg = Float32MultiArray()
+        msg.data = [float(f) for f in forces]
+        self.grf_pub.publish(msg)
     def publish_joint_angle(self, angles):
-            msg = Float32MultiArray()
-            msg.data = [float(a) for a in angles]
-            self.joint_angle_pub.publish(msg)
+        msg = Float32MultiArray()
+        msg.data = [float(a) for a in angles]
+        self.joint_angle_pub.publish(msg)
     def publish_joint_velocity(self, velocities):
-            msg = Float32MultiArray()
-            msg.data = [float(v) for v in velocities]
-            self.joint_velocity_pub.publish(msg)
+        msg = Float32MultiArray()
+        msg.data = [float(v) for v in velocities]
+        self.joint_velocity_pub.publish(msg)
     def publish_joint_stiffness(self, stiffnesses):
-            msg = Float32MultiArray()
-            msg.data = [float(s) for s in stiffnesses]
-            self.joint_stiffness_pub.publish(msg)
+        msg = Float32MultiArray()
+        msg.data = [float(s) for s in stiffnesses]
+        self.joint_stiffness_pub.publish(msg)
     def publish_joint_damping(self, dampings):
-            msg = Float32MultiArray()
-            msg.data = [float(d) for d in dampings]
-            self.joint_damping_pub.publish(msg)
+        msg = Float32MultiArray()
+        msg.data = [float(d) for d in dampings]
+        self.joint_damping_pub.publish(msg)
     def publish_joint_torque_ff(self, torques):
-            msg = Float32MultiArray()
-            msg.data = [float(t) for t in torques]
-            self.joint_torque_ff_pub.publish(msg)
+        msg = Float32MultiArray()
+        msg.data = [float(t) for t in torques]
+        self.joint_torque_ff_pub.publish(msg)
     def publish_joint_torque_output(self, torques):
-            msg = Float32MultiArray()
-            msg.data = [float(t) for t in torques]
-            self.joint_torque_output_pub.publish(msg)
+        msg = Float32MultiArray()
+        msg.data = [float(t) for t in torques]
+        self.joint_torque_output_pub.publish(msg)
+    def publish_joint_damping_energy(self, energies):
+        msg = Float32MultiArray()
+        msg.data = [float(e) for e in energies]
+        self.joint_damping_energy_pub.publish(msg)
+    def publish_termination_status(self, status):
+        msg = Bool()
+        msg.data = status
+        self.ros2_node_termiated_pub.publish(msg)
+    def publish_start_status(self, status):
+        msg = Bool()
+        msg.data = status
+        self.ros2_node_started_pub.publish(msg)
+    def publish_execute_control(self, status):
+        msg = Bool()
+        msg.data = status
+        self.execute_control_pub.publish(msg)

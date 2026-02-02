@@ -47,6 +47,9 @@ class StickInsectNode(Node):
         
         self.sub_js                 = self.create_subscription(Joy, '/joy', self.Joy_set, 1)
         self.sub_foot_force         = self.create_subscription(Float32MultiArray, '/stick_insect/foot_force_feedback', self.FootForceFeedback, 1)
+        self.sub_terminated_cmd     = self.create_subscription(Bool, '/stick_insect/terminated_cmd', self.TerminatedCmdCallback, 1)
+        self.sub_started_cmd        = self.create_subscription(Bool, '/stick_insect/started_cmd', self.StartedCmdCallback, 1)
+        self.sub_execute_control_cmd = self.create_subscription(Bool, '/stick_insect/execute_control_cmd', self.ExecuteControlCmdCallback, 1)
 
         # Command variables
         self.initial_joint_angles = {'TR': [30,    0, -40],
@@ -159,6 +162,7 @@ class StickInsectNode(Node):
         self.tau = 0.0
         self.start_flag = False
         self.end_flag = False
+        self.execute_control_flag = False
         
     # =============== Joy Stick ====================
     def Joy_set(self, msg):
@@ -176,7 +180,21 @@ class StickInsectNode(Node):
         self.foot_force_fb['F_L1'] = np.clip(self.lpf_L1.filter(scaling_factor * msg.data[4]) - offset_factor, 0.0, 1.0)
         self.foot_force_fb['F_L2'] = np.clip(self.lpf_L2.filter(scaling_factor * msg.data[5]) - offset_factor, 0.0, 1.0)
         # print(self.foot_force_fb)
-        
+    def StartedCmdCallback(self, msg):
+        self.start_flag = msg.data
+        # if self.start_flag:
+        #     print("Received start command from simulation.")
+    def ExecuteControlCmdCallback(self, msg):
+        self.execute_control_flag = msg.data
+        # if self.execute_control_flag:
+        #     print("Received execute control command from simulation.")
+    def TerminatedCmdCallback(self, msg):
+        self.end_flag = msg.data
+        if self.end_flag:
+            print("Received termination command from simulation.")
+            self.destroy_node()
+            rclpy.shutdown()
+
     # ==============================================
     def conv2float_arr(self,  input_dict):
         # return [float(value) for value in input_dict.values()]
@@ -211,8 +229,10 @@ class StickInsectNode(Node):
 
     # ==============================================
     def timer_callback(self):
-        ...
+        if self.start_flag:
+            self.control_loop()
         
+    def control_loop(self):
         # Manual shift phase
         if self.btn_js[0] == 1: # A button
             self.cpg_mod_cmd['R0']['phi'] = 0.01
@@ -231,74 +251,6 @@ class StickInsectNode(Node):
             self.cpg_mod_cmd['L1']['phi'] = 0.08
             self.cpg_mod_cmd['L2']['phi'] = 0.08
             
-        # if self.btn_js[0] == 1: # A button
-        #     self.cpg_mod_cmd['R0']['pause_input'] = 1.0
-        #     self.cpg_mod_cmd['R1']['pause_input'] = 0.0
-        #     self.cpg_mod_cmd['R2']['pause_input'] = 1.0
-
-        #     self.cpg_mod_cmd['L0']['pause_input'] = 0.0
-        #     self.cpg_mod_cmd['L1']['pause_input'] = 1.0
-        #     self.cpg_mod_cmd['L2']['pause_input'] = 0.0
-        # else:
-        #     self.cpg_mod_cmd['R0']['pause_input'] = 0.0
-        #     self.cpg_mod_cmd['R1']['pause_input'] = 0.0
-        #     self.cpg_mod_cmd['R2']['pause_input'] = 0.0
-
-        #     self.cpg_mod_cmd['L0']['pause_input'] = 0.0
-        #     self.cpg_mod_cmd['L1']['pause_input'] = 0.0
-        #     self.cpg_mod_cmd['L2']['pause_input'] = 0.0
-        # if self.btn_js[1] == 1: # B button
-        #     self.cpg_phi_cmd = 0.1
-        #     self.cpg_pause_cmd = 0.0
-        #     self.cpg_rewind_cmd = -1.0
-        # if self.btn_js[2] == 1: # X button
-        #     self.cpg_phi_cmd = 0.1
-        #     self.cpg_pause_cmd = 1.0
-        
-        # ==================== Self-orgnization for walking pattern ====================
-        
-        # for col_fb, col_expec in zip(self.foot_force_fb, self.expected_foot_forces):
-        #     # print(col_fb, col_expec)
-        #     self.foot_force_tau[col_expec]   = self.get_phase_shift_time(self.expected_foot_forces[col_expec], self.foot_force_fb[col_fb])
-            
-        #     # if self.foot_force_tau[col_expec] is not None:
-        #     # print()
-            
-        #     self.foot_force_error[col_expec] =  self.foot_force_tau[col_expec] * np.abs(self.foot_force_fb[col_fb] - self.expected_foot_forces[col_expec])
-        # self.pub_foot_force.publish(Float32MultiArray(data = list(self.foot_force_fb.values())))
-        # self.pub_foot_force_error.publish(Float32MultiArray(data = list(self.foot_force_error.values())))
-        
-        
-        
-        # self.cpg_phi_leg_adapt['R_Z0'], _, _ = self.dual_learner_leg_R0.calculate_DIL(self.foot_force_error['R_Z0'])
-        # self.cpg_phi_leg_adapt['R_Z1'], _, _ = self.dual_learner_leg_R1.calculate_DIL(self.foot_force_error['R_Z1'])
-        # self.cpg_phi_leg_adapt['R_Z2'], _, _ = self.dual_learner_leg_R2.calculate_DIL(self.foot_force_error['R_Z2'])
-        # self.cpg_phi_leg_adapt['L_Z0'], _, _ = self.dual_learner_leg_L0.calculate_DIL(self.foot_force_error['L_Z0'])
-        # self.cpg_phi_leg_adapt['L_Z1'], _, _ = self.dual_learner_leg_L1.calculate_DIL(self.foot_force_error['L_Z1'])
-        # self.cpg_phi_leg_adapt['L_Z2'], _, _ = self.dual_learner_leg_L2.calculate_DIL(self.foot_force_error['L_Z2'])
-        
-        # self.cpg_mod_cmd['R0']['phi'] = self.cpg_phi_leg_adapt['R_Z0'] + self.cpg_phi_leg_des['R0']
-        # self.cpg_mod_cmd['R1']['phi'] = self.cpg_phi_leg_adapt['R_Z1'] + self.cpg_phi_leg_des['R1']
-        # self.cpg_mod_cmd['R2']['phi'] = self.cpg_phi_leg_adapt['R_Z2'] + self.cpg_phi_leg_des['R2']
-        # self.cpg_mod_cmd['L0']['phi'] = self.cpg_phi_leg_adapt['L_Z0'] + self.cpg_phi_leg_des['L0']
-        # self.cpg_mod_cmd['L1']['phi'] = self.cpg_phi_leg_adapt['L_Z1'] + self.cpg_phi_leg_des['L1']
-        # self.cpg_mod_cmd['L2']['phi'] = self.cpg_phi_leg_adapt['L_Z2'] + self.cpg_phi_leg_des['L2']
-        # self.pub_phi_cmd.publish(Float32MultiArray(data = [self.cpg_mod_cmd['R0']['phi'], 
-        #                                                    self.cpg_mod_cmd['R1']['phi'], 
-        #                                                    self.cpg_mod_cmd['R2']['phi'], 
-        #                                                    self.cpg_mod_cmd['L0']['phi'], 
-        #                                                    self.cpg_mod_cmd['L1']['phi'], 
-        #                                                    self.cpg_mod_cmd['L2']['phi']]))
-        
-        
-        # self.pub_phi_walk.publish(Float32MultiArray(data = [self.cpg_phi_leg_des ['R0'],
-        #                                                     self.cpg_phi_leg_des ['R1'],
-        #                                                     self.cpg_phi_leg_des ['R2'],
-        #                                                     self.cpg_phi_leg_des ['L0'],
-        #                                                     self.cpg_phi_leg_des ['L1'],
-        #                                                     self.cpg_phi_leg_des ['L2']]))
-        
-               
         # ==================== CPF modulation layer ====================   
         self.cpg_output_leg_R0 = self.cpg_loco_leg_R0.modulate_cpg(self.cpg_mod_cmd['R0']['phi'] , self.cpg_mod_cmd['R0']['pause_input'], self.cpg_mod_cmd['R0']['rewind_input'])
         self.cpg_output_leg_R1 = self.cpg_loco_leg_R1.modulate_cpg(self.cpg_mod_cmd['R1']['phi'] , self.cpg_mod_cmd['R1']['pause_input'], self.cpg_mod_cmd['R1']['rewind_input'])
@@ -342,17 +294,19 @@ class StickInsectNode(Node):
         # self.expected_foot_forces['L_Z2'] = self.rbf.regenerate_target_traj(self.cpg_output_leg_L2['cpg_output_0'], self.cpg_output_leg_L2['cpg_output_1'], self.imitated_forces_weights['F2'])
         
         
-        if time.time() - self.start_time < 2:
+        if not self.execute_control_flag:
             # set initial posture
             msg_float32 = Float32MultiArray()
             msg_float32.data = [float(x) for x in self.initial_joint_angles]
             self.pub_jcmd.publish(msg_float32)
-        elif time.time() - self.start_time >= 2:
+            
+        if self.execute_control_flag:
             msg_float32 = Float32MultiArray()
             
+            # joint angle command publish
             msg_float32.data = self.conv2float_arr(self.joint_angles_cmd)
             self.pub_jcmd.publish(msg_float32)
-            
+            # expected foot force publish
             msg_float32.data = list(self.expected_foot_forces.values())
             self.pub_expected_force.publish(msg_float32)
 
