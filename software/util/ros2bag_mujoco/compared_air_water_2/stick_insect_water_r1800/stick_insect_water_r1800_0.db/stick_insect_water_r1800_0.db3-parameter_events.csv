@@ -1,0 +1,2 @@
+time,stamp,node,new_parameters,changed_parameters,deleted_parameters
+2026/02/02 23:40:56.748978852,"{'secs': 1770050456, 'nsecs': 748681648}",/stick_insect_controller,"[{'name': 'use_sim_time', 'value': {'type': 1, 'bool_value': False, 'integer_value': 0, 'double_value': 0.0, 'string_value': '', 'byte_array_value': [], 'bool_array_value': [], 'integer_array_value': [], 'double_array_value': [], 'string_array_value': []}}]",[],[]

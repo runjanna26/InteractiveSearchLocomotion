@@ -40,11 +40,12 @@ class StickInsectNode(Node):
         self.rbf.construct_kernels_with_cpg_one_cycle(out0_cpg_one_cycle, out1_cpg_one_cycle, cpg_cycle_length) # construct kernels with cpg one cycle
 
         # walking pattern weights
-        # self.imitated_weights = np.load('imitated_stick_insect_walk_weights_me.npz')
-        # self.imitated_forces_weights = np.load('imitated_stick_insect_walk_weights_me_force.npz')
-        
-        self.imitated_weights = np.load('imitated_stick_insect_swim_weights_me.npz')
-        self.imitated_forces_weights = np.load('imitated_stick_insect_swim_weights_me_force.npz')
+        self.imitated_weights = np.load('imitated_stick_insect_walk_weights_me.npz')
+        self.imitated_forces_weights = np.load('imitated_stick_insect_walk_weights_me_force.npz')
+
+        # swimming pattern weights 
+        # self.imitated_weights = np.load('imitated_stick_insect_swim_weights_me.npz')
+        # self.imitated_forces_weights = np.load('imitated_stick_insect_swim_weights_me_force.npz')
 
         # ROS2 publishers and subscribers
         self.pub_jcmd               = self.create_publisher(Float32MultiArray, '/stick_insect/joint_angle_commands', 1)

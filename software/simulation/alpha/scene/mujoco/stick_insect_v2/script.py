@@ -6,7 +6,6 @@ import rclpy
 
 from ros2_node import StickInsectNode
 from muscle_model import MuscleModel
-from buoyancy import BuoyancyPhysics 
 from hydrodynamic import Hydrodynamics
 
 # ======================================================
@@ -21,7 +20,7 @@ NUM_JOINTS_PER_GROUP = 3
 
 START_TIME = 5.0
 EXECUTE_CONTROL_TIME = 7.0
-END_TIME = 1000.0
+END_TIME = 30.0
 
 
 # ======================================================
@@ -175,7 +174,7 @@ def main(args=None):
     with mujoco.viewer.launch_passive(model, data) as viewer:
         start_time = time.time()
 
-        viewer.cam.lookat[:] = [-2.0, 0.0, 2.0] # Look at specific point (X, Y, Z)
+        viewer.cam.lookat[:] = [16.0, 0.0, 2.0] # Look at specific point (X, Y, Z)
         viewer.cam.distance = 5.0               # Distance (Zoom)
         viewer.cam.azimuth = 45   # 45 degrees Angle (Azimuth = Left/Right, Elevation = Up/Down)
         viewer.cam.elevation = -30 # Look down by 30 degrees
@@ -218,14 +217,15 @@ def main(args=None):
                 ros_node.publish_joint_torque_output(joint_torque_output_fb)
                 ros_node.publish_joint_damping_power(joint_damping_power_fb)
                 ros_node.publish_termination_status(False)
-                joint_angle_fb.clear()
-                joint_velocity_fb.clear()
-                joint_stiffness_fb.clear()
-                joint_damping_fb.clear()
-                joint_torque_feedforward_fb.clear()
-                joint_torque_output_fb.clear()
-                joint_damping_power_fb.clear()
-                joint_names.clear()
+
+            joint_angle_fb.clear()
+            joint_velocity_fb.clear()
+            joint_stiffness_fb.clear()
+            joint_damping_fb.clear()
+            joint_torque_feedforward_fb.clear()
+            joint_torque_output_fb.clear()
+            joint_damping_power_fb.clear()
+            joint_names.clear()
                 
 
             # --- GRF FEEDBACK ---
