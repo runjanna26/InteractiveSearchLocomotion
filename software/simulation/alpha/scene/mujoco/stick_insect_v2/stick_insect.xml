@@ -35,7 +35,7 @@
         <!-- -2 0 1.5 : water--> 
         <!-- -2 0 1.5 -->
         <!-- -2 0 1.5 -->
-        <body name="stick_insect_robot" pos="16 0 1.5">  
+        <body name="stick_insect_robot" pos="-2 0 1.5">  
             <!-- comment to fixed the robot on the air -->
             <freejoint name="space" />  
             <inertial pos="0.004237 -0.007339 0" mass="0.253323"

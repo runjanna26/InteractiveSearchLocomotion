@@ -40,12 +40,15 @@ class StickInsectNode(Node):
         self.rbf.construct_kernels_with_cpg_one_cycle(out0_cpg_one_cycle, out1_cpg_one_cycle, cpg_cycle_length) # construct kernels with cpg one cycle
 
         # walking pattern weights
-        self.imitated_weights = np.load('imitated_stick_insect_walk_weights_me.npz')
-        self.imitated_forces_weights = np.load('imitated_stick_insect_walk_weights_me_force.npz')
+        # self.imitated_weights = np.load('imitated_stick_insect_walk_weights_me.npz')
+        # self.imitated_forces_weights = np.load('imitated_stick_insect_walk_weights_me_force.npz')
 
         # swimming pattern weights 
-        # self.imitated_weights = np.load('imitated_stick_insect_swim_weights_me.npz')
-        # self.imitated_forces_weights = np.load('imitated_stick_insect_swim_weights_me_force.npz')
+        # self.imitated_weights = np.load('imitated_stick_insect_swim_1_weights_me.npz')
+        # self.imitated_forces_weights = np.load('imitated_stick_insect_swim_1_weights_me_force.npz')
+
+        self.imitated_weights = np.load('imitated_stick_insect_swim_weights_me.npz')
+        self.imitated_forces_weights = np.load('imitated_stick_insect_swim_weights_me_force.npz')
 
         # ROS2 publishers and subscribers
         self.pub_jcmd               = self.create_publisher(Float32MultiArray, '/stick_insect/joint_angle_commands', 1)
@@ -85,8 +88,11 @@ class StickInsectNode(Node):
             for index in LEG_INDEX:
                 self.cpg_modulated[f'{side}{index}']     = CPG_LOCO()
                 self.cpg_output[f'{side}{index}']        = self.cpg_modulated[f'{side}{index}'].modulate_cpg(0.05, 0.0, 1.0)  # initial run to set up internal states
-                self.cpg_mod_cmd[f'{side}{index}']       = {'phi':0.08, 'pause_input': 0.0, 'rewind_input': 1.0}   # initial run to set up internal states
+                self.cpg_mod_cmd[f'{side}{index}']       = {'phi':0.05, 'pause_input': 0.0, 'rewind_input': 1.0}   # initial run to set up internal states
+        
 
+
+        
         # Feedback variables
         self.expected_foot_forces = {}
         self.foot_force_fb = {}
