@@ -1,0 +1,22 @@
+[1.892s] Invoking command in '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/src/underwater_robot_pkg': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/underwater_robot_pkg build --build-base /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build install --record /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/install.log --single-version-externally-managed install_data
+[2.258s] running egg_info
+[2.278s] writing ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/PKG-INFO
+[2.280s] writing dependency_links to ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/dependency_links.txt
+[2.280s] writing entry points to ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/entry_points.txt
+[2.281s] writing requirements to ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/requires.txt
+[2.281s] writing top-level names to ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/top_level.txt
+[2.326s] reading manifest file '../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/SOURCES.txt'
+[2.326s] adding license file 'LICENSE'
+[2.327s] writing manifest file '../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/SOURCES.txt'
+[2.328s] running build
+[2.328s] running build_py
+[2.328s] running install
+[2.338s] running install_lib
+[2.359s] running install_data
+[2.360s] running install_egg_info
+[2.383s] removing '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg-0.0.0-py3.12.egg-info' (and everything under it)
+[2.385s] Copying ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info to /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg-0.0.0-py3.12.egg-info
+[2.385s] running install_scripts
+[2.571s] Installing underwater_robot_node script to /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/underwater_robot_pkg
+[2.574s] writing list of installed files to '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/install.log'
+[2.739s] Invoked command in '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/src/underwater_robot_pkg' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/underwater_robot_pkg build --build-base /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build install --record /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/install.log --single-version-externally-managed install_data

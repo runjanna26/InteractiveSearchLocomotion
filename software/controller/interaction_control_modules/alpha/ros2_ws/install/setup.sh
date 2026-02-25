@@ -7,7 +7,7 @@
 # since a plain shell script can't determine its own path when being sourced
 # either use the provided COLCON_CURRENT_PREFIX
 # or fall back to the build time prefix (if it exists)
-_colcon_prefix_chain_sh_COLCON_CURRENT_PREFIX=/home/runj/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install
+_colcon_prefix_chain_sh_COLCON_CURRENT_PREFIX=/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install
 if [ ! -z "$COLCON_CURRENT_PREFIX" ]; then
   _colcon_prefix_chain_sh_COLCON_CURRENT_PREFIX="$COLCON_CURRENT_PREFIX"
 elif [ ! -d "$_colcon_prefix_chain_sh_COLCON_CURRENT_PREFIX" ]; then
@@ -31,23 +31,7 @@ _colcon_prefix_chain_sh_source_script() {
 
 # source chained prefixes
 # setting COLCON_CURRENT_PREFIX avoids relying on the build time prefix of the sourced script
-COLCON_CURRENT_PREFIX="/opt/ros/humble"
-_colcon_prefix_chain_sh_source_script "$COLCON_CURRENT_PREFIX/local_setup.sh"
-
-# setting COLCON_CURRENT_PREFIX avoids relying on the build time prefix of the sourced script
-COLCON_CURRENT_PREFIX="/home/runj/BRAIN/microros_ws/install"
-_colcon_prefix_chain_sh_source_script "$COLCON_CURRENT_PREFIX/local_setup.sh"
-
-# setting COLCON_CURRENT_PREFIX avoids relying on the build time prefix of the sourced script
-COLCON_CURRENT_PREFIX="/home/runj/BRAIN/ros2bag_to_csv/ros2_ws/install"
-_colcon_prefix_chain_sh_source_script "$COLCON_CURRENT_PREFIX/local_setup.sh"
-
-# setting COLCON_CURRENT_PREFIX avoids relying on the build time prefix of the sourced script
-COLCON_CURRENT_PREFIX="/home/runj/BRAIN/REFINE/REFINE_II_REMOVE/software/project/alpha/ros2_ws/install"
-_colcon_prefix_chain_sh_source_script "$COLCON_CURRENT_PREFIX/local_setup.sh"
-
-# setting COLCON_CURRENT_PREFIX avoids relying on the build time prefix of the sourced script
-COLCON_CURRENT_PREFIX="/home/runj/BRAIN/HERO2/software/projects/hero2_alpha/ros2_ws/install"
+COLCON_CURRENT_PREFIX="/opt/ros/jazzy"
 _colcon_prefix_chain_sh_source_script "$COLCON_CURRENT_PREFIX/local_setup.sh"
 
 

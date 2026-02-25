@@ -1,6 +1,6 @@
 
 
-robot_pwd = '916269'
+robot_pwd = '11223344'
 
 import can
 import os
@@ -41,7 +41,7 @@ class CAN_Manager(object):
             os.system( 'sudo /sbin/ip link set can0 up type can bitrate 1000000' )
             
             # create a python-can bus object
-            cls._instance.bus = can.interface.Bus(channel='can0', bustype='socketcan') # bustype='socketcan_native')
+            cls._instance.bus = can.interface.Bus(channel='can0', bustype='socketcan') # socketcan_native / socketcan
             # create a python-can notifier object, which motors can later subscribe to
             cls._instance.notifier = can.Notifier(bus=cls._instance.bus, listeners=[])
             print("Connected on: " + str(cls._instance.bus))

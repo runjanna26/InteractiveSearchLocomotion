@@ -54,14 +54,14 @@ class RobotNode(Node):
         self.can_manager = CAN_Manager()
         self.can_manager.check_all_motors()
         self.can_manager.reset_all_motors()
-        self.motor = rmd_motor_can(motor_id=0x01, can_manager=self.can_manager)  
+        self.motor = rmd_motor_can(motor_id=2, can_manager=self.can_manager)  
 
         self.LPF_vel = LPF(0.5)
 
         self.init_pos           = 0.0
-        self.muscle = MuscleModel(_a            = 0.5,
-                                  _b            = 10.0,
-                                  _beta         = 0.05,             # made motor oscillation smaller after holding
+        self.muscle = MuscleModel(_a            = 1.0,
+                                  _b            = 20.0,
+                                  _beta         = 0.0,             # made motor oscillation smaller after holding
                                   _init_pos     = self.init_pos,
                                   number_motor = 1)
 
@@ -97,7 +97,7 @@ class RobotNode(Node):
 
         # Setup sinusoidal oscillation parameters 
         A_max = np.pi/3                                     # Amplitude (radians)
-        frequency = 1                                       # Frequency (Hz)
+        frequency = 0.5                                       # Frequency (Hz)
         ramp_time = 2                                       # Ramp time constant
         amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
         omega = 2 * np.pi * frequency    
@@ -121,10 +121,9 @@ class RobotNode(Node):
         self.motor.set_desired_position_radian(pos_des)
         self.motor.set_desired_velocity_radian_per_second(vel_des)
 
-        # self.motor.set_desired_stiffness(20)
-        # self.motor.set_desired_damping(5)
+        # self.motor.set_desired_stiffness(1)
+        # self.motor.set_desired_damping(0.2)
         # self.motor.set_desired_torque(0)
-
 
         self.motor.set_desired_stiffness(self.muscle.get_stiffness())
         self.motor.set_desired_damping(self.muscle.get_damping())
@@ -134,7 +133,6 @@ class RobotNode(Node):
         # self.motor.set_desired_torque(np.sign(self.motor.feedback_velocity)*0.2)  # Add friction compensation
         # self.motor.set_desired_torque(self.muscle.tau + np.sign(self.motor.feedback_velocity)*0.2) 
         # self.motor.set_desired_torque(self.muscle.tau) 
-
 
 
         # ======================= Send motor command ======================= #
