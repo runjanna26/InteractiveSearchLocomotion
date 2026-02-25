@@ -14,6 +14,7 @@ test/test_copyright.py
 test/test_flake8.py
 test/test_pep257.py
 underwater_robot_pkg/__init__.py
+underwater_robot_pkg/as5047.py
 underwater_robot_pkg/can_manager.py
 underwater_robot_pkg/lowpass_filter.py
 underwater_robot_pkg/muscle_model.py

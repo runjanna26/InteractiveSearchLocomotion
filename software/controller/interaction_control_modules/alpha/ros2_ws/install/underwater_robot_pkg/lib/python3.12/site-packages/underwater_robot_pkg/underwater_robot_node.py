@@ -15,7 +15,7 @@ from std_msgs.msg import Float32MultiArray, UInt8MultiArray, String, Bool, Float
 
 from .can_manager import CAN_Manager
 from .rmd_motor_can import rmd_motor_can
-
+from .as5047 import AS5X47
 from .lowpass_filter import LPF
 from .muscle_model import MuscleModel
 # from .muscle_model_new import MuscleModel
@@ -46,6 +46,8 @@ class RobotNode(Node):
 
         self.robot_joint_err_fb      = self.create_publisher(String, '/joint_error_feedback', best_effort_qos_prof)
 
+        self.joint_enc_pos_fb        = self.create_publisher(Float32MultiArray, '/joint_encoder_position_feedback', best_effort_qos_prof)
+
         self.debug_pub               = self.create_publisher(Float32MultiArray, 'debugging_output', best_effort_qos_prof)
 
 
@@ -54,7 +56,9 @@ class RobotNode(Node):
         self.can_manager = CAN_Manager()
         self.can_manager.check_all_motors()
         self.can_manager.reset_all_motors()
-        self.motor = rmd_motor_can(motor_id=2, can_manager=self.can_manager)  
+        self.motor = rmd_motor_can(motor_id=1, can_manager=self.can_manager)  
+
+        self.encoder = AS5X47()
 
         self.LPF_vel = LPF(0.5)
 
@@ -83,6 +87,8 @@ class RobotNode(Node):
         
         self.all_connection_msg         = [0,0,0,0,0,0,0,0]
         self.all_temperature_msg        = [0,0,0,0]
+
+        self.position_enc               = 0.0
         
     # =========================================================================================================
     #                                               ROS Loop
@@ -121,13 +127,13 @@ class RobotNode(Node):
         self.motor.set_desired_position_radian(pos_des)
         self.motor.set_desired_velocity_radian_per_second(vel_des)
 
-        # self.motor.set_desired_stiffness(1)
-        # self.motor.set_desired_damping(0.2)
-        # self.motor.set_desired_torque(0)
+        self.motor.set_desired_stiffness(1)
+        self.motor.set_desired_damping(0.2)
+        self.motor.set_desired_torque(0)
 
-        self.motor.set_desired_stiffness(self.muscle.get_stiffness())
-        self.motor.set_desired_damping(self.muscle.get_damping())
-        self.motor.set_desired_torque(self.muscle.get_feedforward_force())
+        # self.motor.set_desired_stiffness(self.muscle.get_stiffness())
+        # self.motor.set_desired_damping(self.muscle.get_damping())
+        # self.motor.set_desired_torque(self.muscle.get_feedforward_force())
 
         # Direct torque control (No limit stiffness and damping)
         # self.motor.set_desired_torque(np.sign(self.motor.feedback_velocity)*0.2)  # Add friction compensation
@@ -137,7 +143,9 @@ class RobotNode(Node):
 
         # ======================= Send motor command ======================= #
         self.motor.update()
-        # =========================== Publish messages ===========================
+        # ======================= Read feedbacks ======================= #
+        self.position_enc  = np.deg2rad(self.encoder.read_angle())
+        # =========================== Publish messages =========================== #
         msg = Float32MultiArray()
         msg.data = [pos_des]
         # msg.data = [self.motor.desired_position]
@@ -175,6 +183,9 @@ class RobotNode(Node):
 
         msg.data = [self.muscle.F]
         self.robot_joint_tff_des.publish(msg)
+
+        msg.data = [self.position_enc]
+        self.joint_enc_pos_fb.publish(msg)
 
 
         if self.motor.error_state:
