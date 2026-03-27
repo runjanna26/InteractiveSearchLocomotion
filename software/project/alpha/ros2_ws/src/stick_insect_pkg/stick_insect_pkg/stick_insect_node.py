@@ -12,7 +12,6 @@ import time
 from itertools import product
 
 
-
 from include.cpg_rbf.cpg_so2 import CPG_SO2
 from include.cpg_rbf.rbf import RBF
 from include.cpg_rbf.cpg_so2 import CPG_LOCO
@@ -118,7 +117,7 @@ class StickInsectNode(Node):
     # =============== Joy Stick ====================
     def Joy_set(self, msg):
         self.axes_js = msg.axes
-        self.btn_js = msg.buttons  
+        self.btn_js = msg.buttons
         # print(self.axes_js)
         # print(self.btn_js)
     # =============== Feedback ====================
