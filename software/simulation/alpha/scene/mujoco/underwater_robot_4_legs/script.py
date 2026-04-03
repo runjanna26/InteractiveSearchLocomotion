@@ -17,9 +17,9 @@ FOOT_NAMES = ['FOOT_FR', 'FOOT_BR', 'FOOT_FL', 'FOOT_BL']
 JOINT_GROUPS = ['FR', 'BR', 'FL', 'BL']
 NUM_JOINTS_PER_GROUP = 4
 
-START_TIME = 5.0
-EXECUTE_CONTROL_TIME = 7.0
-END_TIME = 300.0
+START_TIME = 1.0
+EXECUTE_CONTROL_TIME = 2.0
+END_TIME = 10000.0
 
 
 # ======================================================
@@ -50,9 +50,9 @@ def init_controllers(model):
         qvel_ids[name] = model.jnt_dofadr[joint_id]
 
         controllers[name] = MuscleModel(
-            _a=0.2,
-            _b=5.0,
-            _beta=0.0,
+            _a=0.2,         # 0.2 too bounce
+            _b=50.0,         # 5.0 too bounce
+            _beta=0.05,
             _init_pos=0.0
         )
 
@@ -172,7 +172,7 @@ def main(args=None):
     with mujoco.viewer.launch_passive(model, data) as viewer:
         start_time = time.time()
 
-        viewer.cam.lookat[:] = [-2.0, 0.0, 2.0] # Look at specific point (X, Y, Z)
+        viewer.cam.lookat[:] = [2.0, 0.0, 2.0] # Look at specific point (X, Y, Z)
         viewer.cam.distance = 5.0               # Distance (Zoom)
         viewer.cam.azimuth = 45   # 45 degrees Angle (Azimuth = Left/Right, Elevation = Up/Down)
         viewer.cam.elevation = -30 # Look down by 30 degrees
@@ -203,7 +203,7 @@ def main(args=None):
                 joint_damping_power_fb.append(ctrl.get_power_damping())
                 joint_names.append(name)
             # print(joint_names)
-
+            # print(joint_torque_feedforward_fb[0])
                 
             if elapsed > START_TIME:
                 # --- FEEDBACK ---
@@ -239,6 +239,12 @@ def main(args=None):
 
             with viewer.lock():
                 viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = True
+                viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = True
+                viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
+                viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_INERTIA] = True
+
+                
+
 
             # --- REALTIME SYNC ---
             sleep_time = model.opt.timestep - (time.time() - step_start)

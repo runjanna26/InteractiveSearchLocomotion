@@ -10,9 +10,9 @@ class Hydrodynamics:
         
         # DRAG COEFFICIENTS
         # Cylinder moving sideways (flat against flow)
-        self.Cd_side = 1.2 # <--- INCREASE this to make it "thicker"
+        self.Cd_side = 2 # <--- INCREASE this to make it "thicker" 1.2
         # Cylinder moving end-on (like a needle)
-        self.Cd_end = 0.8  # <--- INCREASE this to make it "thicker"
+        self.Cd_end = 2  # <--- INCREASE this to make it "thicker" 0.8
         
         
         # Pre-calculate Body Properties
@@ -75,7 +75,7 @@ class Hydrodynamics:
             if z_pos >= self.water_level:
                 continue
                 
-            self.model.opt.viscosity = 0.089
+            self.model.opt.viscosity = 0.0089  # 0.89
             props = self.body_props[i]
             
             # Calculate partial submersion (simple linear fade)

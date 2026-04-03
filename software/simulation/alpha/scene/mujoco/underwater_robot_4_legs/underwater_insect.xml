@@ -2,8 +2,14 @@
 <mujoco>
     <compiler meshdir="asset" texturedir="asset" />
     <statistic extent="1.5" meansize=".05" />
-    <option timestep="0.005"  integrator="implicitfast"/>
-    <option density="1000.0" viscosity="5.0" />
+
+
+    <!-- <option timestep="0.005"  integrator="implicitfast"/> -->
+    <option timestep="0.005" integrator="implicit"/>
+
+    <!-- <option density="1000.0" viscosity="5.0" /> -->
+    <!-- <option viscosity="5.0" /> -->
+
 
     <visual>
         <quality shadowsize="4096" />
@@ -49,31 +55,33 @@
     <worldbody>
 
         <!-- Underwater Insect Robot -->
-        <!-- -2 0 1.5 : water--> 
-        <!-- 15 0 1.5 : ground-->
+        <!-- -2 0 0.5 : water--> 
+        <!-- 15 0 2.5 : ground-->
 
-        <body name="underwater_insect" pos="-2 0 0.5" quat="0.7071 0 0 0.707165">  
-            <freejoint name="space" /> q
-            <inertial pos="0 -0.3 0" mass="1.5" diaginertia="0.01521 0.01521 9.453e-05" />
+        <body name="underwater_insect" pos="-2.5 0 2" quat="0.7071 0 0 0.707165">  
+            <freejoint name="space" />
+            <inertial pos="0 -0.1 0.2" mass="10.0" diaginertia="0.01521 0.01521 9.453e-05" />
             <geom quat="-0.707108 0.707105 0 2.44949e-07" type="mesh" mesh="underwater_insect_robot_base_coll_1" contype="1" conaffinity="1"/>
             
+            <!-- Leg 1 High Front leg: 0.140684 -0.026921 0.339098-->
+            <!-- Leg 1 Low Front leg: 0.140684 -0.026921 0.223809-->
             <body name="FR_L1" pos="0.140684 -0.026921 0.339098" quat="0.707103 -0.00241547 -0.00241572 -0.707103">
                 <inertial pos="0.000123 0.068716 -0.038767" quat="0.499117 0.500952 -0.502851 0.497062" mass="0.431618" diaginertia="0.000458537 0.000422628 0.00025388" />
-                <joint name="FR_J1" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                <joint name="FR_J1" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                 <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FR_L1_coll_1" contype="0" conaffinity="0"/>
                 <body name="FR_L2" pos="0 0.113998 -0.039" quat="0.5 0.5 -0.5 0.5">
                     <inertial pos="0.000323 0.001645 -0.052271" quat="0.701208 -0.0295292 -0.0254289 0.71189" mass="0.374899" diaginertia="0.000281472 0.000222081 0.00020913" />
-                    <joint name="FR_J2" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                    <joint name="FR_J2" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                     <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FR_L2_coll_1" contype="0" conaffinity="0"/>
                     <body name="FR_L3" pos="0 0.039 -0.061002" quat="0.5 0.5 0.5 -0.5">
                         <inertial pos="0.045 0 0.03774" quat="0 -0.707107 2.44949e-07 -0.707107" mass="0.159476" diaginertia="0.000309795 0.000273197 4.09354e-05" />
-                        <joint name="FR_J3" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                        <joint name="FR_J3" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FR_L3_coll_1" contype="0" conaffinity="0"/>
                         <body name="FR_L4" pos="0.09 0 0.0005" quat="0.707107 0 -2.44949e-07 0.707106">
                             <inertial pos="0.000717535 -0.0330022 0.037096" quat="0.502157 0.497867 -0.499283 0.500683" mass="0.46319" diaginertia="0.000933369 0.000893362 0.000229344" />
-                            <joint name="FR_J4" pos="0 0 0" axis="0 0 1"  damping="1.0"/>
+                            <joint name="FR_J4" pos="0 0 0" axis="0 0 1"  damping="7.0"/>
                             <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FR_L4_coll_1" contype="0" conaffinity="0"/>
-                            <geom name="FOOT_FR" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_FR_FOOT_coll_1" />
+                            <geom name="FOOT_FR" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_FR_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
                         </body>
                     </body>
                 </body>
@@ -81,43 +89,45 @@
             
             <body name="BR_L1" pos="0.140684 -0.277715 0.223809" quat="0.707103 -0.00241547 -0.00241572 -0.707103">
                 <inertial pos="0.000123 0.068716 -0.038767" quat="0.499117 0.500952 -0.502851 0.497062" mass="0.431618" diaginertia="0.000458537 0.000422628 0.00025388" />
-                <joint name="BR_J1" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                <joint name="BR_J1" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                 <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BR_L1_coll_1" contype="0" conaffinity="0"/>
                 <body name="BR_L2" pos="0 0.113998 -0.039" quat="0.5 0.5 -0.5 0.5">
                     <inertial pos="0.000323 0.001645 -0.052271" quat="0.701208 -0.0295292 -0.0254289 0.71189" mass="0.374899" diaginertia="0.000281472 0.000222081 0.00020913" />
-                    <joint name="BR_J2" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                    <joint name="BR_J2" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                     <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BR_L2_coll_1" contype="0" conaffinity="0"/>
                     <body name="BR_L3" pos="0 0.039 -0.061002" quat="0.5 0.5 0.5 -0.5">
                         <inertial pos="0.045 0 0.03774" quat="-2.44949e-07 0.707107 0 0.707107" mass="0.159476" diaginertia="0.000309795 0.000273197 4.09354e-05" />
-                        <joint name="BR_J3" pos="0 0 0" axis="0 0 1"  damping="1.0"/>
+                        <joint name="BR_J3" pos="0 0 0" axis="0 0 1"  damping="7.0"/>
                         <geom quat="0.707107 -0.707107 -2.44949e-07 0" type="mesh" mesh="underwater_insect_BR_L3_coll_1" contype="0" conaffinity="0"/>
                         <body name="BR_L4" pos="0.09 0 0.0005" quat="0.707107 0 -2.44949e-07 0.707106">
                             <inertial pos="0.000717535 -0.0330022 0.037096" quat="0.502157 0.497867 -0.499283 0.500682" mass="0.46319" diaginertia="0.000933369 0.000893362 0.000229344" />
-                            <joint name="BR_J4" pos="0 0 0" axis="0 0 1"  damping="1.0"/>
+                            <joint name="BR_J4" pos="0 0 0" axis="0 0 1"  damping="7.0"/>
                             <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BR_L4_coll_1" contype="0" conaffinity="0"/>
-                            <geom name="FOOT_BR" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_BR_FOOT_coll_1" />
+                            <geom name="FOOT_BR" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_BR_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
                         </body>
                     </body>
                 </body>
             </body>
             
+            <!-- Leg 1 High Front leg:-0.129316 -0.026921 0.339098-->
+            <!-- Leg 1 Low Front leg: -0.129316 -0.026921 0.223809-->
             <body name="FL_L1" pos="-0.129316 -0.026921 0.339098" quat="0.707103 -0.00241583 0.00241558 0.707103">
                 <inertial pos="0.000123 0.068716 -0.038767" quat="0.499117 0.500952 -0.502851 0.497062" mass="0.431618" diaginertia="0.000458537 0.000422628 0.00025388" />
-                <joint name="FL_J1" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                <joint name="FL_J1" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                 <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FL_L1_coll_1" contype="0" conaffinity="0"/>
                 <body name="FL_L2" pos="0 0.113998 -0.039" quat="0.5 0.5 -0.5 0.5">
                     <inertial pos="0.000323 0.001645 -0.052271" quat="0.701208 -0.0295292 -0.0254289 0.71189" mass="0.374899" diaginertia="0.000281472 0.000222081 0.00020913" />
-                    <joint name="FL_J2" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                    <joint name="FL_J2" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                     <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FL_L2_coll_1" contype="0" conaffinity="0"/>
                     <body name="FL_L3" pos="0 0.039 -0.061002" quat="0.5 0.5 0.5 -0.5">
                         <inertial pos="0.045 0 0.03774" quat="2.44949e-07 0.707107 0 0.707107" mass="0.159476" diaginertia="0.000309795 0.000273197 4.09354e-05" />
-                        <joint name="FL_J3" pos="0 0 0" axis="0 0 1"  damping="1.0"/>
+                        <joint name="FL_J3" pos="0 0 0" axis="0 0 1"  damping="7.0"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FL_L3_coll_1" contype="0" conaffinity="0"/>
                         <body name="FL_L4" pos="0.09 0 0.0005" quat="0.707107 0 -2.44949e-07 0.707106">
                             <inertial pos="0.000717535 -0.0330022 0.037096" quat="0.502157 0.497867 -0.499283 0.500683" mass="0.46319" diaginertia="0.000933369 0.000893362 0.000229344" />
-                            <joint name="FL_J4" pos="0 0 0" axis="0 0 1"  damping="1.0"/>
+                            <joint name="FL_J4" pos="0 0 0" axis="0 0 1"  damping="7.0"/>
                             <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FL_L4_coll_1" contype="0" conaffinity="0"/>
-                            <geom name="FOOT_FL" pos="0 -0.2475 0.0385" quat="1.22475e-07 -0.707107 -1.22475e-07 0.707107" type="mesh" mesh="underwater_insect_FL_FOOT_coll_1" />
+                            <geom name="FOOT_FL" pos="0 -0.2475 0.0385" quat="1.22475e-07 -0.707107 -1.22475e-07 0.707107" type="mesh" mesh="underwater_insect_FL_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
                         </body>
                     </body>
                 </body>
@@ -125,21 +135,21 @@
             
             <body name="BL_L1" pos="-0.129316 -0.277715 0.223809" quat="0.707103 -0.00241583 0.00241558 0.707103">
                 <inertial pos="0.000123 0.068716 -0.038767" quat="0.499117 0.500952 -0.502851 0.497062" mass="0.431618" diaginertia="0.000458537 0.000422628 0.00025388" />
-                <joint name="BL_J1" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                <joint name="BL_J1" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                 <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BL_L1_coll_1" contype="0" conaffinity="0"/>
                 <body name="BL_L2" pos="0 0.113998 -0.039" quat="0.5 0.5 -0.5 0.5">
                     <inertial pos="0.000323 0.001645 -0.052271" quat="0.701208 -0.0295292 -0.0254289 0.71189" mass="0.374899" diaginertia="0.000281472 0.000222081 0.00020913" />
-                    <joint name="BL_J2" pos="0 0 0" axis="0 0 1" damping="1.0"/>
+                    <joint name="BL_J2" pos="0 0 0" axis="0 0 1" damping="7.0"/>
                     <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BL_L2_coll_1" contype="0" conaffinity="0"/>
                     <body name="BL_L3" pos="0 0.039 -0.061002" quat="0.5 0.5 0.5 -0.5">
                         <inertial pos="0.045 0 0.03774" quat="0 -0.707107 -2.44949e-07 -0.707107" mass="0.159476" diaginertia="0.000309795 0.000273197 4.09354e-05" />
-                        <joint name="BL_J3" pos="0 0 0" axis="0 0 1"  damping="1.0"/>
+                        <joint name="BL_J3" pos="0 0 0" axis="0 0 1"  damping="7.0"/>
                         <geom quat="0.707107 -0.707107 -2.44949e-07 0" type="mesh" mesh="underwater_insect_BL_L3_coll_1" contype="0" conaffinity="0"/>
                         <body name="BL_L4" pos="0.09 0 0.0005" quat="-0.707107 -2.44949e-07 0 -0.707106">
                             <inertial pos="0.000717535 -0.0330022 0.037096" quat="0.710375 0.703821 -0.00134745 -0.00136041" mass="0.46319" diaginertia="0.000893364 0.000770436 0.000392275" />
-                            <joint name="BL_J4" pos="0 0 0" axis="0 0 1"  damping="1.0"/>
+                            <joint name="BL_J4" pos="0 0 0" axis="0 0 1"  damping="7.0"/>
                             <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BL_L4_coll_1" contype="0" conaffinity="0"/>
-                            <geom name="FOOT_BL" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_BL_FOOT_coll_1" />
+                            <geom name="FOOT_BL" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_BL_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
                         </body>
                     </body>
                 </body>
@@ -149,53 +159,53 @@
 
 
         <!-- Water Space -->
-        <geom name="water_space" type="box" size="4 4 1" pos="-2 -2 0.0" rgba="0 0.5 1 0.1" conaffinity="0" contype="0"/>
+        <geom name="water_space" type="box" size="20 20 1" pos="-2 0 0.0" rgba="0 0.5 1 0.1" conaffinity="0" contype="0"/>
 
         <!-- Environment Ground -->
+        <geom name="ground_1" type="box" size="2 6 1" pos="4 0 0.5" quat="1 0 0 0" material="matplane" condim="3"   friction="2.5 0.0005 0.0001" solref="0.02 1" solimp="0.9 0.99 0.001"/>
+        <!-- <geom name="ground_3" type="box" size="2 2 1" pos="0 4 0.5" quat="1 0 0 0" material="matplane" condim="3"   friction="2.5 0.0005 0.0001" solref="0.02 1" solimp="0.9 0.99 0.001"/> -->
+        <!-- <geom name="ground_5" type="box" size="2 2 1" pos="4 4 0.5" quat="1 0 0 0" material="matplane" condim="3"   friction="2.5 0.0005 0.0001" solref="0.02 1" solimp="0.9 0.99 0.001"/> -->
+        <!-- <geom name="ground_6" type="box" size="2 2 1" pos="-4 4 0.5" quat="1 0 0 0" material="matplane" condim="3"  friction="2.5 0.0005 0.0001" solref="0.02 1" solimp="0.9 0.99 0.001"/> -->
+        <!-- <geom name="ground_7" type="box" size="2 2 1" pos="4 -4 0.5" quat="1 0 0 0" material="matplane" condim="3"  friction="2.5 0.0005 0.0001" solref="0.02 1" solimp="0.9 0.99 0.001"/> -->
+        <geom name="ground_9" type="box" size="2 6 1" pos="8 0 0.5" quat="1 0 0 0" material="matplane" condim="3"   friction="2.5 0.0005 0.0001" solref="0.02 1" solimp="0.9 0.99 0.001"/>   
+        <geom name="ground_10" type="box" size="2 6 1" pos="12 0 0.5" quat="1 0 0 0" material="matplane" condim="3" friction="2.5 0.0005 0.0001" solref="0.02 1" solimp="0.9 0.99 0.001"/>  
+        <geom name="ground_11" type="box" size="2 6 1" pos="16 0 0.5" quat="1 0 0 0" material="matplane" condim="3" friction="2.5 0.0005 0.0001" solref="0.02 1" solimp="0.9 0.99 0.001"/>  
+
+        <geom name="ground" type="plane" size="0 0 1" pos="0 0 -5" quat="1 0 0 0" condim="1" friction="1.5 0.005 0.0001" rgba="1 1 1 1"/>
+
+        <geom name="ramp" type="box" size="3.0 6.0 0.1" pos="-0.85 0 0.628" euler="0 -15 0" rgba="0.6 0.4 0.2 1" friction="2.5 0.05 0.0001"/>
+
         <!-- <geom name="ground_0" type="box" size="2 2 0.05" pos="0 0 1.1" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001" contype="1"/> -->
-
-        <geom name="ground_1" type="box" size="2 2 1" pos="4 0 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001" contype="1"/>
         <!-- <geom name="ground_2" type="box" size="2 2 1" pos="-4 0 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/> -->
-        <geom name="ground_3" type="box" size="2 2 1" pos="0 4 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/>
         <!-- <geom name="ground_4" type="box" size="2 2 1" pos="0 -4 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/> -->
-
-        <geom name="ground_5" type="box" size="2 2 1" pos="4 4 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/>
-        <geom name="ground_6" type="box" size="2 2 1" pos="-4 4 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/>
-        <geom name="ground_7" type="box" size="2 2 1" pos="4 -4 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/>
         <!-- <geom name="ground_8" type="box" size="2 2 1" pos="-4 -4 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/> -->
-        <geom name="ground_9" type="box" size="2 2 1" pos="8 0 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/>   
-        <geom name="ground_10" type="box" size="2 2 1" pos="12 0 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/>  
-        <geom name="ground_11" type="box" size="2 2 1" pos="16 0 0.5" quat="1 0 0 0" material="matplane" condim="1" friction="1.5 0.005 0.0001"/>  
 
-        <geom name="ground" type="plane" size="0 0 1" pos="0 0 0" quat="1 0 0 0" condim="1" friction="1.5 0.005 0.0001" rgba="1 1 1 1"/>
-
-        <geom name="ramp" type="box" size="3.0 1.0 0.1" pos="1.5 0 1.265" euler="0 -15 0" rgba="0.6 0.4 0.2 1" friction="1.5 0.005 0.0001"/>
 
         <!-- Light settings -->
-        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="true" />
-        <light directional="true" diffuse="1 1 1" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" />    
+        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 5.0" dir="0 0 -1" castshadow="false"/>
+        <light directional="true" diffuse="1 1 1" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" castshadow="false"/>    
 
     </worldbody>
 
     <actuator>
-        <motor name="FR_J1" joint="FR_J1" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="FR_J2" joint="FR_J2" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="FR_J3" joint="FR_J3" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="FR_J4" joint="FR_J4" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FR_J1" joint="FR_J1" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FR_J2" joint="FR_J2" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FR_J3" joint="FR_J3" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FR_J4" joint="FR_J4" ctrllimited="true" ctrlrange="-20 20"/>
 
-        <motor name="BR_J1" joint="BR_J1" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="BR_J2" joint="BR_J2" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="BR_J3" joint="BR_J3" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="BR_J4" joint="BR_J4" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="BR_J1" joint="BR_J1" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BR_J2" joint="BR_J2" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BR_J3" joint="BR_J3" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BR_J4" joint="BR_J4" ctrllimited="true" ctrlrange="-20 20"/>
 
-        <motor name="FL_J1" joint="FL_J1" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="FL_J2" joint="FL_J2" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="FL_J3" joint="FL_J3" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="FL_J4" joint="FL_J4" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="FL_J1" joint="FL_J1" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FL_J2" joint="FL_J2" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FL_J3" joint="FL_J3" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FL_J4" joint="FL_J4" ctrllimited="true" ctrlrange="-20 20"/>
 
-        <motor name="BL_J1" joint="BL_J1" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="BL_J2" joint="BL_J2" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="BL_J3" joint="BL_J3" ctrllimited="true" ctrlrange="-10 10"/>
-        <motor name="BL_J4" joint="BL_J4" ctrllimited="true" ctrlrange="-10 10"/>
+        <motor name="BL_J1" joint="BL_J1" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BL_J2" joint="BL_J2" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BL_J3" joint="BL_J3" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BL_J4" joint="BL_J4" ctrllimited="true" ctrlrange="-20 20"/>
     </actuator>
 </mujoco>
