@@ -20,7 +20,7 @@ NUM_JOINTS_PER_GROUP = 3
 
 START_TIME = 5.0
 EXECUTE_CONTROL_TIME = 7.0
-END_TIME = 30.0
+END_TIME = 300.0
 
 
 # ======================================================
@@ -174,7 +174,7 @@ def main(args=None):
     with mujoco.viewer.launch_passive(model, data) as viewer:
         start_time = time.time()
 
-        viewer.cam.lookat[:] = [16.0, 0.0, 2.0] # Look at specific point (X, Y, Z)
+        viewer.cam.lookat[:] = [-2.0, 0.0, 2.0] # Look at specific point (X, Y, Z)
         viewer.cam.distance = 5.0               # Distance (Zoom)
         viewer.cam.azimuth = 45   # 45 degrees Angle (Azimuth = Left/Right, Elevation = Up/Down)
         viewer.cam.elevation = -30 # Look down by 30 degrees

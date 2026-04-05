@@ -1,0 +1,37 @@
+[1.555s] Invoking command in '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/src/online_adaptive_impedance_control_pkg': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/online_adaptive_impedance_control_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/online_adaptive_impedance_control_pkg/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/online_adaptive_impedance_control_pkg build --build-base /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/online_adaptive_impedance_control_pkg/build install --record /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/online_adaptive_impedance_control_pkg/install.log --install-scripts $base/lib/online_adaptive_impedance_control_pkg --single-version-externally-managed install_data
+[1.747s] /usr/lib/python3/dist-packages/setuptools/dist.py:744: SetuptoolsDeprecationWarning: Invalid dash-separated options
+[1.747s] !!
+[1.747s] 
+[1.747s]         ********************************************************************************
+[1.747s]         Usage of dash-separated 'script-dir' will not be supported in future
+[1.747s]         versions. Please use the underscore name 'script_dir' instead.
+[1.747s] 
+[1.747s]         This deprecation is overdue, please update your project and remove deprecated
+[1.747s]         calls to avoid build errors in the future.
+[1.748s] 
+[1.748s]         See https://setuptools.pypa.io/en/latest/userguide/declarative_config.html for details.
+[1.748s]         ********************************************************************************
+[1.748s] 
+[1.748s] !!
+[1.748s]   opt = self.warn_dash_deprecation(opt, section)
+[1.888s] running egg_info
+[1.907s] writing ../../build/online_adaptive_impedance_control_pkg/online_adaptive_impedance_control_pkg.egg-info/PKG-INFO
+[1.911s] writing dependency_links to ../../build/online_adaptive_impedance_control_pkg/online_adaptive_impedance_control_pkg.egg-info/dependency_links.txt
+[1.911s] writing entry points to ../../build/online_adaptive_impedance_control_pkg/online_adaptive_impedance_control_pkg.egg-info/entry_points.txt
+[1.911s] writing requirements to ../../build/online_adaptive_impedance_control_pkg/online_adaptive_impedance_control_pkg.egg-info/requires.txt
+[1.911s] writing top-level names to ../../build/online_adaptive_impedance_control_pkg/online_adaptive_impedance_control_pkg.egg-info/top_level.txt
+[1.952s] reading manifest file '../../build/online_adaptive_impedance_control_pkg/online_adaptive_impedance_control_pkg.egg-info/SOURCES.txt'
+[1.953s] writing manifest file '../../build/online_adaptive_impedance_control_pkg/online_adaptive_impedance_control_pkg.egg-info/SOURCES.txt'
+[1.953s] running build
+[1.953s] running build_py
+[1.954s] running install
+[1.964s] running install_lib
+[1.985s] running install_data
+[1.985s] running install_egg_info
+[2.008s] removing '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/online_adaptive_impedance_control_pkg/lib/python3.12/site-packages/online_adaptive_impedance_control_pkg-0.0.0-py3.12.egg-info' (and everything under it)
+[2.012s] Copying ../../build/online_adaptive_impedance_control_pkg/online_adaptive_impedance_control_pkg.egg-info to /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/online_adaptive_impedance_control_pkg/lib/python3.12/site-packages/online_adaptive_impedance_control_pkg-0.0.0-py3.12.egg-info
+[2.013s] running install_scripts
+[2.200s] Installing muscle_learning_node script to /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/online_adaptive_impedance_control_pkg/lib/online_adaptive_impedance_control_pkg
+[2.201s] Installing online_adaptive_impedance_control_node script to /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/online_adaptive_impedance_control_pkg/lib/online_adaptive_impedance_control_pkg
+[2.202s] writing list of installed files to '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/online_adaptive_impedance_control_pkg/install.log'
+[2.321s] Invoked command in '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/src/online_adaptive_impedance_control_pkg' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/online_adaptive_impedance_control_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/online_adaptive_impedance_control_pkg/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/online_adaptive_impedance_control_pkg build --build-base /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/online_adaptive_impedance_control_pkg/build install --record /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/online_adaptive_impedance_control_pkg/install.log --install-scripts $base/lib/online_adaptive_impedance_control_pkg --single-version-externally-managed install_data

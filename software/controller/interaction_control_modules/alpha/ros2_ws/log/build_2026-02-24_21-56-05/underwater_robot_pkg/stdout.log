@@ -1,0 +1,51 @@
+running egg_info
+creating ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info
+writing ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/PKG-INFO
+writing dependency_links to ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/dependency_links.txt
+writing entry points to ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/entry_points.txt
+writing requirements to ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/requires.txt
+writing top-level names to ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/top_level.txt
+writing manifest file '../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/SOURCES.txt'
+reading manifest file '../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file '../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build
+creating /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib
+creating /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg
+copying underwater_robot_pkg/can_manager.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg
+copying underwater_robot_pkg/muscle_model_new.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg
+copying underwater_robot_pkg/lowpass_filter.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg
+copying underwater_robot_pkg/__init__.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg
+copying underwater_robot_pkg/muscle_model.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg
+copying underwater_robot_pkg/rmd_motor_can.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg
+copying underwater_robot_pkg/underwater_robot_node.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg
+running install
+running install_lib
+creating /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg
+copying /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg/can_manager.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg
+copying /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg/muscle_model_new.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg
+copying /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg/lowpass_filter.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg
+copying /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg/__init__.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg
+copying /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg/muscle_model.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg
+copying /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg/rmd_motor_can.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg
+copying /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/build/lib/underwater_robot_pkg/underwater_robot_node.py -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg
+byte-compiling /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg/can_manager.py to can_manager.cpython-312.pyc
+byte-compiling /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg/muscle_model_new.py to muscle_model_new.cpython-312.pyc
+byte-compiling /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg/lowpass_filter.py to lowpass_filter.cpython-312.pyc
+byte-compiling /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg/__init__.py to __init__.cpython-312.pyc
+byte-compiling /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg/muscle_model.py to muscle_model.cpython-312.pyc
+byte-compiling /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg/rmd_motor_can.py to rmd_motor_can.cpython-312.pyc
+byte-compiling /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg/underwater_robot_node.py to underwater_robot_node.cpython-312.pyc
+running install_data
+creating /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/share/ament_index
+creating /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/share/ament_index/resource_index
+creating /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/share/ament_index/resource_index/packages
+copying resource/underwater_robot_pkg -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/share/ament_index/resource_index/packages
+copying package.xml -> /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/share/underwater_robot_pkg
+running install_egg_info
+Copying ../../build/underwater_robot_pkg/underwater_robot_pkg.egg-info to /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/python3.12/site-packages/underwater_robot_pkg-0.0.0-py3.12.egg-info
+running install_scripts
+Installing underwater_robot_node script to /home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/install/underwater_robot_pkg/lib/underwater_robot_pkg
+writing list of installed files to '/home/underwater_robot/BRAIN/InteractiveSearchLocomotion/software/controller/interaction_control_modules/alpha/ros2_ws/build/underwater_robot_pkg/install.log'

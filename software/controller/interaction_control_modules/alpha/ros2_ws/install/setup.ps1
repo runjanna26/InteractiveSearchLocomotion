@@ -22,11 +22,7 @@ function _colcon_prefix_chain_powershell_source_script {
 }
 
 # source chained prefixes
-_colcon_prefix_chain_powershell_source_script "/opt/ros/humble\local_setup.ps1"
-_colcon_prefix_chain_powershell_source_script "/home/runj/BRAIN/microros_ws/install\local_setup.ps1"
-_colcon_prefix_chain_powershell_source_script "/home/runj/BRAIN/ros2bag_to_csv/ros2_ws/install\local_setup.ps1"
-_colcon_prefix_chain_powershell_source_script "/home/runj/BRAIN/REFINE/REFINE_II_REMOVE/software/project/alpha/ros2_ws/install\local_setup.ps1"
-_colcon_prefix_chain_powershell_source_script "/home/runj/BRAIN/HERO2/software/projects/hero2_alpha/ros2_ws/install\local_setup.ps1"
+_colcon_prefix_chain_powershell_source_script "/opt/ros/jazzy\local_setup.ps1"
 
 # source this prefix
 $env:COLCON_CURRENT_PREFIX=(Split-Path $PSCommandPath -Parent)

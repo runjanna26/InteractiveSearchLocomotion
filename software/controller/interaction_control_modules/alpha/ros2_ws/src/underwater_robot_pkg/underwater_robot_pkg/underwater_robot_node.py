@@ -46,6 +46,8 @@ class RobotNode(Node):
 
         self.robot_joint_err_fb      = self.create_publisher(String, '/joint_error_feedback', best_effort_qos_prof)
 
+        self.joint_enc_pos_fb        = self.create_publisher(Float32MultiArray, '/joint_encoder_position_feedback', best_effort_qos_prof)
+
         self.debug_pub               = self.create_publisher(Float32MultiArray, 'debugging_output', best_effort_qos_prof)
 
 
@@ -54,14 +56,16 @@ class RobotNode(Node):
         self.can_manager = CAN_Manager()
         self.can_manager.check_all_motors()
         self.can_manager.reset_all_motors()
-        self.motor = rmd_motor_can(motor_id=0x01, can_manager=self.can_manager)  
+        self.motor = rmd_motor_can(motor_id=1, can_manager=self.can_manager)  
+
+        self.encoder = AS5X47()
 
         self.LPF_vel = LPF(0.5)
 
         self.init_pos           = 0.0
-        self.muscle = MuscleModel(_a            = 0.5,
-                                  _b            = 10.0,
-                                  _beta         = 1.5,             # made motor oscillation smaller after holding
+        self.muscle = MuscleModel(_a            = 1.0,
+                                  _b            = 20.0,
+                                  _beta         = 0.0,             # made motor oscillation smaller after holding
                                   _init_pos     = self.init_pos,
                                   number_motor = 1)
 
@@ -83,6 +87,8 @@ class RobotNode(Node):
         
         self.all_connection_msg         = [0,0,0,0,0,0,0,0]
         self.all_temperature_msg        = [0,0,0,0]
+
+        self.position_enc               = 0.0
         
     # =========================================================================================================
     #                                               ROS Loop
@@ -97,7 +103,7 @@ class RobotNode(Node):
 
         # Setup sinusoidal oscillation parameters 
         A_max = np.pi/3                                     # Amplitude (radians)
-        frequency = 1                                       # Frequency (Hz)
+        frequency = 0.5                                       # Frequency (Hz)
         ramp_time = 2                                       # Ramp time constant
         amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
         omega = 2 * np.pi * frequency    
@@ -137,7 +143,9 @@ class RobotNode(Node):
 
         # ======================= Send motor command ======================= #
         self.motor.update()
-        # =========================== Publish messages ===========================
+        # ======================= Read feedbacks ======================= #
+        self.position_enc  = np.deg2rad(self.encoder.read_angle())
+        # =========================== Publish messages =========================== #
         msg = Float32MultiArray()
         msg.data = [pos_des]
         # msg.data = [self.motor.desired_position]
@@ -175,6 +183,9 @@ class RobotNode(Node):
 
         msg.data = [self.muscle.F]
         self.robot_joint_tff_des.publish(msg)
+
+        msg.data = [self.position_enc]
+        self.joint_enc_pos_fb.publish(msg)
 
 
         if self.motor.error_state:
