@@ -13,11 +13,11 @@ from rclpy.qos import ReliabilityPolicy
 from sensor_msgs.msg import Joy, CompressedImage
 from std_msgs.msg import Float32MultiArray, UInt8MultiArray, String, Bool, Float32, UInt8
 
-from .can_manager import CAN_Manager
-from .rmd_motor_can import rmd_motor_can
+from underwater_robot_pkg.can_manager import CAN_Manager
+from underwater_robot_pkg.rmd_motor_can import rmd_motor_can
 
-from .lowpass_filter import LPF
-from .muscle_model import MuscleModel
+from underwater_robot_pkg.lowpass_filter import LPF
+from underwater_robot_pkg.muscle_model import MuscleModel
 # from .muscle_model_new import MuscleModel
 
 
@@ -102,11 +102,11 @@ class RobotNode(Node):
         amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
         omega = 2 * np.pi * frequency    
 
-        # pos_des = 0.0
-        # vel_des = 0.0
+        pos_des = - np.pi/4  #ID:1 offset -np.pi/4  ID:2 offset -np.pi/2 - np.pi/4 
+        vel_des = 0.0
 
-        pos_des = amplitude * np.sin(omega * t)
-        vel_des= amplitude * omega * np.cos(omega * t)
+        # pos_des = amplitude * np.sin(omega * t)
+        # vel_des= amplitude * omega * np.cos(omega * t)
         
 
 
@@ -121,13 +121,13 @@ class RobotNode(Node):
         self.motor.set_desired_position_radian(pos_des)
         self.motor.set_desired_velocity_radian_per_second(vel_des)
 
-        # self.motor.set_desired_stiffness(20)
-        # self.motor.set_desired_damping(5)
-        # self.motor.set_desired_torque(0)
+        self.motor.set_desired_stiffness(20)
+        self.motor.set_desired_damping(5)
+        self.motor.set_desired_torque(0)
 
-        self.motor.set_desired_stiffness(self.muscle.get_stiffness())
-        self.motor.set_desired_damping(self.muscle.get_damping())
-        self.motor.set_desired_torque(self.muscle.get_feedforward_force())
+        # self.motor.set_desired_stiffness(self.muscle.get_stiffness())
+        # self.motor.set_desired_damping(self.muscle.get_damping())
+        # self.motor.set_desired_torque(self.muscle.get_feedforward_force())
 
         # Direct torque control (No limit stiffness and damping)
         # self.motor.set_desired_torque(np.sign(self.motor.feedback_velocity)*0.2)  # Add friction compensation
