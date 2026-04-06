@@ -34,7 +34,7 @@ class MuscleModel:
             self.safe_dt = 1e-3 
             print(f"Warning: dt too small ({dt:.6f}s). Using safe_dt={self.safe_dt:.3f}s for velocity calculation.")
         
-        vel_des_raw= (self.pos_des - self.pos_des_prev) / self.safe_dt
+        vel_des_raw = (self.pos_des - self.pos_des_prev) / self.safe_dt
         self.vel_des = (self.alpha_vel * vel_des_raw) + ((1.0 - self.alpha_vel) * self.vel_des)
         # Adaptive Scalar Law
         adapt_scalar = self.gen_adapt_scalar()

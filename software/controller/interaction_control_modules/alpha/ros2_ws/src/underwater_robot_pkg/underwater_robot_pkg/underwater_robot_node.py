@@ -11,14 +11,14 @@ from rclpy.node import Node, QoSProfile
 from rclpy.qos import ReliabilityPolicy
 
 from sensor_msgs.msg import Joy, CompressedImage
-from underwater_robot_pkg.as5047 import AS5X47
+from as5047 import AS5X47
 from std_msgs.msg import Float32MultiArray, UInt8MultiArray, String, Bool, Float32, UInt8
 
 from underwater_robot_pkg.can_manager import CAN_Manager
-from underwater_robot_pkg.rmd_motor_can import rmd_motor_can
+from rmd_motor_can import rmd_motor_can
 
-from underwater_robot_pkg.lowpass_filter import LPF
-from underwater_robot_pkg.muscle_model import MuscleModel
+from lowpass_filter import LPF
+from muscle_model import MuscleModel
 # from .muscle_model_new import MuscleModel
 
 
@@ -54,28 +54,28 @@ class RobotNode(Node):
 
         self.get_logger().info('Starting motor control...')
 
+
         self.can_manager = CAN_Manager()
         self.can_manager.check_all_motors()
         self.can_manager.reset_all_motors()
         
         self.motor_ids = [0x02, 0x01]  # List of motor IDs to initialize
         self.motors = []
+        self.muscles = []
+        self.init_pos           = [- np.pi/2 - np.pi/4, - np.pi/4]
+        
         for motor_id in self.motor_ids:
             motor = rmd_motor_can(motor_id=motor_id, can_manager=self.can_manager)
             self.motors.append(motor)
-
-
+            muscle = MuscleModel(_a            = 1.0,
+                                 _b            = 20.0,
+                                 _beta         = 0.0,             # made motor oscillation smaller after holding
+                                 _init_pos     = self.init_pos[self.motors.index(motor)],
+                                 number_motor = 2)
+            self.muscles.append(muscle)
+            print(f'Motor {motor_id} initialized with position {self.init_pos[self.motors.index(motor)]} radians')
     
         # self.encoder = AS5X47()
-
-        self.LPF_vel = LPF(0.5)
-
-        self.init_pos           = [- np.pi/2 - np.pi/4, - np.pi/4]
-        # self.muscle = MuscleModel(_a            = 1.0,
-        #                           _b            = 20.0,
-        #                           _beta         = 0.0,             # made motor oscillation smaller after holding
-        #                           _init_pos     = self.init_pos,
-        #                           number_motor = 1)
 
 
         ros_node_freq = 1000 #Hz
@@ -116,47 +116,56 @@ class RobotNode(Node):
         amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
         omega = 2 * np.pi * frequency    
 
+        # # ------ Desired trajectories for position and velocity (sinusoidal) ------ #
         pos_des = [amplitude * np.sin(omega * t), 
                    amplitude * np.sin(omega * t + np.pi/4)]  # Desired position (radians)
         vel_des = [amplitude * omega * np.cos(omega * t),
                    amplitude * omega * np.cos(omega * t + np.pi/4)]  # Desired velocity (radians/second)
-
-        # pos_des = amplitude * np.sin(omega * t)
-        # vel_des= amplitude * omega * np.cos(omega * t)
+        # ------ Desired trajectories for position and velocity (zero) ------ #
+        # pos_des = [0, 0]
+        # vel_des = [0, 0]
         
 
-
         # ========================= Online Adaptive Impedance Control ========================= #
-        # self.muscle.calculate(pos_des = pos_des, 
-        #                       pos_fb  = self.motor.feedback_multi_turn_position,        # It has been minus init_pos in class
-        #                       vel_fb  = self.LPF_vel.filter(self.motor.feedback_velocity))               
-
+        self.muscles[0].calculate(pos_des = pos_des[0], 
+                                  pos_fb  = self.motors[0].feedback_multi_turn_position,        # It has been minus init_pos in class
+                                  vel_fb  = self.motors[0].feedback_velocity)               
+        self.muscles[1].calculate(pos_des = pos_des[1], 
+                                  pos_fb  = self.motors[1].feedback_multi_turn_position,        # It has been minus init_pos in class
+                                  vel_fb  = self.motors[1].feedback_velocity)      
 
         # ======================= Set motor command ======================= #
 
         self.motors[0].set_desired_position_radian(pos_des[0] + self.init_pos[0])  
         self.motors[0].set_desired_velocity_radian_per_second(vel_des[0])
 
-        self.motors[0].set_desired_stiffness(20)
-        self.motors[0].set_desired_damping(5)
-        self.motors[0].set_desired_torque(0)
-        
         self.motors[1].set_desired_position_radian(pos_des[1] + self.init_pos[1])
         self.motors[1].set_desired_velocity_radian_per_second(vel_des[1])
-
-        self.motors[1].set_desired_stiffness(20)
-        self.motors[1].set_desired_damping(5)
-        self.motors[1].set_desired_torque(0)
         
+        
+        # ---------- stiffness and damping are constants ---------- #
+        # self.motors[0].set_desired_stiffness(20)
+        # self.motors[0].set_desired_damping(5)
+        # self.motors[0].set_desired_torque(0)
+        
+        # self.motors[1].set_desired_stiffness(20)
+        # self.motors[1].set_desired_damping(5)
+        # self.motors[1].set_desired_torque(0)
+        
+        # ---------- stiffness, damping and feedforward torque are adaptive ---------- #
+        self.motors[0].set_desired_stiffness(self.muscles[0].get_stiffness())
+        self.motors[0].set_desired_damping(self.muscles[0].get_damping())
+        self.motors[0].set_desired_torque(self.muscles[0].get_feedforward_force())
 
-        # self.motors[0].set_desired_stiffness(self.muscle.get_stiffness())
-        # self.motors[0].set_desired_damping(self.muscle.get_damping())
-        # self.motors[0].set_desired_torque(self.muscle.get_feedforward_force())
+        self.motors[1].set_desired_stiffness(self.muscles[1].get_stiffness())
+        self.motors[1].set_desired_damping(self.muscles[1].get_damping())
+        self.motors[1].set_desired_torque(self.muscles[1].get_feedforward_force())
+
 
         # Direct torque control (No limit stiffness and damping)
         # self.motors[0].set_desired_torque(np.sign(self.motors[0].feedback_velocity)*0.2)  # Add friction compensation
-        # self.motors[0].set_desired_torque(self.muscle.tau + np.sign(self.motors[0].feedback_velocity)*0.2) 
-        # self.motors[0].set_desired_torque(self.muscle.tau) 
+        # self.motors[0].set_desired_torque(self.muscles[0].tau + np.sign(self.motors[0].feedback_velocity)*0.2) 
+        # self.motors[0].set_desired_torque(self.muscles[0].tau) 
 
 
         # ======================= Send motor command ======================= #
@@ -166,53 +175,53 @@ class RobotNode(Node):
         # self.position_enc  = np.deg2rad(self.encoder.read_angle())
         # =========================== Publish messages =========================== #
         msg = Float32MultiArray()
-        msg.data = [float(pos_des[0]), float(pos_des[1])]
-        # msg.data = [self.motors[0].desired_position]
+        msg.data = [float(muscle.pos_des) for muscle in self.muscles]
         self.robot_joint_pos_des.publish(msg)
 
-        # msg.data = [self.muscle.vel_des]
-        # self.robot_joint_vel_des.publish(msg)
+        msg.data = [float(muscle.vel_des) for muscle in self.muscles]
+        self.robot_joint_vel_des.publish(msg)
 
-        msg.data = [self.motors[0].feedback_multi_turn_position]
+        msg.data = [float(muscle.pos_fb - muscle.pos_init) for muscle in self.muscles]
         self.robot_joint_pos_fb.publish(msg)
 
-        msg.data = [self.motors[0].feedback_velocity]
+        msg.data = [float(muscle.vel_fb) for muscle in self.muscles]
         self.robot_joint_vel_fb.publish(msg)
 
-        msg.data = [self.motors[0].feedback_motor_torque]
+        msg.data = [float(motor.feedback_motor_torque) for motor in self.motors]
         self.robot_joint_tor_fb.publish(msg)
 
-        msg.data = [self.motors[0].feedback_temperature]
+        msg.data = [float(motor.feedback_temperature) for motor in self.motors]
         self.robot_joint_tem_fb.publish(msg)
 
-        msg.data = [self.motors[0].feedback_mosfet_temperature]
+        msg.data = [float(motor.feedback_mosfet_temperature) for motor in self.motors]
         self.robot_joint_mtem_fb.publish(msg)
 
-        msg.data = [self.motors[0].feedback_current]
+        msg.data = [float(motor.feedback_current) for motor in self.motors]
         self.robot_joint_cur_fb.publish(msg)
 
-        msg.data = [self.motors[0].feedback_voltage]
+        msg.data = [float(motor.feedback_voltage) for motor in self.motors]
         self.robot_joint_vol_fb.publish(msg)
 
-        # msg.data = [self.muscle.K]
-        # self.robot_joint_k_des.publish(msg)  
+        msg.data = [float(muscle.K) for muscle in self.muscles]
+        self.robot_joint_k_des.publish(msg)  
 
-        # msg.data = [self.muscle.D]
-        # self.robot_joint_d_des.publish(msg)  
+        msg.data = [float(muscle.D) for muscle in self.muscles]
+        self.robot_joint_d_des.publish(msg)  
 
-        # msg.data = [self.muscle.F]
-        # self.robot_joint_tff_des.publish(msg)
+        msg.data = [float(muscle.F) for muscle in self.muscles]
+        self.robot_joint_tff_des.publish(msg)
 
-        msg.data = [self.position_enc]
-        self.joint_enc_pos_fb.publish(msg)
+        # msg.data = [float(self.position_enc)]
+        # self.joint_enc_pos_fb.publish(msg)
 
+        for motor in self.motors:
+             if motor.error_state:
+                self.get_logger().info(f'Error: {motor.errors}')
+                str_msg = String()
+                str_msg.data = ', '.join(motor.errors)
+                self.robot_joint_err_fb.publish(str_msg)
+                
 
-        if self.motors[0].error_state:
-            self.get_logger().info(f'Error: {self.motors[0].errors}')
-
-            str_msg = String()
-            str_msg.data = ', '.join(self.motors[0].errors)
-            self.robot_joint_err_fb.publish(str_msg)
 
         # Debugging publisher
         self.debug_pub.publish(Float32MultiArray(data=[]))

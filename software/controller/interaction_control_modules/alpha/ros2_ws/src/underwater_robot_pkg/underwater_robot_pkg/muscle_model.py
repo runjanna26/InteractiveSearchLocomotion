@@ -95,10 +95,13 @@ class MuscleModel:
         self.F                  = 0.0
         self.tau                = 0.0
         
+        self.alpha_vel = 0.5
+        self.D_offset = 1.0
 
         self.timestamp_now      = 0.0 
         self.timestamp_prev     = 0.0
         self.timestamp_now = time.time() 
+        
 
         self.transient_flag = True
 
@@ -111,16 +114,25 @@ class MuscleModel:
         Ts = (self.timestamp_now - self.timestamp_prev) 
         if Ts <= 0 or Ts > 0.5:
             Ts = 1e-3
-        self.vel_des = (self.pos_des - self.pos_des_prev) / Ts
+        vel_des_raw = (self.pos_des - self.pos_des_prev) / Ts
+        # self.vel_des = (self.alpha_vel * vel_des_raw) + ((1.0 - self.alpha_vel) * self.vel_des)
+        self.vel_des = vel_des_raw
 
         # # Adaptive Impedance Control
-        self.F = self.gen_track_error() / self.gen_adapt_scalar()
+        adapt_scalar = self.gen_adapt_scalar()
+        if abs(adapt_scalar) < 1e-6: adapt_scalar = 1e-6
+        self.F = self.gen_track_error() / adapt_scalar
         self.K = self.F * self.gen_pos_error()
-        self.D = self.F * self.gen_vel_error()
+        self.D = self.F * self.gen_vel_error() + self.D_offset
 
+        # Default Impedance Control
         # self.F = 0.0
-        # self.K = 10.0
-        # self.D = 0.0
+        # self.K = 20.0
+        # self.D = 1.0
+        
+        
+
+        # print(self.gen_pos_error())
 
         self.tau = - (self.K * self.gen_pos_error() + self.D * self.gen_vel_error() + self.F)
 
