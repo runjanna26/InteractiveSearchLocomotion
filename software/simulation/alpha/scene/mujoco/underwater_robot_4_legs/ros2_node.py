@@ -16,6 +16,11 @@ class StickInsectNode(Node):
         self.joint_torque_ff_pub        = self.create_publisher( Float32MultiArray, '/diving_beetle/joint_torque_feedforward_fb', 1 )
         self.joint_torque_output_pub    = self.create_publisher( Float32MultiArray, '/diving_beetle/joint_torque_output_fb', 1 )
         self.joint_damping_power_pub   = self.create_publisher( Float32MultiArray, '/diving_beetle/joint_damping_power_fb', 1 )
+
+        self.leg_stiffness_pub        = self.create_publisher( Float32MultiArray, '/diving_beetle/leg_stiffness_fb', 1 )
+        self.leg_damping_pub          = self.create_publisher( Float32MultiArray, '/diving_beetle/leg_damping_fb', 1 )
+        self.leg_torque_ff_pub        = self.create_publisher( Float32MultiArray, '/diving_beetle/leg_torque_feedforward_fb', 1 )
+
         self.ros2_node_termiated_pub    = self.create_publisher( Bool, '/diving_beetle/terminated_cmd', 1 )
         self.ros2_node_started_pub      = self.create_publisher( Bool, '/diving_beetle/started_cmd', 1 )
         self.execute_control_pub        = self.create_publisher( Bool, '/diving_beetle/execute_control_cmd', 1 )
@@ -79,3 +84,16 @@ class StickInsectNode(Node):
         msg = Bool()
         msg.data = status
         self.execute_control_pub.publish(msg)
+
+    def publish_leg_stiffness(self, stiffnesses):
+        msg = Float32MultiArray()
+        msg.data = [float(s) for s in stiffnesses]
+        self.leg_stiffness_pub.publish(msg)
+    def publish_leg_damping(self, dampings):
+        msg = Float32MultiArray()
+        msg.data = [float(d) for d in dampings]
+        self.leg_damping_pub.publish(msg)
+    def publish_leg_torque_ff(self, torques):
+        msg = Float32MultiArray()
+        msg.data = [float(t) for t in torques]
+        self.leg_torque_ff_pub.publish(msg)

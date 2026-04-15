@@ -20,7 +20,7 @@ class MuscleModel:
         
         self.K, self.D, self.F = 0.0, 0.0, 0.0
         
-        self.alpha_vel = 0.1
+        self.alpha_vel = 0.8
         self.DE = 0.0
 
     def calculate(self, pos_des, pos_fb, vel_fb, dt):

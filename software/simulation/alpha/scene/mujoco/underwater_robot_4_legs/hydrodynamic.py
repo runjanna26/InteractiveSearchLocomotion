@@ -8,21 +8,27 @@ class Hydrodynamics:
         self.model = model
         self.gravity = abs(self.model.opt.gravity[2])
         
+        # Simulation parameters (tune these for more/less drag and buoyancy)
         # DRAG COEFFICIENTS
         # Cylinder moving sideways (flat against flow)
         self.Cd_side = 2 # <--- INCREASE this to make it "thicker" 1.2
         # Cylinder moving end-on (like a needle)
         self.Cd_end = 2  # <--- INCREASE this to make it "thicker" 0.8
         
-        
+        self.linear_drag_coeff = 150.0 
+        self.angular_drag_coeff = 20.0 # Tune this if it spins too much or too little
+
+        # Robot density to ensure robot floats (500 kg/m^3 = Light wood/plastic)
+        target_density = 950.0 
+        # target_density = 1800.0 
+
+
         # Pre-calculate Body Properties
         self.body_props = {}
         # Skip the world body (index 0)
         self.body_ids = [i for i in range(1, self.model.nbody)]
         
-        # Robot density to ensure robot floats (500 kg/m^3 = Light wood/plastic)
-        target_density = 990.0 
-        # target_density = 1800.0 
+
 
         for bid in self.body_ids:
             # 1. Get Mass
@@ -67,59 +73,60 @@ class Hydrodynamics:
 
     def apply(self, data):
         for i in self.body_ids:
-            # --- 1. CHECK SUBMERSION ---
             pos = data.xpos[i]
             z_pos = pos[2]
-            self.model.opt.viscosity = 0.0000089
-            # If above water, skip
-            if z_pos >= self.water_level:
-                continue
-                
-            self.model.opt.viscosity = 0.0089  # 0.89
             props = self.body_props[i]
             
-            # Calculate partial submersion (simple linear fade)
-            depth = self.water_level - z_pos
-            # Fully submerged if depth > 2x radius
-            submerged_ratio = np.clip(depth / (props['radius'] * 2), 0.0, 1.0)
+            # --- 1. CORRECTED SUBMERSION CHECK ---
+            bottom_z = z_pos - props['radius']
+            if bottom_z >= self.water_level:
+                continue
+                
+            submerged_height = self.water_level - bottom_z
+            submerged_ratio = np.clip(submerged_height / (props['radius'] * 2.0), 0.0, 1.0)
             
-            # --- 2. APPLY BUOYANCY (Archimedes) ---
-            # F_buoy = rho * g * V_submerged
+            # --- 2. APPLY BUOYANCY ---
             f_buoy = self.density * self.gravity * (props['vol'] * submerged_ratio)
             data.xfrc_applied[i][2] += f_buoy
             
-            # --- 3. APPLY DRAG (Quadratic) ---
-            # Get linear velocity of the body
-            vel = data.cvel[i][3:6]
+            # --- 3. APPLY LINEAR DRAG (Stops the bouncing) ---
+            vel = data.cvel[i][3:6] # Linear velocity
             speed = np.linalg.norm(vel)
             
-            if speed < 1e-4:
-                continue
+            if speed > 1e-4:
+                vel_dir = vel / speed
+                rot = data.xmat[i].reshape(3, 3)
+                axis_z = rot[:, 2] 
                 
-            # Direction of flow relative to body
-            vel_dir = vel / speed
+                alignment = abs(np.dot(axis_z, vel_dir))
+                area = (alignment * props['area_end']) + ((1.0 - alignment) * props['area_side'])
+                cd   = (alignment * self.Cd_end)       + ((1.0 - alignment) * self.Cd_side)
+                
+                quadratic_drag = 0.5 * self.density * (speed**2) * cd * area
+                
+                # INCREASED for density 500.0. If it still bounces, increase to 200.0 or 300.0
+                linear_drag = self.linear_drag_coeff * speed * area 
+                
+                drag_mag = (quadratic_drag + linear_drag) * submerged_ratio
+                f_drag = -drag_mag * vel_dir
+                
+                data.xfrc_applied[i][0] += f_drag[0]
+                data.xfrc_applied[i][1] += f_drag[1]
+                data.xfrc_applied[i][2] += f_drag[2]
+
+            # --- 4. APPLY ANGULAR DRAG (Stops the spinning) ---
+            ang_vel = data.cvel[i][0:3] # Angular velocity
+            ang_speed = np.linalg.norm(ang_vel)
             
-            # Determine Area based on orientation
-            # Get body orientation matrix (local Z usually points along the limb length)
-            rot = data.xmat[i].reshape(3, 3)
-            axis_z = rot[:, 2] # Axis of the cylinder
-            
-            # Dot product: 1.0 = Moving End-on, 0.0 = Moving Sideways
-            alignment = abs(np.dot(axis_z, vel_dir))
-            
-            # Interpolate Area and Cd
-            area = (alignment * props['area_end']) + ((1.0 - alignment) * props['area_side'])
-            cd   = (alignment * self.Cd_end)       + ((1.0 - alignment) * self.Cd_side)
-            
-            # Calculate Drag Force Magnitude: F = 0.5 * rho * v^2 * Cd * A
-            drag_mag = 0.5 * self.density * (speed**2) * cd * area
-            
-            # Scale by submersion (no drag on parts in air)
-            drag_mag *= submerged_ratio
-            
-            # Apply Force (Opposite to velocity)
-            f_drag = -drag_mag * vel_dir
-            
-            data.xfrc_applied[i][0] += f_drag[0]
-            data.xfrc_applied[i][1] += f_drag[1]
-            data.xfrc_applied[i][2] += f_drag[2]
+            if ang_speed > 1e-4:
+                # Water provides heavy resistance to spinning. 
+                # We scale it by the volume of the part and how submerged it is.
+                
+                
+                # Torque = -k * angular_velocity * volume * submersion
+                torque_drag = -self.angular_drag_coeff * ang_vel * props['vol'] * submerged_ratio
+                
+                # Apply the torque to xfrc_applied indices 3, 4, 5
+                data.xfrc_applied[i][3] += torque_drag[0]
+                data.xfrc_applied[i][4] += torque_drag[1]
+                data.xfrc_applied[i][5] += torque_drag[2]

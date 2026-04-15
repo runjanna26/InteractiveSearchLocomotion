@@ -19,7 +19,7 @@ NUM_JOINTS_PER_GROUP = 4
 
 START_TIME = 1.0
 EXECUTE_CONTROL_TIME = 2.0
-END_TIME = 10000.0
+END_TIME = 45.0
 
 
 # ======================================================
@@ -50,9 +50,9 @@ def init_controllers(model):
         qvel_ids[name] = model.jnt_dofadr[joint_id]
 
         controllers[name] = MuscleModel(
-            _a=0.2,         # 0.2 too bounce
-            _b=50.0,         # 5.0 too bounce
-            _beta=0.05,
+            _a=0.5,         # 0.2 too bounce
+            _b=10.0,         # 5.0 too bounce
+            _beta=0.0,
             _init_pos=0.0
         )
 
@@ -137,14 +137,20 @@ joint_stiffness_fb = []
 joint_damping_fb = []
 joint_torque_feedforward_fb = []
 joint_torque_output_fb = []
-joint_damping_power_fb = []
+joint_damping_power_fb = [] 
 joint_names = []    
-# ['TR0', 'CR0', 'FR0', 
-#  'TR1', 'CR1', 'FR1', 
-#  'TR2', 'CR2', 'FR2', 
-#  'TL0', 'CL0', 'FL0', 
-#  'TL1', 'CL1', 'FL1', 
-#  'TL2', 'CL2', 'FL2']
+
+leg_stiffness_fb = []
+leg_damping_fb = []
+leg_torque_feedforward_fb = []
+
+# ['FR_J1', 'FR_J2', 'FR_J3', 'FR_J4', 
+#  'BR_J1', 'BR_J2', 'BR_J3', 'BR_J4', 
+#  'FL_J1', 'FL_J2', 'FL_J3', 'FL_J4', 
+#  'BL_J1', 'BL_J2', 'BL_J3', 'BL_J4']
+
+# ['FR', 'BR', 'FL', 'BL']
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -169,13 +175,13 @@ def main(args=None):
     # hydro = BuoyancyPhysics(model, water_level=2.0)
     hydro = Hydrodynamics(model, water_level=0.8)
 
-    with mujoco.viewer.launch_passive(model, data) as viewer:
+    with mujoco.viewer.launch_passive(model, data, show_left_ui=True, show_right_ui=False) as viewer:
         start_time = time.time()
 
-        viewer.cam.lookat[:] = [2.0, 0.0, 2.0] # Look at specific point (X, Y, Z)
-        viewer.cam.distance = 5.0               # Distance (Zoom)
-        viewer.cam.azimuth = 45   # 45 degrees Angle (Azimuth = Left/Right, Elevation = Up/Down)
-        viewer.cam.elevation = -30 # Look down by 30 degrees
+        viewer.cam.lookat[:] = [0, 0.0, 2.0]    # Look at specific point (X, Y, Z)
+        viewer.cam.distance = 5.0               # Distance (Zoom out)
+        viewer.cam.azimuth = 45                 # 45 degrees Angle (Azimuth = Left/Right, Elevation = Up/Down)
+        viewer.cam.elevation = -30              # Look down by 30 degrees
 
 
         while viewer.is_running():
@@ -202,9 +208,24 @@ def main(args=None):
                 joint_torque_output_fb.append(ctrl.get_torque())
                 joint_damping_power_fb.append(ctrl.get_power_damping())
                 joint_names.append(name)
+
             # print(joint_names)
             # print(joint_torque_feedforward_fb[0])
-                
+
+            leg_stiffness_fb = [sum(joint_stiffness_fb[0:4]), 
+                                     sum(joint_stiffness_fb[4:8]), 
+                                     sum(joint_stiffness_fb[8:12]), 
+                                     sum(joint_stiffness_fb[12:16])]
+            leg_damping_fb = [sum(joint_damping_fb[0:4]), 
+                               sum(joint_damping_fb[4:8]), 
+                               sum(joint_damping_fb[8:12]), 
+                               sum(joint_damping_fb[12:16])]
+            leg_torque_feedforward_fb = [sum(joint_torque_feedforward_fb[0:4]), 
+                                              sum(joint_torque_feedforward_fb[4:8]), 
+                                              sum(joint_torque_feedforward_fb[8:12]), 
+                                              sum(joint_torque_feedforward_fb[12:16])]
+
+
             if elapsed > START_TIME:
                 # --- FEEDBACK ---
                 ros_node.publish_joint_angle(joint_angle_fb)
@@ -214,6 +235,11 @@ def main(args=None):
                 ros_node.publish_joint_torque_ff(joint_torque_feedforward_fb)
                 ros_node.publish_joint_torque_output(joint_torque_output_fb)
                 ros_node.publish_joint_damping_power(joint_damping_power_fb)
+
+                ros_node.publish_leg_stiffness(leg_stiffness_fb)
+                ros_node.publish_leg_damping(leg_damping_fb)
+                ros_node.publish_leg_torque_ff(leg_torque_feedforward_fb)
+
                 ros_node.publish_termination_status(False)
 
             joint_angle_fb.clear()
@@ -224,6 +250,9 @@ def main(args=None):
             joint_torque_output_fb.clear()
             joint_damping_power_fb.clear()
             joint_names.clear()
+            leg_stiffness_fb.clear()
+            leg_damping_fb.clear()
+            leg_torque_feedforward_fb.clear()
                 
 
             # --- GRF FEEDBACK ---
@@ -241,8 +270,58 @@ def main(args=None):
                 viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = True
                 viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = True
                 viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
-                viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_INERTIA] = True
+                viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_COM] = True
+                # viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_INERTIA] = True
+                
+                # Clear previous frame's custom arrows
+                viewer.user_scn.ngeom = 0 
+                # Draw new arrows
+                for i in hydro.body_ids:
+                    pos = data.xpos[i]
+                    
+                    # 1. LINEAR FORCE (Drag + Buoyancy -> Blue Arrows)
+                    force = np.array([
+                        data.xfrc_applied[i][0], 
+                        data.xfrc_applied[i][1], 
+                        data.xfrc_applied[i][2]
+                    ])
+                    force_mag = np.linalg.norm(force)
+                    
+                    if force_mag > 1e-3 and viewer.user_scn.ngeom < viewer.user_scn.maxgeom:
+                        force_scale = 100 # Tune this if blue arrows are too big/small
+                        pt2_force = pos + (force * force_scale) + 10 * np.array([0,0,1]) 
+                        
+                        mujoco.mjv_connector(
+                            viewer.user_scn.geoms[viewer.user_scn.ngeom],
+                            mujoco.mjtGeom.mjGEOM_ARROW,
+                            0.005, # Arrow thickness
+                            pos,
+                            pt2_force
+                        )
+                        viewer.user_scn.geoms[viewer.user_scn.ngeom].rgba = np.array([0.0, 0.5, 1.0, 1.0])
+                        viewer.user_scn.ngeom += 1
 
+                    # 2. TORQUE (Angular Drag -> Red Arrows)
+                    torque = np.array([
+                        data.xfrc_applied[i][3], 
+                        data.xfrc_applied[i][4], 
+                        data.xfrc_applied[i][5]
+                    ])
+                    torque_mag = np.linalg.norm(torque)
+                    
+                    if torque_mag > 1e-3 and viewer.user_scn.ngeom < viewer.user_scn.maxgeom:
+                        torque_scale = 100 # Tune this if red arrows are too big/small
+                        pt2_torque = pos + (torque * torque_scale) + 10 * np.array([0,0,1]) 
+                        
+                        mujoco.mjv_connector(
+                            viewer.user_scn.geoms[viewer.user_scn.ngeom],
+                            mujoco.mjtGeom.mjGEOM_ARROW,
+                            0.008, # Arrow thickness
+                            pos,
+                            pt2_torque
+                        )
+                        viewer.user_scn.geoms[viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
+                        viewer.user_scn.ngeom += 1
                 
 
 
