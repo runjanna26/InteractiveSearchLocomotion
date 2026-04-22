@@ -1,0 +1,30 @@
+<mujocoinclude>
+    <asset>
+        <material name="mat_body" rgba="0.2 0.6 0.8 1" specular="0.5" shininess="0.5"/> 
+        <material name="mat_legs" rgba="0.1 0.1 0.1 1" specular="0.5" shininess="0.5"/> 
+        <material name="mat_feet" rgba="0.8 0.5 0.1 1" /> 
+
+        <mesh name="underwater_insect_robot_base_coll_1"    file="meshes/underwater_insect_robot_base_coll_1.stl" />
+        <mesh name="underwater_insect_FR_L1_coll_1"         file="meshes/underwater_insect_FR_L1_coll_1.stl" />
+        <mesh name="underwater_insect_FR_L2_coll_1"         file="meshes/underwater_insect_FR_L2_coll_1.stl" />
+        <mesh name="underwater_insect_FR_L3_coll_1"         file="meshes/underwater_insect_FR_L3_coll_1.stl" />
+        <mesh name="underwater_insect_FR_L4_coll_1"         file="meshes/underwater_insect_FR_L4_coll_1.stl" />
+        <mesh name="underwater_insect_FR_FOOT_coll_1"       file="meshes/underwater_insect_FR_FOOT_coll_1.stl" />
+        <mesh name="underwater_insect_BR_L1_coll_1"         file="meshes/underwater_insect_BR_L1_coll_1.stl" />
+        <mesh name="underwater_insect_BR_L2_coll_1"         file="meshes/underwater_insect_BR_L2_coll_1.stl" />
+        <mesh name="underwater_insect_BR_L3_coll_1"         file="meshes/underwater_insect_BR_L3_coll_1.stl" />
+        <mesh name="underwater_insect_BR_L4_coll_1"         file="meshes/underwater_insect_BR_L4_coll_1.stl" />
+        <mesh name="underwater_insect_BR_FOOT_coll_1"       file="meshes/underwater_insect_BR_FOOT_coll_1.stl" />
+        <mesh name="underwater_insect_FL_L1_coll_1"         file="meshes/underwater_insect_FL_L1_coll_1.stl" />
+        <mesh name="underwater_insect_FL_L2_coll_1"         file="meshes/underwater_insect_FL_L2_coll_1.stl" />
+        <mesh name="underwater_insect_FL_L3_coll_1"         file="meshes/underwater_insect_FL_L3_coll_1.stl" />
+        <mesh name="underwater_insect_FL_L4_coll_1"         file="meshes/underwater_insect_FL_L4_coll_1.stl" />
+        <mesh name="underwater_insect_FL_FOOT_coll_1"       file="meshes/underwater_insect_FL_FOOT_coll_1.stl" />
+        <mesh name="underwater_insect_BL_L1_coll_1"         file="meshes/underwater_insect_BL_L1_coll_1.stl" />
+        <mesh name="underwater_insect_BL_L2_coll_1"         file="meshes/underwater_insect_BL_L2_coll_1.stl" />
+        <mesh name="underwater_insect_BL_L3_coll_1"         file="meshes/underwater_insect_BL_L3_coll_1.stl" />
+        <mesh name="underwater_insect_BL_L4_coll_1"         file="meshes/underwater_insect_BL_L4_coll_1.stl" />
+        <mesh name="underwater_insect_BL_FOOT_coll_1"       file="meshes/underwater_insect_BL_FOOT_coll_1.stl" />
+
+    </asset>
+</mujocoinclude>

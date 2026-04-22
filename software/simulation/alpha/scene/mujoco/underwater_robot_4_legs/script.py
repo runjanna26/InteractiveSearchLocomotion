@@ -7,6 +7,7 @@ import rclpy
 from ros2_node import StickInsectNode
 from muscle_model import MuscleModel
 from hydrodynamic import Hydrodynamics
+from generate_terrain import TerrainGenerator
 
 # ======================================================
 # CONSTANTS
@@ -19,7 +20,7 @@ NUM_JOINTS_PER_GROUP = 4
 
 START_TIME = 1.0
 EXECUTE_CONTROL_TIME = 2.0
-END_TIME = 45.0
+END_TIME = 300.0
 
 
 # ======================================================
@@ -144,6 +145,8 @@ leg_stiffness_fb = []
 leg_damping_fb = []
 leg_torque_feedforward_fb = []
 
+grf_fb = []
+
 # ['FR_J1', 'FR_J2', 'FR_J3', 'FR_J4', 
 #  'BR_J1', 'BR_J2', 'BR_J3', 'BR_J4', 
 #  'FL_J1', 'FL_J2', 'FL_J3', 'FL_J4', 
@@ -155,9 +158,44 @@ leg_torque_feedforward_fb = []
 def main(args=None):
     rclpy.init(args=args)
     ros_node = StickInsectNode()
-
-    model = mujoco.MjModel.from_xml_path("./underwater_insect.xml")
     
+    # Generate Scene
+    x_start = 2.5
+    tg = TerrainGenerator()
+    terrain_xml       = tg.generate_flat_terrain(    name = 'rough_terrain_1',   n_rows=1, n_cols=1, start_pos=(x_start, 0, 1.5))
+
+
+    # rough_terrain_xml       = tg.generate_rough_terrain(    name = 'rough_terrain_1',   n_rows=36, n_cols=36, start_pos=(x_start, 0, 1.5))
+    # flat_terrain_xml        = tg.generate_flat_terrain(     name = 'flat_terrain_1',    n_rows=36, n_cols=36, start_pos=(x_start + 9, 0, 1.5))
+    # sponge_terrain_xml      = tg.generate_sponge_terrain(   name = 'sponge_terrain_1',  n_rows=36, n_cols=36, start_pos=(x_start + 18, 0, 1.5))
+    # sandy_terrain_xml       = tg.generate_sandy_terrain(    name = 'sandy_terrain_1',   n_rows=36, n_cols=36, start_pos=(x_start + 27, 0, 1.5))
+    # muddy_terrain_xml       = tg.generate_muddy_terrain(    name = 'muddy_terrain_1',   n_rows=36, n_cols=36, start_pos=(x_start + 36, 0, 1.5))
+
+    # rough_water_terrain_xml       = tg.generate_rough_terrain(    name = 'rough_water_terrain_1',   n_rows=36, n_cols=36, start_pos=(-16.25 + x_start, 0, 0.25), h_dev=0.05)
+    # flat_water_terrain_xml        = tg.generate_flat_terrain(     name = 'flat_water_terrain_1',    n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 9, 0, 0.25))
+    # sponge_water_terrain_xml      = tg.generate_sponge_terrain(   name = 'sponge_water_terrain_1',  n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 18, 0, 0.25))
+    # sandy_water_terrain_xml       = tg.generate_sandy_terrain(    name = 'sandy_water_terrain_1',   n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 27, 0, 0.25))
+    # muddy_water_terrain_xml       = tg.generate_muddy_terrain(    name = 'muddy_water_terrain_1',   n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 36, 0, 0.25))
+
+
+    combined_terrain = terrain_xml
+    # combined_terrain = rough_terrain_xml + flat_terrain_xml + sponge_terrain_xml + sandy_terrain_xml + muddy_terrain_xml
+    # combined_terrain = combined_terrain + rough_water_terrain_xml + flat_water_terrain_xml + sponge_water_terrain_xml + sandy_water_terrain_xml + muddy_water_terrain_xml
+    with open("main_scene.xml", "r") as f:
+        base_xml = f.read()
+    complete_xml = base_xml.replace("INCLUDE_TERRAIN", combined_terrain, 1)
+    model = mujoco.MjModel.from_xml_string(complete_xml)
+
+    # Save Scene
+    # with open("scene/generated_scene.xml", "w") as f:
+    #     f.write(complete_xml)
+
+    # Load Scene
+    # with open("scene/generated_scene.xml", "r") as f:
+    #     base_xml = f.read()
+    # model = mujoco.MjModel.from_xml_string(base_xml)
+
+
     # --- SET VISCOSITY HERE ---
     # This overwrites whatever was in the XML <option viscosity="..." />
     # model.opt.viscosity = 0.089  # Water viscosity in Pa.s (kg/m.s)
@@ -175,11 +213,11 @@ def main(args=None):
     # hydro = BuoyancyPhysics(model, water_level=2.0)
     hydro = Hydrodynamics(model, water_level=0.8)
 
-    with mujoco.viewer.launch_passive(model, data, show_left_ui=True, show_right_ui=False) as viewer:
+    with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         start_time = time.time()
 
-        viewer.cam.lookat[:] = [0, 0.0, 2.0]    # Look at specific point (X, Y, Z)
-        viewer.cam.distance = 5.0               # Distance (Zoom out)
+        viewer.cam.lookat[:] = [-15.0, 0.0, 0.0]    # Look at specific point (X, Y, Z)
+        viewer.cam.distance = 11.0               # Distance (Zoom out)
         viewer.cam.azimuth = 45                 # 45 degrees Angle (Azimuth = Left/Right, Elevation = Up/Down)
         viewer.cam.elevation = -30              # Look down by 30 degrees
 
@@ -199,7 +237,8 @@ def main(args=None):
 
                 ctrl.calculate(target, q, dq, model.opt.timestep)
                 data.ctrl[actuator_ids[name]] = ctrl.get_torque()   # control signal to the actuator mujoco
-
+                
+                # --- GRF FEEDBACK ---
                 joint_angle_fb.append(q)
                 joint_velocity_fb.append(dq)
                 joint_stiffness_fb.append(ctrl.K)
@@ -208,6 +247,7 @@ def main(args=None):
                 joint_torque_output_fb.append(ctrl.get_torque())
                 joint_damping_power_fb.append(ctrl.get_power_damping())
                 joint_names.append(name)
+            grf_fb = get_grf(model, data, foot_geom_ids)
 
             # print(joint_names)
             # print(joint_torque_feedforward_fb[0])
@@ -226,6 +266,8 @@ def main(args=None):
                                               sum(joint_torque_feedforward_fb[12:16])]
 
 
+            
+
             if elapsed > START_TIME:
                 # --- FEEDBACK ---
                 ros_node.publish_joint_angle(joint_angle_fb)
@@ -239,6 +281,10 @@ def main(args=None):
                 ros_node.publish_leg_stiffness(leg_stiffness_fb)
                 ros_node.publish_leg_damping(leg_damping_fb)
                 ros_node.publish_leg_torque_ff(leg_torque_feedforward_fb)
+
+
+                ros_node.publish_grf(grf_fb)
+                ros_node.publish_cpg()
 
                 ros_node.publish_termination_status(False)
 
@@ -255,9 +301,7 @@ def main(args=None):
             leg_torque_feedforward_fb.clear()
                 
 
-            # --- GRF FEEDBACK ---
-            grf_data = get_grf(model, data, foot_geom_ids)
-            ros_node.publish_grf(grf_data)
+ 
 
             # --- BUOYANCY PHYSICS ---
             hydro.apply(data)

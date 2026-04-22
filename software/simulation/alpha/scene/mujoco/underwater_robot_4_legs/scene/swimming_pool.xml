@@ -1,0 +1,27 @@
+<mujocoinclude>
+    <asset>
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
+        <material name="matplane" reflectance="0.3" texture="texplane" texrepeat="1 1" texuniform="true" />
+         <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512" />
+        <texture name="texrough" type="2d" builtin="gradient" rgb1="0.7 .1 .1" rgb2=".3 .05 .05" 
+                 width="512" height="512" mark="edge" markrgb="0 0 0" />
+        <material name="matrough" reflectance="0.5" shininess="1" specular="1" texture="texrough"/>
+    </asset>
+
+    <worldbody>
+        <geom name="water_space" type="box" size="50 50 1" pos="-2 0 0.0" rgba="0 0.5 1 0.1" conaffinity="0" contype="0"/>
+
+        <!-- <geom name="ground_1" type="box" size="2 6 1" pos="4 0 0.5" material="matplane" friction="2.5 0.0005 0.0001" /> -->
+        <!-- <geom name="ground_9" type="box" size="2 6 1" pos="8 0 0.5" material="matplane" friction="2.5 0.0005 0.0001" />    -->
+        <geom name="ground_10" type="box" size="2 6 1" pos="12 0 0.5" material="matplane" friction="2.5 0.0005 0.0001" />  
+        <geom name="ground_11" type="box" size="20 6 1" pos="32 0 0.5" material="matplane" friction="2.5 0.0005 0.0001" />  
+
+        <geom name="ground_plane" type="box" size="50 50 0.25" pos="0 0 .0" friction="1.5 0.005 0.0001" rgba="0.1 0.1 0.2 1"/>
+
+        <geom name="ramp_10_deg" type="box" size="7.0 6.0 0.1" pos="-4.87 0 0.18" euler="0 -10 0" material="matplane" friction="2.5 0.05 0.0001"/>       
+        <!-- <geom name="ramp_10_deg" type="box" size="3.0 6.0 0.1" pos="-0.94 0 0.87" euler="0 -10 0" material="matplane" friction="2.5 0.05 0.0001"/>        -->
+
+        <light directional="true" diffuse=".4 .4 .4" specular="0.1 0.1 0.1" pos="0 0 2.0" dir="0 0 -1" castshadow="false"/>
+        <light directional="true" diffuse="1 1 1" specular="0.2 0.2 0.2" pos="0 0 4" dir="0 0 -1" castshadow="false"/>    
+    </worldbody>
+</mujocoinclude>

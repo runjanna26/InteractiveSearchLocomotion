@@ -6,9 +6,11 @@ class StickInsectNode(Node):
         super().__init__('diving_beetle_controller')
         
         self.joint_cmd_sub  = self.create_subscription( Float32MultiArray, '/diving_beetle/joint_angle_commands', self.joint_cmd_callback, 1)
+        self.leg_cpg_cmd_sub  = self.create_subscription( Float32MultiArray, '/diving_beetle/cpg_output_0', self.cpg_cmd_callback, 1)
         
         
         self.grf_pub                    = self.create_publisher( Float32MultiArray, '/diving_beetle/foot_force_feedback', 1 )
+        self.cpg_pub                    = self.create_publisher( Float32MultiArray, '/diving_beetle/cpg_ref', 1 )
         self.joint_angle_pub            = self.create_publisher( Float32MultiArray, '/diving_beetle/joint_angle_fb', 1 )
         self.joint_velocity_pub         = self.create_publisher( Float32MultiArray, '/diving_beetle/joint_velocity_fb', 1 )
         self.joint_stiffness_pub        = self.create_publisher( Float32MultiArray, '/diving_beetle/joint_stiffness_fb', 1 )
@@ -30,6 +32,11 @@ class StickInsectNode(Node):
                           'BR': [0.0, 0.0, 0.0, 0.0],
                           'FL': [0.0, 0.0, 0.0, 0.0],
                           'BL': [0.0, 0.0, 0.0, 0.0]}
+        self.cpg_cmd   = {'FR': 0.0,
+                          'BR': 0.0,
+                          'FL': 0.0,
+                          'BL': 0.0}
+        self.cpg_cmd_list = [0.0, 0.0, 0.0, 0.0]
         print("ROS 2 Node Started. Subscribed to /joint_commands")
 
     def joint_cmd_callback(self, msg):
@@ -38,12 +45,22 @@ class StickInsectNode(Node):
         self.joint_cmd['FL'] = msg.data[8:12]
         self.joint_cmd['BL'] = msg.data[12:16]
         # print(f"Received joint commands: {self.joint_cmd}")
+    def cpg_cmd_callback(self, msg):
+        self.cpg_cmd['FR'] = msg.data[0]
+        self.cpg_cmd['BR'] = msg.data[1]
+        self.cpg_cmd['FL'] = msg.data[2]
+        self.cpg_cmd['BL'] = msg.data[3]
+        self.cpg_cmd_list = msg.data
 
 
     def publish_grf(self, forces):
         msg = Float32MultiArray()
         msg.data = [float(f) for f in forces]
         self.grf_pub.publish(msg)
+    def publish_cpg(self):
+        msg = Float32MultiArray()
+        msg.data = [float(f) for f in self.cpg_cmd_list]
+        self.cpg_pub.publish(msg)
     def publish_joint_angle(self, angles):
         msg = Float32MultiArray()
         msg.data = [float(a) for a in angles]

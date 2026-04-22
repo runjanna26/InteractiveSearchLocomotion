@@ -29,7 +29,7 @@ from include.gait_cycle_cut.gait_cycle_cut import OnlineGaitSegmenter
 from include.enviroment_classification.env_pred import TimeSeriesKMeans
 
 
-NAME_EXP = "transition_2"
+NAME_EXP = "dataset/air_rough_1"
 
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
@@ -404,14 +404,16 @@ class DivingBeetleNode(Node):
                 self.leg_stiffness_cycle_buffer[leg].append(cycle_np[:, 0].tolist())
                 self.leg_damping_cycle_buffer[leg].append(cycle_np[:, 1].tolist())
                 self.leg_torque_feedforward_cycle_buffer[leg].append(cycle_np[:, 2].tolist())
-                if leg == 'FR':
-                    cycle = np.stack([cycle_np[:, 0].tolist(), 
-                             cycle_np[:, 1].tolist(),
-                             cycle_np[:, 2].tolist()], axis=1)
-                    cycle = self.online_environment_classifier['FR'].resample_cycle(cycle, target_len=90)
-                    cluster_id, uncertainty  = self.online_environment_classifier['FR'].predict(cycle)
-                    # print(f"Environment Classification - Cluster ID: {cluster_id}, Environment: {'ground' if cluster_id == 0 else 'water'}, Uncertainty: {uncertainty:.4f}")
-                    self.pub_env_class.publish(UInt16(data=int(cluster_id)))
+                
+                
+                # if leg == 'FR':
+                #     cycle = np.stack([cycle_np[:, 0].tolist(), 
+                #              cycle_np[:, 1].tolist(),
+                #              cycle_np[:, 2].tolist()], axis=1)
+                #     cycle = self.online_environment_classifier['FR'].resample_cycle(cycle, target_len=90)
+                #     cluster_id, uncertainty  = self.online_environment_classifier['FR'].predict(cycle)
+                #     print(f"Environment Classification - Environment: {'ground' if cluster_id == 0 else 'water'}, Uncertainty: {uncertainty:.4f}")
+                #     self.pub_env_class.publish(UInt16(data=int(cluster_id)))
 
     def plot_full_robot_data(self, stiffness_buffers, damping_buffers):
         legs = ['FR', 'FL', 'BR', 'BL']
