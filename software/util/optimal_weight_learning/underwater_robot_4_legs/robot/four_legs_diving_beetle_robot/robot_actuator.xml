@@ -1,0 +1,23 @@
+<mujocoinclude>
+    <actuator>
+        <motor name="FR_J1" joint="FR_J1" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FR_J2" joint="FR_J2" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FR_J3" joint="FR_J3" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FR_J4" joint="FR_J4" ctrllimited="true" ctrlrange="-20 20"/>
+
+        <motor name="BR_J1" joint="BR_J1" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BR_J2" joint="BR_J2" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BR_J3" joint="BR_J3" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BR_J4" joint="BR_J4" ctrllimited="true" ctrlrange="-20 20"/>
+
+        <motor name="FL_J1" joint="FL_J1" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FL_J2" joint="FL_J2" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FL_J3" joint="FL_J3" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="FL_J4" joint="FL_J4" ctrllimited="true" ctrlrange="-20 20"/>
+
+        <motor name="BL_J1" joint="BL_J1" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BL_J2" joint="BL_J2" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BL_J3" joint="BL_J3" ctrllimited="true" ctrlrange="-20 20"/>
+        <motor name="BL_J4" joint="BL_J4" ctrllimited="true" ctrlrange="-20 20"/>
+    </actuator>
+</mujocoinclude>

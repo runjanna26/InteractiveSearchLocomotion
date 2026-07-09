@@ -1,0 +1,39 @@
+<mujoco>
+    <compiler meshdir="."/>
+    <statistic extent="1.5" meansize=".05" />
+
+    <!-- <option timestep="0.005"  integrator="implicitfast"/> -->
+    <option timestep="0.005" integrator="implicit"/>
+
+    <!-- <option density="1000.0" viscosity="5.0" /> -->
+    <!-- <option viscosity="5.0" /> -->
+
+
+    <!-- <include file="scene/swimming_pool_2.xml"/> -->
+    <include file="scene/swimming_pool.xml"/>
+
+    <include file="robot/four_legs_diving_beetle_robot/robot_mesh.xml"/>
+
+
+    <visual>
+        <quality shadowsize="4096" />
+        <headlight diffuse="0.8 0.8 0.8" ambient="0.5 0.5 0.5" specular="0.2 0.2 0.2"/>
+        <rgba haze="0.15 0.25 0.35 1"/>
+        <global azimuth="120" elevation="45"/>
+    </visual>
+
+
+    <worldbody>
+        <light directional="true" diffuse="0.6 0.6 0.6" specular="0.2 0.2 0.2" pos="0 0 5" dir="0 0 -1" castshadow="false"/>
+
+        <body name="robot" pos="0 0 1.75" euler="0 0 -90">
+            <freejoint name="space" />
+            <include file="robot/four_legs_diving_beetle_robot/robot.xml"/>
+        </body>
+        INCLUDE_TERRAIN
+    </worldbody>
+
+    <include file="robot/four_legs_diving_beetle_robot/robot_actuator.xml"/>
+    
+    
+</mujoco>
