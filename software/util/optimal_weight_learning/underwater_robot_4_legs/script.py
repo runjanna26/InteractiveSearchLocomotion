@@ -308,6 +308,7 @@ class StickInsectEnv:
         # ==========================================
         # Forward Distance & Y-Axis Drift
         distance_walked = self.data.qpos[0] - self.start_pos[0]
+        
         drift_y = abs(self.data.qpos[1] - self.start_pos[1])
         
         # Instability 

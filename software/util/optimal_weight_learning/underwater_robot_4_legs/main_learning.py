@@ -14,10 +14,10 @@ import json
 # CONFIGURATION
 # ======================================================
 RENDER = False
-ROLLOUTS = 10  # Number of parallel rollouts per iteration
-SIMULATION_STEPS =  5000  # E.g., 5 seconds at 0.005s timestep
+ROLLOUTS = 4  # Number of parallel rollouts per iteration
+SIMULATION_STEPS =  2500  # E.g., 5 seconds at 0.005s timestep
 ITERATIONS = 350
-NOISE_VARIANCE_INIT = 0.015
+NOISE_VARIANCE_INIT = 0.005
 BASE_PARAM_INIT = 0.000
 NUM_KERNELS = 20 
 # NUM_PARAMETERS = NUM_KERNELS * 16 # Example: 50 RBF neurons * 16 joints = 800 parameters
