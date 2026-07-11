@@ -9,7 +9,7 @@ import matplotlib.animation as animation
 # ==========================================
 LOG_DIR = "data/pibb_logs/"
 # Set to a specific filename if you don't want the latest one
-SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260709_173755.json" 
+SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260711_144156.json" 
 
 # How often to refresh the plot (in milliseconds)
 REFRESH_INTERVAL_MS = 2000  
@@ -55,8 +55,9 @@ def update_plot(frame):
     ax.clear()
     
     # Plot Max and Mean fitness
-    ax.plot(iterations, max_fitness, label='Max Fitness (Best Rollout)', color='blue', linewidth=2)
-    ax.plot(iterations, mean_fitness, label='Average Fitness (Batch Mean)', color='orange', linewidth=2, linestyle='--')
+    ax.plot(iterations, max_fitness
+            , label='Max Fitness (Best Rollout)', color='blue', linewidth=2)
+    # ax.plot(iterations, mean_fitness, label='Average Fitness (Batch Mean)', color='orange', linewidth=2, linestyle='--')
     
     # Format the plot
     ax.set_title('PIBB Learning Curve (LIVE)', fontsize=16, fontweight='bold')
@@ -66,8 +67,8 @@ def update_plot(frame):
     ax.legend(fontsize=12, loc='upper left')
     
     # Optional: Fill the area between max and mean to visualize variance
-    if len(iterations) > 0:
-        ax.fill_between(iterations, mean_fitness, max_fitness, color='blue', alpha=0.1)
+    # if len(iterations) > 0:
+    #     ax.fill_between(iterations, mean_fitness, max_fitness, color='blue', alpha=0.1)
 
 def start_live_monitor():
     if not TARGET_LOG_FILE:

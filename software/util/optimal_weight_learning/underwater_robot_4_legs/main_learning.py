@@ -14,16 +14,19 @@ import json
 # CONFIGURATION
 # ======================================================
 RENDER = False
-ROLLOUTS = 4  # Number of parallel rollouts per iteration
-SIMULATION_STEPS =  2500  # E.g., 5 seconds at 0.005s timestep
-ITERATIONS = 350
-NOISE_VARIANCE_INIT = 0.005
+ROLLOUTS = 10  # Number of parallel rollouts per iteration
+SIMULATION_STEPS =  2000  # E.g., 5 seconds at 0.005s timestep
+ITERATIONS = 500
+NOISE_VARIANCE_INIT = 0.0010
 BASE_PARAM_INIT = 0.000
 NUM_KERNELS = 20 
-# NUM_PARAMETERS = NUM_KERNELS * 16 # Example: 50 RBF neurons * 16 joints = 800 parameters
-NUM_PARAMETERS = NUM_KERNELS * 8 # 
-CPG_PHI = 0.03
+NUM_PARAMETERS = NUM_KERNELS * 8 # 20x8 = 160 parameters
+CPG_PHI = 0.05
 
+
+# ======================================================
+# Initial Variables
+# ======================================================
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
 JOINT_NAMES = [0, 1, 2, 3]
@@ -139,14 +142,21 @@ def evaluate_rollout(noisy_parameters, simulation_steps):
                         imitated_weights[f'{index}{side}{joint}']
                     )
                     
+                    # ==========================================
+                    # NEW: MECHANICAL INVERSION FOR LEFT HIP
+                    # ==========================================
+                    # Because the Left hip (J0) axis is mirrored in the XML, 
+                    # we must invert the network output to make it swing the 
+                    # same physical direction as the Right hip.
+                    if side == 'L' and joint == 0:
+                        network_output = -network_output 
+                    
                     # 2. Add it to your standing pose
-                    # f'{index}{side}' gives 'FR' and 'joint' acts as the list index [0]
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
-                    # target_angle = baseline_angle + network_output
                     target_angle = baseline_angle + network_output
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
-                    actuator_name = f"{index}{side}_J{joint+1}"  # +1 because your actuators are likely 1-indexed
+                    actuator_name = f"{index}{side}_J{joint+1}"  
                     env_targets[actuator_name] = target_angle
             
         # Pass the flat dictionary to the environment

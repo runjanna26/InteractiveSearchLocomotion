@@ -19,9 +19,10 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260709_145905.json" # <-- Paste your actual log filename here
-TARGET_ITERATION = 30    # Set to -1 for the last iteration, or a specific number (e.g., 150)
-SIMULATION_STEPS = 5000
+LOG_FILE = "data/pibb_logs/pibb_training_20260711_053503.json" # <-- Paste your actual log filename here
+TARGET_ITERATION = -1   # Set to -1 for the last iteration, or a specific number (e.g., 150)
+SIMULATION_STEPS = 100000000
+CPG_PHI = 0.05
 
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
@@ -88,12 +89,14 @@ if __name__ == "__main__":
     cpg = CPG_SO2()
     rbf = RBF(nc=NUM_KERNELS)
 
-    cpg_one_cycle = cpg.generate_cpg_one_cycle(0.05)
+    cpg_one_cycle = cpg.generate_cpg_one_cycle(CPG_PHI)
     rbf.construct_kernels_with_cpg_one_cycle(
         cpg_one_cycle['out0_cpg_one_cycle'][:], 
         cpg_one_cycle['out1_cpg_one_cycle'][:], 
         len(cpg_one_cycle['out0_cpg_one_cycle'])
     )
+
+    cpg_cycle_length = len(cpg_one_cycle['out0_cpg_one_cycle'][:])
 
     cpg_modulated = {}
     cpg_output = {}
@@ -102,8 +105,17 @@ if __name__ == "__main__":
     for side in LEG_SIDE:
         for index in LEG_INDEX:
             cpg_modulated[f'{index}{side}'] = CPG_LOCO()
-            cpg_output[f'{index}{side}']    = cpg_modulated[f'{index}{side}'].modulate_cpg(0.05, 0.0, 1.0)
-            cpg_mod_cmd[f'{index}{side}']   = {'phi': 0.05, 'pause_input': 0.0, 'rewind_input': 1.0}
+            cpg_output[f'{index}{side}']    = cpg_modulated[f'{index}{side}'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+            cpg_mod_cmd[f'{index}{side}']   = {'phi': CPG_PHI, 'pause_input': 0.0, 'rewind_input': 1.0}
+
+
+    half_cycle = cpg_cycle_length // 2
+    
+    for _ in range(half_cycle):
+        # Manually step the FL and BR oscillators forward in time
+        # before the MuJoCo simulation even begins.
+        cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+        cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
 
     # 4. Initialize Environment WITH Rendering (and ROS if you want to record bags)
     env = StickInsectEnv(enable_ros=True, render=True) 
@@ -137,13 +149,21 @@ if __name__ == "__main__":
                         imitated_weights[f'{index}{side}{joint}']
                     )
                     
+                    # ==========================================
+                    # NEW: MECHANICAL INVERSION FOR LEFT HIP
+                    # ==========================================
+                    # Because the Left hip (J0) axis is mirrored in the XML, 
+                    # we must invert the network output to make it swing the 
+                    # same physical direction as the Right hip.
+                    if side == 'L' and joint == 0:
+                        network_output = -network_output 
+                    
                     # 2. Add it to your standing pose
-                    # f'{index}{side}' gives 'FR' and 'joint' acts as the list index [0]
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
-                    target_angle = network_output + baseline_angle
+                    target_angle = baseline_angle + network_output
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
-                    actuator_name = f"{index}{side}_J{joint+1}"  # +1 because your actuators are likely 1-indexed
+                    actuator_name = f"{index}{side}_J{joint+1}"  
                     env_targets[actuator_name] = target_angle
             
         # Pass the flat dictionary to the environment

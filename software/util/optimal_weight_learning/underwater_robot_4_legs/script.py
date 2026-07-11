@@ -50,7 +50,7 @@ class StickInsectEnv:
         x_start = -20
         tg = TerrainGenerator()
         # terrain_xml             = tg.generate_rough_terrain(    name = 'rough_terrain_1',   n_rows=64, n_cols=64, start_pos=(x_start, 0, 1.5))
-        terrain_xml                 = tg.generate_flat_terrain(     name = 'flat_terrain_1',    n_rows=200, n_cols=200, start_pos=(x_start, 0, 1.5))
+        terrain_xml                 = tg.generate_flat_terrain(     name = 'flat_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
         # sponge_terrain_xml      = tg.generate_sponge_terrain(   name = 'sponge_terrain_1',  n_rows=36, n_cols=36, start_pos=(x_start + 18, 0, 1.5))
         # sandy_terrain_xml       = tg.generate_sandy_terrain(    name = 'sandy_terrain_1',   n_rows=36, n_cols=36, start_pos=(x_start + 27, 0, 1.5))
         # muddy_terrain_xml       = tg.generate_muddy_terrain(    name = 'muddy_terrain_1',   n_rows=36, n_cols=36, start_pos=(x_start + 36, 0, 1.5))
@@ -140,9 +140,13 @@ class StickInsectEnv:
         self.contact_steps = 0
         self.slipping_steps = 0
 
-        # --- NEW: Track motor effort ---
-        self.accumulated_energy = 0.0
-        self.accumulated_joint_vel = 0.0
+        # New trackers for smoothness
+        self.accumulated_torque_ripple = 0.0
+        self.accumulated_joint_accel = 0.0
+        self.step_count = 0
+
+        # Array to hold the torques from the previous timestep
+        self.prev_ctrl = np.zeros(self.model.nu)
 
     def step(self, targets):
         """
@@ -158,11 +162,11 @@ class StickInsectEnv:
             
             # Prevent exploding targets
             target = np.clip(targets.get(name, 0.0), -3.14, 3.14) 
-
             ctrl.calculate(target, q, dq, self.model.opt.timestep)
-            
+
+    
             # Prevent exploding torques
-            torque = np.clip(ctrl.get_torque(), -100.0, 100.0) 
+            torque = np.clip(ctrl.get_torque(), -12.0, 12.0) 
             self.data.ctrl[self.actuator_ids[name]] = torque
 
         # Apply Custom Hydrodynamics
@@ -187,15 +191,41 @@ class StickInsectEnv:
         # ==========================================
         # 3. TRACK COLLISION (Exponential Inverse Distance)
         # ==========================================
-        foot_positions = [self.data.geom(name).xpos for name in FOOT_NAMES]
-        num_feet = len(foot_positions)
+        # foot_positions = [self.data.geom(name).xpos for name in FOOT_NAMES]
+        # num_feet = len(foot_positions)
         
-        for i in range(num_feet):
-            for j in range(i + 1, num_feet):
-                dist = np.linalg.norm(foot_positions[i] - foot_positions[j])
-                if dist < 0.15: # maxdist threshold
-                    self.accumulated_collision += np.exp(-dist * 10) 
-
+        # for i in range(num_feet):
+        #     for j in range(i + 1, num_feet):
+        #         dist = np.linalg.norm(foot_positions[i] - foot_positions[j])
+        #         if dist < 0.15: # maxdist threshold
+        #             self.accumulated_collision += np.exp(-dist * 10) 
+        
+        step_collision = 0.0
+        
+        # Loop through every physical contact detected by MuJoCo in this timestep
+        for i in range(self.data.ncon):
+            contact = self.data.contact[i]
+            
+            # Get the ID of the main body that each colliding geometry belongs to
+            body1_id = self.model.geom_bodyid[contact.geom1]
+            body2_id = self.model.geom_bodyid[contact.geom2]
+            
+            # Convert those IDs into string names (e.g., 'FR_calf', 'FR_thigh')
+            body1_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, body1_id)
+            body2_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, body2_id)
+            
+            # Safely check if they have names
+            if body1_name and body2_name:
+                # List your leg prefixes
+                for prefix in ['FR_', 'FL_', 'BR_', 'BL_']:
+                    # If BOTH colliding bodies start with the exact same prefix...
+                    if body1_name.startswith(prefix) and body2_name.startswith(prefix):
+                        # ...it is an intra-leg collision! 
+                        # Add a flat penalty for this frame.
+                        step_collision += 1.0
+                        break # Stop checking prefixes
+                        
+        self.accumulated_collision += step_collision
         # ==========================================
         # 4. TRACK SLIPPAGE (Optimized to prevent double-counting)
         # ==========================================
@@ -221,17 +251,21 @@ class StickInsectEnv:
             if horizontal_speed > 0.05:
                 self.slipping_steps += 1
 
-        # ==========================================
-        # 5. TRACK SHAKING / ENERGY PENALTIES
-        # ==========================================
-        # Energy: Sum up the squared motor commands
-        self.accumulated_energy += np.sum(np.square(self.data.ctrl))
         
-        # Joint Velocity: Sum of absolute joint speeds to penalize fast twitching
-        step_vel = 0.0
+        # Difference between current motor commands and previous commands
+        torque_diff = self.data.ctrl - self.prev_ctrl
+        self.accumulated_torque_ripple += np.sum(np.square(torque_diff))
+        
+        # Save current control for the next step
+        self.prev_ctrl = np.copy(self.data.ctrl)
+
+        # 2. Joint Acceleration (Shakiness)
+        step_accel = 0.0
         for name in self.controllers.keys():
-            step_vel += abs(self.data.qvel[self.qvel_ids[name]])
-        self.accumulated_joint_vel += step_vel
+            # self.data.qacc holds the accelerations computed by MuJoCo
+            step_accel += abs(self.data.qacc[self.qvel_ids[name]])
+        self.accumulated_joint_accel += step_accel
+
 
         # ==========================================
         # 6. RENDERING & ROS
@@ -308,7 +342,6 @@ class StickInsectEnv:
         # ==========================================
         # Forward Distance & Y-Axis Drift
         distance_walked = self.data.qpos[0] - self.start_pos[0]
-        
         drift_y = abs(self.data.qpos[1] - self.start_pos[1])
         
         # Instability 
@@ -318,31 +351,36 @@ class StickInsectEnv:
         mean_yaw = np.mean(self.history_yaw) if len(self.history_yaw) > 0 else 0
         instability = var_z + mean_roll + mean_pitch + mean_yaw
         
-        # --- NEW: Shaking & Energy Costs ---
-        total_steps = len(self.history_z) if len(self.history_z) > 0 else 1
-        energy_cost = self.accumulated_energy / total_steps          # Averages the squared torques
-        velocity_cost = self.accumulated_joint_vel / total_steps     # Averages the joint speeds
-
-        # Survival Bonus 
-        current_z_height = self.data.qpos[2]
-        survival_penalty = -10.0 if current_z_height < 0.15 else 1.0
+        # Averages for penalties
+        if self.step_count > 0:
+            avg_torque_ripple = self.accumulated_torque_ripple / self.step_count
+            avg_joint_accel   = self.accumulated_joint_accel / self.step_count
+            
+            # --- NEW: Calculate Average Collision ---
+            avg_collision     = self.accumulated_collision / self.step_count
+        else:
+            avg_torque_ripple = 0.0
+            avg_joint_accel   = 0.0
+            avg_collision     = 0.0
 
         # ==========================================
         # 3. TOTAL REWARD COMPUTATION
         # ==========================================
-        w1 = 3.0      # Distance weight
-        w2 = 1.0      # Instability weight
-        w3 = 0.001    # Energy (Torque) penalty weight
+        w1 = 5.0      # Distance weight
+        w2 = 2.0      # Instability weight
         w4 = 5.0      # Y-Drift penalty weight
-        w5 = 0.05     # Shaking (Velocity) penalty weight
         
-        total_reward = (w1 * distance_walked) - (w2 * instability) - (w3 * energy_cost) - (w4 * drift_y) - (w5 * velocity_cost) + survival_penalty
-
+        w_collision = 2.0  # NEW: Collision penalty weight
+        w_ripple    = 0.0 
+        w_accel     = 0.0  
+        
+        total_reward = (w1 * distance_walked) - (w2 * instability) - (w4 * drift_y) - (w_collision * avg_collision) - (w_ripple * avg_torque_ripple) - (w_accel * avg_joint_accel)
+        
         return {
             "distance_walked":  (w1 * distance_walked),
             "instability":      -(w2 * instability),
-            "collision":        -(w4 * drift_y),        # Reused for logger
-            "slippage":         -(w5 * velocity_cost),  # Reused for logger (now tracks velocity penalty)
+            "collision":        -(w_collision * avg_collision),        
+            "slippage":         -(w4 * drift_y) - (w_ripple * avg_torque_ripple) - (w_accel * avg_joint_accel),  
             "total_reward":     total_reward
         }
     

@@ -12,18 +12,20 @@ from cpg_rbf.rbf import RBF
 # CONFIGURATION
 # ==========================================
 LOG_DIR = "data/pibb_logs/"
-SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260708_155502.json" 
+SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260711_053503.json" 
 
 # Which iterations do you want to compare on the graph?
-# Pick a spread: e.g., the start, a middle point, and the final result.
-ITERATIONS_TO_PLOT = [0, 50, 150, 349] 
+ITERATIONS_TO_PLOT = [0, 25, 50, 75, 100, 150, 300] 
 
 # Network constraints (Must match main_learning.py)
 NUM_KERNELS = 20
-CPG_PHI = 0.02
+CPG_PHI = 0.05
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
 JOINT_NAMES = [0, 1, 2, 3]
+
+# The color that will fade in
+BASE_COLOR = '#1f77b4' 
 
 def get_latest_log_file(directory):
     list_of_files = glob.glob(os.path.join(directory, '*.json'))
@@ -33,15 +35,19 @@ def get_latest_log_file(directory):
 
 def extract_joint_weights(flat_parameters, target_joint):
     """
-    Finds the exact slice of 20 weights for the requested joint 
-    from the massive flat list of parameters.
+    Extracts the 20 weights for the requested joint. 
+    Includes Weight Symmetry mapping for 160-parameter arrays.
     """
-    joint_keys = [f'{index}{side}{joint}' for side in LEG_SIDE for index in LEG_INDEX for joint in JOINT_NAMES]
+    # 1. Define the 8 joints that are actually saved in the JSON (Right side only)
+    base_keys = [f'{index}R{joint}' for index in LEG_INDEX for joint in JOINT_NAMES]
+    
+    # 2. If asking for a Left leg, secretly map it to the Right leg's weights
+    mapped_joint = target_joint.replace('L', 'R')
     
     try:
-        joint_index = joint_keys.index(target_joint)
+        joint_index = base_keys.index(mapped_joint)
     except ValueError:
-        print(f"Error: Joint {target_joint} not found. Valid options: {joint_keys}")
+        print(f"Error: Joint {target_joint} not found.")
         exit()
         
     start_idx = joint_index * NUM_KERNELS
@@ -73,12 +79,16 @@ def plot_learned_trajectories():
     # Create a time array (X-axis) representing one full step cycle
     time_steps = np.arange(cpg_cycle_length)
 
+    # ===============================================================
+    # GENERATE ALPHA GRADIENT
+    # ===============================================================
+    # Creates an evenly spaced array from 0.2 (faint) to 1.0 (solid)
+    alpha_values = np.linspace(0.05, 1.0, len(ITERATIONS_TO_PLOT))
+
     # Create a 4x4 grid of subplots for all 16 joints
-    fig, axs = plt.subplots(4, 4, figsize=(20, 16), sharex=True, sharey=True)
-    fig.suptitle('Evolution of Rhythmic Trajectories for All Joints', fontsize=22, fontweight='bold')
+    fig, axs = plt.subplots(4, 4, figsize=(16, 12), sharex=True, sharey=True)
 
     # To keep plots organized: Rows = Legs, Cols = Joints
-    # LEG_SIDE = ['R', 'L'], LEG_INDEX = ['F', 'B'] -> ['FR', 'BR', 'FL', 'BL']
     legs = [f"{index}{side}" for side in LEG_SIDE for index in LEG_INDEX] 
     
     for i, leg in enumerate(legs):
@@ -87,8 +97,7 @@ def plot_learned_trajectories():
             ax = axs[i, j]
 
             # Extract and Plot the trajectory for each requested iteration
-            for target_iter in ITERATIONS_TO_PLOT:
-                # Find the log entry for this iteration
+            for idx, target_iter in enumerate(ITERATIONS_TO_PLOT):
                 entry = next((item for item in log_data if item["iteration"] == target_iter), None)
                 
                 if entry is None:
@@ -96,6 +105,8 @@ def plot_learned_trajectories():
                     
                 # Extract the best parameters found in that iteration
                 best_flat_params = entry["best_parameters"]
+                
+                # --- NEW SYMMETRY EXTRACTOR ---
                 joint_weights = extract_joint_weights(best_flat_params, target_joint)
                 
                 # Generate the rhythmic target angle for every step in the CPG cycle
@@ -104,8 +115,9 @@ def plot_learned_trajectories():
                     angle = rbf.regenerate_target_traj(out0[t], out1[t], joint_weights)
                     trajectory.append(angle)
                     
-                # Plot it
-                ax.plot(time_steps, trajectory, label=f'Iter {target_iter}', linewidth=2)
+                # Plot it using the fixed color and the gradient alpha
+                ax.plot(time_steps, trajectory, label=f'Iteration {target_iter}', 
+                        color=BASE_COLOR, alpha=alpha_values[idx], linewidth=2)
 
             # Subplot formatting
             ax.set_title(f'Joint: {target_joint}', fontsize=14, fontweight='bold')
@@ -118,20 +130,17 @@ def plot_learned_trajectories():
             if j == 0:
                 ax.set_ylabel('Angle Offset (Rad)', fontsize=12)
 
-    # Add a single legend for the entire figure to save space in the individual subplots
+    # Add a single legend for the entire figure
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper right', fontsize=14, bbox_to_anchor=(0.98, 0.98))
-    
-    plt.tight_layout()
-    # Adjust top boundary to make room for the master title and legend
-    plt.subplots_adjust(top=0.92)
+    fig.legend(handles, labels, ncol=4, fontsize=14, bbox_to_anchor=(0.98, 1.0))
     
     # Save the plot
-    save_path = "trajectory_all_joints.png"
+    save_path = "trajectory_all_joints_alpha.png"
     plt.savefig(save_path, dpi=300)
     print(f"Saved plot to: {save_path}")
     
     plt.show()
+    plt.grid(False)
 
 if __name__ == "__main__":
     plot_learned_trajectories()
