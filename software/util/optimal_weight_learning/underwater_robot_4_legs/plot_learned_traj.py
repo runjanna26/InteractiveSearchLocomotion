@@ -12,7 +12,7 @@ from cpg_rbf.rbf import RBF
 # CONFIGURATION
 # ==========================================
 LOG_DIR = "data/pibb_logs/"
-SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260711_053503.json" 
+SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260715_154125.json" 
 
 # Which iterations do you want to compare on the graph?
 ITERATIONS_TO_PLOT = [0, 25, 50, 75, 100, 150, 300] 

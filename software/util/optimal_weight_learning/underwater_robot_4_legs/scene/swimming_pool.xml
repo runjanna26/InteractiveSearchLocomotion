@@ -1,11 +1,22 @@
 <mujocoinclude>
     <asset>
-        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
-        <material name="matplane" reflectance="0.3" texture="texplane" texrepeat="1 1" texuniform="true" />
-         <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512" />
-        <texture name="texrough" type="2d" builtin="gradient" rgb1="0.7 .1 .1" rgb2=".3 .05 .05" 
-                 width="512" height="512" mark="edge" markrgb="0 0 0" />
-        <material name="matrough" reflectance="0.5" shininess="1" specular="1" texture="texrough"/>
+        <texture name="texplane" type="2d" builtin="checker" rgb1="0.05 0.05 0.05" rgb2="0.4 0.4 0.4" width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
+        <material name="solid_ground" texture="texplane" reflectance="0.3"  texrepeat="1 1" texuniform="true" />
+
+        <texture name="texplane_2" type="2d" builtin="checker" rgb1=".4 .3 .2" rgb2="0.2 0.15 0.1" width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
+        <material name="soft_ground" texture="texplane_2" reflectance="0.3"  texrepeat="1 1" texuniform="true" />
+
+        <texture name="texplane_3" type="2d" builtin="checker" rgb1="0.4 0.2 0.04" rgb2="0.5 0.3 0.2" width="512" height="512" mark="cross" markrgb=".2 .2 .2" />
+        <material name="muddy_ground" texture="texplane_3" reflectance="0.3"  texrepeat="1 1" texuniform="true" />
+        
+        <texture name="texplane_4" type="2d" builtin="checker" rgb1="0.05 0.1 0.15" rgb2="0.1 0.15 0.25" width="512" height="512" mark="cross" markrgb=".2 .2 .2" />
+        <material name="slippery_ground" texture="texplane_4" reflectance="0.3"  texrepeat="1 1" texuniform="true" />
+
+
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512" />
+
+        <texture name="texrough" type="2d" builtin="gradient" rgb1="0.7 .1 .1" rgb2=".3 .05 .05" width="512" height="512" mark="edge" markrgb="0 0 0" />
+        <material name="matrough" texture="texrough" reflectance="0.5" shininess="1" specular="1"/>
     </asset>
 
     <worldbody>

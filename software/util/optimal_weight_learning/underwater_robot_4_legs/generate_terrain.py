@@ -88,13 +88,13 @@ class TerrainGenerator:
         geom_name = f"{name}_geom"
         line = (f'<geom name="{geom_name}" type="box" size="{size_x:.3f} {size_y:.3f} {size_z:.3f}" '
                 f'pos="{pos_x:.3f} {pos_y:.3f} {pos_z:.3f}" '
-                f'rgba="0.1 0.0 0.2 1" friction="2.0 0.05 0.01"/>')
+                f'material="solid_ground" friction="2.0 0.05 0.01" contype="1" conaffinity="1"/>')
         xml_lines.append(line)
 
         xml_lines.append('</body>')
         return "\n".join(xml_lines)
     
-    def generate_sponge_terrain(self,
+    def generate_soft_terrain(self,
                             name='generated_terrain', 
                             n_rows=10, 
                             n_cols=3, 
@@ -141,21 +141,21 @@ class TerrainGenerator:
         line = (f'<geom name="{geom_name}" type="box" size="{size_x:.3f} {size_y:.3f} {size_z:.3f}" '
                 f'pos="{pos_x:.3f} {pos_y:.3f} {pos_z:.3f}" '
                 f'rgba="0.5 0.647 0 0.5" friction="1.0 0.05 0.01" '
-                f'solref="0.1 5.0" solimp="0.001 0.99 0.05 0.5 2"/>')
+                f'material="soft_ground" solref="0.1 0.7" solimp="0.1 0.99 0.08"/>')
         xml_lines.append(line)
 
         xml_lines.append('</body>')
         return "\n".join(xml_lines)
     
-    def generate_sandy_terrain(self,
-                           name='generated_terrain', 
-                           n_rows=10, 
-                           n_cols=3, 
-                           h_base=0.2, 
-                           spacing=0.25, 
-                           start_pos=(2.5, 0, 1.5)):
+    def generate_slippery_terrain(self,
+                               name='generated_terrain', 
+                               n_rows=10, 
+                               n_cols=3, 
+                               h_base=0.2, 
+                               spacing=0.25, 
+                               start_pos=(2.5, 0, 1.5)):
         """
-        Generates a MuJoCo XML string for a single monolithic block of sandy terrain.
+        Generates a MuJoCo XML string for a single monolithic block of icy terrain.
         
         Args:
             n_rows: Length multiplier
@@ -163,8 +163,6 @@ class TerrainGenerator:
             h_base: Total box thickness
             spacing: Used to scale the total size based on grid parameters
             start_pos: Tuple (x, y, z) for the start of the terrain block
-            
-            solref/solimp: Tuned specifically for a softer, sandy contact dynamic.
         """
         # 1. Calculate total dimensions based on the grid parameters
         total_length_x = n_rows * spacing
@@ -185,12 +183,14 @@ class TerrainGenerator:
         # Body wrapper for the entire terrain block
         xml_lines.append(f'<body name="{name}" pos="{start_pos[0]} {start_pos[1]} {start_pos[2]}">')
 
-        # The single monolithic sandy box
+        # --- ICE MODIFICATIONS ---
+        # 1. rgba changed to a translucent light blue to look like ice
+        # 2. friction lowered massively (0.02 sliding friction)
+        # 3. solref and solimp removed so the ice acts like a hard, solid surface
         geom_name = f"{name}_geom"
         line = (f'<geom name="{geom_name}" type="box" size="{size_x:.3f} {size_y:.3f} {size_z:.3f}" '
                 f'pos="{pos_x:.3f} {pos_y:.3f} {pos_z:.3f}" '
-                f'rgba="0.957 0.643 0.376 1" friction="1.0 0.05 0.01" '
-                f'solref="0.04 1.1" solimp="0.01 0.99 0.03"/>')
+                f'material="slippery_ground" friction="0.0 0.005 0.0001" />')
         xml_lines.append(line)
 
         xml_lines.append('</body>')
@@ -240,7 +240,51 @@ class TerrainGenerator:
         line = (f'<geom name="{geom_name}" type="box" size="{size_x:.3f} {size_y:.3f} {size_z:.3f}" '
                 f'pos="{pos_x:.3f} {pos_y:.3f} {pos_z:.3f}" '
                 f'rgba="0.445 0.171 0.075 1" friction="1.0 0.05 0.01" '
-                f'solref="0.1 1.5" solimp="0.9 0.99 0.001 0.5 2"/>')
+                f'material="muddy_ground" solref="0.2 3.0" solimp="0.0 0.99 0.15"/>')  
+        xml_lines.append(line)
+
+        xml_lines.append('</body>')
+        
+        return "\n".join(xml_lines)
+    
+
+    def generate_water_pool(self,
+                           name='water_pool', 
+                           n_rows=10, 
+                           n_cols=3, 
+                           depth=1.0, 
+                           spacing=0.25, 
+                           start_pos=(2.5, 0, 1.5)):
+        """
+        Generates a MuJoCo XML string for a visual-only block of water.
+        Physics (buoyancy/drag) must be handled by the Python Hydrodynamics class!
+        """
+        # 1. Calculate total dimensions
+        total_length_x = n_rows * spacing
+        total_width_y = n_cols * spacing
+        
+        # 2. MuJoCo box 'size' takes half-extents
+        size_x = total_length_x / 2.0
+        size_y = total_width_y / 2.0
+        size_z = depth / 2.0
+        
+        # 3. Calculate position relative to body origin
+        pos_x = size_x - (spacing / 2.0)
+        pos_y = 0.0
+        pos_z = size_z
+
+        xml_lines = []
+        
+        xml_lines.append(f'<body name="{name}" pos="{start_pos[0]} {start_pos[1]} {start_pos[2]}">')
+
+        # --- WATER MODIFICATIONS ---
+        # 1. contype="0" conaffinity="0" : Makes the water a ghost (no rigid collisions)
+        # 2. rgba : Translucent blue so you can see the robot swimming underneath
+        # 3. Removed friction, solref, and solimp (Ghosts don't have friction!)
+        geom_name = f"{name}_geom"
+        line = (f'<geom name="{geom_name}" type="box" size="{size_x:.3f} {size_y:.3f} {size_z:.3f}" '
+                f'pos="{pos_x:.3f} {pos_y:.3f} {pos_z:.3f}" '
+                f'rgba="0.1 0.4 0.8 0.4" contype="0" conaffinity="0" />')  
         xml_lines.append(line)
 
         xml_lines.append('</body>')

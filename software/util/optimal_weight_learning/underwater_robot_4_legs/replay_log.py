@@ -19,10 +19,10 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260711_053503.json" # <-- Paste your actual log filename here
-TARGET_ITERATION = -1   # Set to -1 for the last iteration, or a specific number (e.g., 150)
+LOG_FILE = "data/pibb_logs/pibb_training_20260716_002950.json" # <-- Paste your actual log filename here
+TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
 SIMULATION_STEPS = 100000000
-CPG_PHI = 0.05
+CPG_PHI = 0.03
 
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
@@ -57,33 +57,59 @@ if __name__ == "__main__":
     
     print(f"Replaying Iteration {selected_data['iteration']} | Max Fitness: {fitness_score:.4f}")
 
-    # 3. Slice the weights for your joints (Exact same as before)
-    # imitated_weights = {}
-    # joint_keys = [(side, index, joint) for side in LEG_SIDE for index in LEG_INDEX for joint in JOINT_NAMES]
     
-    # for i, (side, index, joint) in enumerate(joint_keys):
-    #     start_idx = i * NUM_KERNELS
-    #     end_idx = start_idx + NUM_KERNELS
-    #     dict_key = f'{index}{side}{joint}'
-    #     imitated_weights[dict_key] = trained_weights[start_idx:end_idx]
 
-    # Assuming 'best_parameters' is the variable holding the 160 weights loaded from your JSON
-    imitated_weights = {}
-    joint_index = 0
+
+    # # ===============================================================
+    # # WEIGHT SYMMETRY LOGIC
+    # # ===============================================================
+    # imitated_weights = {}
     
-    for index in LEG_INDEX: 
-        for joint in JOINT_NAMES:
-            start_idx = joint_index * NUM_KERNELS
-            end_idx = start_idx + NUM_KERNELS
+    # # 1. We only loop through the Front ('F') and Back ('B') indices
+    # joint_index = 0
+    # for index in LEG_INDEX: 
+    #     for joint in JOINT_NAMES:
+    #         start_idx = joint_index * NUM_KERNELS
+    #         end_idx = start_idx + NUM_KERNELS
             
-            # Extract the 20 weights for this specific joint
-            extracted_weights = trained_weights[start_idx:end_idx]
+    #         # Extract the 20 weights for this specific joint
+    #         extracted_weights = trained_weights[start_idx:end_idx]
             
-            # MIRROR them exactly to both the RIGHT and LEFT sides!
-            imitated_weights[f"{index}R{joint}"] = extracted_weights
-            imitated_weights[f"{index}L{joint}"] = extracted_weights 
+    #         # 2. Assign these weights to the RIGHT side
+    #         right_key = f"{index}R{joint}"
+    #         imitated_weights[right_key] = extracted_weights
             
-            joint_index += 1
+    #         # 3. MIRROR them exactly to the LEFT side!
+    #         left_key = f"{index}L{joint}"
+    #         imitated_weights[left_key] = extracted_weights
+            
+    #         joint_index += 1
+    # # ===============================================================
+
+    # ===============================================================
+    # FULLY INDEPENDENT WEIGHT LOGIC (No Symmetry)
+    # ===============================================================
+    imitated_weights = {}
+    
+    # We must loop through BOTH sides now, exactly matching the order
+    # that base_parameters was packed in the main loop!
+    joint_index = 0
+    for side in LEG_SIDE:       # ['R', 'L']
+        for index in LEG_INDEX: # ['F', 'B']
+            for joint in JOINT_NAMES: # [0, 1, 2, 3]
+                
+                start_idx = joint_index * NUM_KERNELS
+                end_idx = start_idx + NUM_KERNELS
+                
+                # Extract the 20 weights for this specific independent joint
+                extracted_weights = trained_weights[start_idx:end_idx]
+                
+                # Assign them directly to the unique dictionary key
+                dict_key = f"{index}{side}{joint}"
+                imitated_weights[dict_key] = extracted_weights
+                
+                joint_index += 1
+    # ===============================================================
 
     # 3. Initialize Neural Networks
     cpg = CPG_SO2()
@@ -160,7 +186,7 @@ if __name__ == "__main__":
                     
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
-                    target_angle = baseline_angle + network_output
+                    target_angle =  network_output
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
                     actuator_name = f"{index}{side}_J{joint+1}"  

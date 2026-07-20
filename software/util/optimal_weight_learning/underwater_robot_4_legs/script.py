@@ -5,6 +5,10 @@ import mujoco.viewer
 import rclpy
 import math
 
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
 
 # Assuming these are available in your workspace
 from ros2_node import StickInsectNode
@@ -26,6 +30,8 @@ class StickInsectEnv:
         self.enable_ros = enable_ros
         self.has_viewer = render
         self.robot_fixed = False
+
+        self.frame_skip = 1
         
         # 1. Generate Terrain and Load Model
         self._build_environment()
@@ -49,11 +55,13 @@ class StickInsectEnv:
     def _build_environment(self):
         x_start = -20
         tg = TerrainGenerator()
-        # terrain_xml             = tg.generate_rough_terrain(    name = 'rough_terrain_1',   n_rows=64, n_cols=64, start_pos=(x_start, 0, 1.5))
-        terrain_xml                 = tg.generate_flat_terrain(     name = 'flat_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
-        # sponge_terrain_xml      = tg.generate_sponge_terrain(   name = 'sponge_terrain_1',  n_rows=36, n_cols=36, start_pos=(x_start + 18, 0, 1.5))
-        # sandy_terrain_xml       = tg.generate_sandy_terrain(    name = 'sandy_terrain_1',   n_rows=36, n_cols=36, start_pos=(x_start + 27, 0, 1.5))
-        # muddy_terrain_xml       = tg.generate_muddy_terrain(    name = 'muddy_terrain_1',   n_rows=36, n_cols=36, start_pos=(x_start + 36, 0, 1.5))
+        # terrain_xml             = tg.generate_rough_terrain(    name = 'rough_terrain_1',   n_rows=100, n_cols=100, start_pos=(x_start+15, 0, 1.5))
+        # terrain_xml                 = tg.generate_flat_terrain(     name = 'flat_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
+        # terrain_xml                 = tg.generate_soft_terrain(     name = 'soft_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
+        # terrain_xml                 = tg.generate_muddy_terrain(     name = 'muddy_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
+        # terrain_xml                 = tg.generate_slippery_terrain (     name = 'slippery_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
+        
+        terrain_xml                 = tg.generate_flat_terrain(     name = 'water_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, -1.5))
 
         # rough_water_terrain_xml       = tg.generate_rough_terrain(    name = 'rough_water_terrain_1',   n_rows=36, n_cols=36, start_pos=(-16.25 + x_start, 0, 0.25), h_dev=0.05)
         # flat_water_terrain_xml        = tg.generate_flat_terrain(     name = 'flat_water_terrain_1',    n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 9, 0, 0.25))
@@ -64,10 +72,16 @@ class StickInsectEnv:
 
         with open("main_scene.xml", "r") as f:
             base_xml = f.read()
-            
         complete_xml = base_xml.replace("INCLUDE_TERRAIN", terrain_xml, 1)
         self.model = mujoco.MjModel.from_xml_string(complete_xml)
+
+        # self.model = mujoco.MjModel.from_binary_path("fast_rough_scene.mjb")
+
+
         self.data = mujoco.MjData(self.model)
+
+        # mujoco.mj_saveModel(self.model, "fast_rough_scene.mjb", None)
+        # print("Binary model saved!")
 
     def _get_actuator_name(self, idx):
         addr = self.model.name_actuatoradr[idx]
@@ -106,10 +120,16 @@ class StickInsectEnv:
         return foot_geom_ids
 
     def _setup_camera(self):
-        self.viewer.cam.lookat[:] = [0.0, 0.0, 2]
-        self.viewer.cam.distance = 4.0
-        self.viewer.cam.azimuth = 45
-        self.viewer.cam.elevation = -15
+        robot_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "robot")
+        
+        # 2. Change the default Free Camera into a Tracking Camera
+        self.viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+        self.viewer.cam.trackbodyid = robot_body_id
+        
+        # 3. Set the default starting angle (Optional but highly recommended)
+        self.viewer.cam.distance = 3.0    # How far away to start (meters)
+        self.viewer.cam.azimuth = 135      # Rotate left/right (degrees)
+        self.viewer.cam.elevation = -20   # Tilt up/down (degrees)
 
     def get_grf(self):
         grf = {name: 0.0 for name in FOOT_NAMES}
@@ -166,11 +186,15 @@ class StickInsectEnv:
 
     
             # Prevent exploding torques
-            torque = np.clip(ctrl.get_torque(), -12.0, 12.0) 
+            torque = np.clip(ctrl.get_torque(), -15.0, 15.0) 
             self.data.ctrl[self.actuator_ids[name]] = torque
 
         # Apply Custom Hydrodynamics
         self.hydro.apply(self.data)
+        # for _ in range(self.frame_skip):
+        #     # GOOD: Apply hydrodynamics right before EVERY physics step
+        #     self.hydro.apply(self.data)
+        #     mujoco.mj_step(self.model, self.data)
 
         # Step MuJoCo
         mujoco.mj_step(self.model, self.data)
@@ -226,6 +250,7 @@ class StickInsectEnv:
                         break # Stop checking prefixes
                         
         self.accumulated_collision += step_collision
+        # print(self.accumulated_collision)
         # ==========================================
         # 4. TRACK SLIPPAGE (Optimized to prevent double-counting)
         # ==========================================
@@ -320,22 +345,22 @@ class StickInsectEnv:
         # ==========================================
         # 1. EARLY SAFEGUARD (Must execute first)
         # ==========================================
-        roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
+        # roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
         
         # Catch explosions or flips instantly
-        if (np.isnan(self.data.qpos).any() or 
-            np.isnan(self.data.qvel).any() or 
-            self.data.qpos[2] > 3.0 or 
-            abs(roll) > 1.5 or 
-            abs(pitch) > 1.5):
+        # if (np.isnan(self.data.qpos).any() or 
+        #     np.isnan(self.data.qvel).any() or 
+        #     self.data.qpos[2] > 3.0 or 
+        #     abs(roll) > 1.5 or 
+        #     abs(pitch) > 1.5):
             
-            return {
-                "distance_walked": 0.0,
-                "instability": 0.0,
-                "collision": 0.0,
-                "slippage": 0.0,
-                "total_reward": -1000.0
-            }
+        #     return {
+        #         "distance_walked": 0.0,
+        #         "instability": 0.0,
+        #         "collision": 0.0,
+        #         "slippage": 0.0,
+        #         "total_reward": -1000.0
+        #     }
 
         # ==========================================
         # 2. CALCULATE METRICS
@@ -366,11 +391,11 @@ class StickInsectEnv:
         # ==========================================
         # 3. TOTAL REWARD COMPUTATION
         # ==========================================
-        w1 = 5.0      # Distance weight
-        w2 = 2.0      # Instability weight
-        w4 = 5.0      # Y-Drift penalty weight
+        w1 = 30.0      # Distance weight
+        w2 = 5.0      # Instability weight
+        w4 = 0.0      # Y-Drift penalty weight
         
-        w_collision = 2.0  # NEW: Collision penalty weight
+        w_collision = 1000.0  # NEW: Collision penalty weight
         w_ripple    = 0.0 
         w_accel     = 0.0  
         

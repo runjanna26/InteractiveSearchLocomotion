@@ -11,22 +11,22 @@ class Hydrodynamics:
         # Simulation parameters (tune these for more/less drag and buoyancy)
         # DRAG COEFFICIENTS
         # Cylinder moving sideways (flat against flow)
-        self.Cd_side = 2 # <--- INCREASE this to make it "thicker" 1.2
+        self.Cd_side = 6.0 # <--- INCREASE this to make it "thicker" 1.2
         # Cylinder moving end-on (like a needle)
-        self.Cd_end = 2  # <--- INCREASE this to make it "thicker" 0.8
+        self.Cd_end = 0.5  # <--- INCREASE this to make it "thicker" 0.8
         
-        self.linear_drag_coeff = 150.0 
-        self.angular_drag_coeff = 20.0 # Tune this if it spins too much or too little
+        self.linear_drag_coeff = 40.0 
+        self.angular_drag_coeff = 10.0 # Tune this if it spins too much or too little
 
         # Robot density to ensure robot floats (500 kg/m^3 = Light wood/plastic)
-        target_density = 950.0 
-        # target_density = 1800.0 
+        target_density = 900 
 
 
         # Pre-calculate Body Properties
         self.body_props = {}
         # Skip the world body (index 0)
         self.body_ids = [i for i in range(1, self.model.nbody)]
+        self.torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "robot")
         
 
 
@@ -89,44 +89,51 @@ class Hydrodynamics:
             f_buoy = self.density * self.gravity * (props['vol'] * submerged_ratio)
             data.xfrc_applied[i][2] += f_buoy
             
-            # --- 3. APPLY LINEAR DRAG (Stops the bouncing) ---
-            vel = data.cvel[i][3:6] # Linear velocity
+            
+            if i == self.torso_id:
+                continue # Skip the rest of the loop for the torso!
+
+            # ==========================================
+            # GET GLOBAL ROTATION MATRIX
+            # ==========================================
+            rot = data.xmat[i].reshape(3, 3)
+
+            # --- 3. APPLY LINEAR DRAG ---
+            local_lin_vel = data.cvel[i][3:6]
+            
+            # 🚨 THE FIX: Rotate local velocity into the global world frame!
+            vel = rot @ local_lin_vel 
             speed = np.linalg.norm(vel)
             
             if speed > 1e-4:
                 vel_dir = vel / speed
-                rot = data.xmat[i].reshape(3, 3)
-                axis_z = rot[:, 2] 
+                axis_z = rot[:, 2] # Global direction of the part's length
                 
                 alignment = abs(np.dot(axis_z, vel_dir))
                 area = (alignment * props['area_end']) + ((1.0 - alignment) * props['area_side'])
                 cd   = (alignment * self.Cd_end)       + ((1.0 - alignment) * self.Cd_side)
                 
                 quadratic_drag = 0.5 * self.density * (speed**2) * cd * area
-                
-                # INCREASED for density 500.0. If it still bounces, increase to 200.0 or 300.0
                 linear_drag = self.linear_drag_coeff * speed * area 
                 
                 drag_mag = (quadratic_drag + linear_drag) * submerged_ratio
                 f_drag = -drag_mag * vel_dir
                 
+                # Apply global drag to global xfrc_applied
                 data.xfrc_applied[i][0] += f_drag[0]
                 data.xfrc_applied[i][1] += f_drag[1]
                 data.xfrc_applied[i][2] += f_drag[2]
 
-            # --- 4. APPLY ANGULAR DRAG (Stops the spinning) ---
-            ang_vel = data.cvel[i][0:3] # Angular velocity
+            # --- 4. APPLY ANGULAR DRAG ---
+            local_ang_vel = data.cvel[i][0:3] 
+            
+            # 🚨 THE FIX: Rotate local angular velocity into global frame!
+            ang_vel = rot @ local_ang_vel
             ang_speed = np.linalg.norm(ang_vel)
             
             if ang_speed > 1e-4:
-                # Water provides heavy resistance to spinning. 
-                # We scale it by the volume of the part and how submerged it is.
-                
-                
-                # Torque = -k * angular_velocity * volume * submersion
                 torque_drag = -self.angular_drag_coeff * ang_vel * props['vol'] * submerged_ratio
                 
-                # Apply the torque to xfrc_applied indices 3, 4, 5
                 data.xfrc_applied[i][3] += torque_drag[0]
                 data.xfrc_applied[i][4] += torque_drag[1]
                 data.xfrc_applied[i][5] += torque_drag[2]
