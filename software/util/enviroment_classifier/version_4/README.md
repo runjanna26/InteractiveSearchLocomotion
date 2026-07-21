@@ -1,1 +1,0 @@
-# Echo State Network Resevior Classifier using Ridge Regression
