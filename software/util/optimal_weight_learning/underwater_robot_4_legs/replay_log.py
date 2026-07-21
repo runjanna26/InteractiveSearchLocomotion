@@ -19,10 +19,10 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260721_144815.json" # <-- Paste your actual log filename here
-TARGET_ITERATION = 100  # Set to -1 for the last iteration, or a specific number (e.g., 150)
+LOG_FILE = "data/pibb_logs/pibb_training_20260721_235931.json" # <-- Paste your actual log filename here
+TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
 SIMULATION_STEPS = 100000000
-CPG_PHI = 0.03
+CPG_PHI = 0.05
 
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
@@ -72,24 +72,31 @@ if __name__ == "__main__":
             start_idx = joint_index * NUM_KERNELS
             end_idx = start_idx + NUM_KERNELS
             
-            # 1. Get the Learned Weights (for the Right side) from the JSON log
-            learned_weights = np.array(trained_weights[start_idx:end_idx])
-            
-            # 2. Get the Original Priors to calculate the offset
+            # 1. Get the Original Priors first so we can use them for the freeze
             right_key = f"{index}R{joint}"
             left_key = f"{index}L{joint}"
             
             right_prior = np.array(prior_knowledge[right_key])
             left_prior = np.array(prior_knowledge[left_key])
             
+            # ==========================================
+            # 🚨 THE FIX: FREEZE JOINT 1 
+            # ==========================================
+            if joint == 1:
+                # FREEZE: Ignore the JSON log. Force it to be the original prior.
+                learned_weights = np.copy(right_prior)
+            else:
+                # LEARN: Get the optimized weights from the JSON log
+                learned_weights = np.array(trained_weights[start_idx:end_idx])
+            
             # Calculate the exact difference (Left - Right)
             offset_weights = left_prior - right_prior
             
-            # 3. Assign the pure learned weights to the RIGHT side
+            # 3. Assign the pure weights to the RIGHT side
             imitated_weights[right_key] = learned_weights
             
-            # 4. Assign the Learned Weights + Original Offset to the LEFT side
-            imitated_weights[left_key] = learned_weights
+            # 4. Assign the Weights + Original Offset to the LEFT side
+            imitated_weights[left_key] = learned_weights + offset_weights
             
             joint_index += 1
     # ===============================================================
@@ -169,13 +176,13 @@ if __name__ == "__main__":
             cpg_mod_cmd[f'{index}{side}']   = {'phi': CPG_PHI, 'pause_input': 0.0, 'rewind_input': 1.0}
 
 
-    # half_cycle = cpg_cycle_length // 2
+    half_cycle = cpg_cycle_length // 2
     
-    # for _ in range(half_cycle):
-    #     # Manually step the FL and BR oscillators forward in time
-    #     # before the MuJoCo simulation even begins.
-    #     cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
-    #     cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    for _ in range(half_cycle):
+        # Manually step the FL and BR oscillators forward in time
+        # before the MuJoCo simulation even begins.
+        cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+        cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
 
     # 4. Initialize Environment WITH Rendering (and ROS if you want to record bags)
     env = StickInsectEnv(enable_ros=True, render=True) 

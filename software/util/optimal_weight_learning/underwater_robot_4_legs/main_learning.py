@@ -18,9 +18,9 @@ os.environ["MKL_NUM_THREADS"] = "1"
 # CONFIGURATION
 # ======================================================
 RENDER = False
-ROLLOUTS = 12  # Number of parallel rollouts per iteration
+ROLLOUTS = 14  # Number of parallel rollouts per iteration
 SIMULATION_STEPS = 2500  # E.g., 5 seconds at 0.005s timestep
-ITERATIONS = 150
+ITERATIONS = 500
 NOISE_VARIANCE_INIT = 0.0010
 BASE_PARAM_INIT = 0.000
 NUM_KERNELS = 20 
@@ -49,7 +49,7 @@ STANDING_POSE = {
 # ======================================================
 # WORKER FUNCTION (Runs in a separate process)
 # ======================================================
-def evaluate_rollout(noisy_parameters, left_offsets, simulation_steps):
+def evaluate_rollout(noisy_parameters, left_offsets, right_priors, simulation_steps):
     """
     This function is executed by a separate CPU core.
     It creates its own headless environment to avoid MuJoCo pickling errors.
@@ -75,7 +75,7 @@ def evaluate_rollout(noisy_parameters, left_offsets, simulation_steps):
 
 
     # ===============================================================
-    # RESIDUAL SYMMETRY LOGIC (Preserves full prior, learns symmetrically)
+    # RESIDUAL SYMMETRY LOGIC (With Joint 1 Frozen!)
     # ===============================================================
     imitated_weights = {}
     
@@ -85,8 +85,13 @@ def evaluate_rollout(noisy_parameters, left_offsets, simulation_steps):
             start_idx = joint_index * NUM_KERNELS
             end_idx = start_idx + NUM_KERNELS
             
-            # The learned weights (based on the Right side prior)
-            learned_weights = np.array(noisy_parameters[start_idx:end_idx])
+            # 🚨 THE FIX: Freeze Joint 1
+            if joint == 1:
+                # FREEZE: Ignore PIBB completely. Force it to the original prior knowledge.
+                learned_weights = np.array(right_priors[start_idx:end_idx])
+            else:
+                # LEARN: Use PIBB's newly generated noisy parameters (for joints 0, 2, and 3)
+                learned_weights = np.array(noisy_parameters[start_idx:end_idx])
             
             # The exact difference between Left and Right from the prior knowledge
             offset_weights = np.array(left_offsets[start_idx:end_idx])
@@ -94,7 +99,7 @@ def evaluate_rollout(noisy_parameters, left_offsets, simulation_steps):
             # 1. Assign to RIGHT side
             right_key = f"{index}R{joint}"
             imitated_weights[right_key] = learned_weights
-            
+        
             # 2. Assign to LEFT side (Learned update + Original offset)
             left_key = f"{index}L{joint}"
             imitated_weights[left_key] = learned_weights + offset_weights
@@ -140,13 +145,13 @@ def evaluate_rollout(noisy_parameters, left_offsets, simulation_steps):
     # ===============================================================
     # We want Front-Left (FL) and Back-Right (BR) to be 180 degrees 
     # out of phase with Front-Right (FR) and Back-Left (BL).
-    # half_cycle = cpg_cycle_length // 2
+    half_cycle = cpg_cycle_length // 2
     
-    # for _ in range(half_cycle):
-    #     # Manually step the FL and BR oscillators forward in time
-    #     # before the MuJoCo simulation even begins.
-    #     cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
-    #     cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    for _ in range(half_cycle):
+        # Manually step the FL and BR oscillators forward in time
+        # before the MuJoCo simulation even begins.
+        cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+        cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
 
     # 3. Reset environment
     env.reset()
@@ -221,14 +226,14 @@ if __name__ == "__main__":
     # prior_knowledge = np.load('imitated_diving_beetle_walk_forward_weights.npz')
     prior_knowledge = np.load('imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
 
-    # Initialize base policy parameters
+    # Initialize lists
     base_parameters = []
     left_offsets = []
+    right_priors = [] # 🚨 NEW: Create a list for the original right-side priors
     
     LEG_INDEX   = ["F", "B"]
     JOINT_NAMES = [0, 1, 2, 3]
     
-    # 🚨 LOAD FULL PRIOR KNOWLEDGE, BUT SEPARATE THE OFFSET
     for index in LEG_INDEX:
         for joint in JOINT_NAMES:
             right_key = f"{index}R{joint}" 
@@ -237,14 +242,19 @@ if __name__ == "__main__":
             right_weights = np.array(prior_knowledge[right_key])
             left_weights = np.array(prior_knowledge[left_key])
             
-            # Base parameters for PIBB (160 weights)
+            # Base parameters for PIBB
             base_parameters.extend(right_weights)
             
-            # Calculate the difference to preserve the original Left prior
+            # Save the original right priors to send to the worker
+            right_priors.extend(right_weights)
+            
+            # Calculate the difference
             offset = left_weights - right_weights
             left_offsets.extend(offset)
+            
     base_parameters = np.array(base_parameters, dtype=np.float64)
     left_offsets = np.array(left_offsets, dtype=np.float64).tolist()
+    right_priors = np.array(right_priors, dtype=np.float64).tolist() 
     print(f"Successfully loaded {len(base_parameters)} base parameters and {len(left_offsets)} left offsets!")
 
     noise_variance = NOISE_VARIANCE_INIT
@@ -274,8 +284,8 @@ if __name__ == "__main__":
                 noisy_parameters = [base + n for base, n in zip(base_parameters, noise)]
                 
                 # 🚨 Add left_offsets to the bundled arguments!
-                noisy_parameters_list.append((noisy_parameters, left_offsets, SIMULATION_STEPS))
-
+                noisy_parameters_list.append((noisy_parameters, left_offsets, right_priors, SIMULATION_STEPS))
+            
             # 4. Dispatch tasks and wait for results (blocking)
             # starmap unpacks the tuples in noisy_parameters_list into the evaluate_rollout arguments
             rollout_results = pool.starmap(evaluate_rollout, noisy_parameters_list)
