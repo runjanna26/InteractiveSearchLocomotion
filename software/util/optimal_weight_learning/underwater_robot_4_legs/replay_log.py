@@ -19,8 +19,8 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260716_002950.json" # <-- Paste your actual log filename here
-TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
+LOG_FILE = "data/pibb_logs/pibb_training_20260721_144815.json" # <-- Paste your actual log filename here
+TARGET_ITERATION = 100  # Set to -1 for the last iteration, or a specific number (e.g., 150)
 SIMULATION_STEPS = 100000000
 CPG_PHI = 0.03
 
@@ -58,7 +58,41 @@ if __name__ == "__main__":
     print(f"Replaying Iteration {selected_data['iteration']} | Max Fitness: {fitness_score:.4f}")
 
     
+    # ===============================================================
+    # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior)
+    # ===============================================================
+    print("Loading Prior Knowledge to reconstruct Left offsets...")
+    prior_knowledge = np.load('imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
 
+    imitated_weights = {}
+    
+    joint_index = 0
+    for index in LEG_INDEX: 
+        for joint in JOINT_NAMES:
+            start_idx = joint_index * NUM_KERNELS
+            end_idx = start_idx + NUM_KERNELS
+            
+            # 1. Get the Learned Weights (for the Right side) from the JSON log
+            learned_weights = np.array(trained_weights[start_idx:end_idx])
+            
+            # 2. Get the Original Priors to calculate the offset
+            right_key = f"{index}R{joint}"
+            left_key = f"{index}L{joint}"
+            
+            right_prior = np.array(prior_knowledge[right_key])
+            left_prior = np.array(prior_knowledge[left_key])
+            
+            # Calculate the exact difference (Left - Right)
+            offset_weights = left_prior - right_prior
+            
+            # 3. Assign the pure learned weights to the RIGHT side
+            imitated_weights[right_key] = learned_weights
+            
+            # 4. Assign the Learned Weights + Original Offset to the LEFT side
+            imitated_weights[left_key] = learned_weights
+            
+            joint_index += 1
+    # ===============================================================
 
     # # ===============================================================
     # # WEIGHT SYMMETRY LOGIC
@@ -84,32 +118,32 @@ if __name__ == "__main__":
     #         imitated_weights[left_key] = extracted_weights
             
     #         joint_index += 1
-    # # ===============================================================
+    # ===============================================================
 
-    # ===============================================================
-    # FULLY INDEPENDENT WEIGHT LOGIC (No Symmetry)
-    # ===============================================================
-    imitated_weights = {}
+    # # ===============================================================
+    # # FULLY INDEPENDENT WEIGHT LOGIC (No Symmetry)
+    # # ===============================================================
+    # imitated_weights = {}
     
-    # We must loop through BOTH sides now, exactly matching the order
-    # that base_parameters was packed in the main loop!
-    joint_index = 0
-    for side in LEG_SIDE:       # ['R', 'L']
-        for index in LEG_INDEX: # ['F', 'B']
-            for joint in JOINT_NAMES: # [0, 1, 2, 3]
+    # # We must loop through BOTH sides now, exactly matching the order
+    # # that base_parameters was packed in the main loop!
+    # joint_index = 0
+    # for side in LEG_SIDE:       # ['R', 'L']
+    #     for index in LEG_INDEX: # ['F', 'B']
+    #         for joint in JOINT_NAMES: # [0, 1, 2, 3]
                 
-                start_idx = joint_index * NUM_KERNELS
-                end_idx = start_idx + NUM_KERNELS
+    #             start_idx = joint_index * NUM_KERNELS
+    #             end_idx = start_idx + NUM_KERNELS
                 
-                # Extract the 20 weights for this specific independent joint
-                extracted_weights = trained_weights[start_idx:end_idx]
+    #             # Extract the 20 weights for this specific independent joint
+    #             extracted_weights = trained_weights[start_idx:end_idx]
                 
-                # Assign them directly to the unique dictionary key
-                dict_key = f"{index}{side}{joint}"
-                imitated_weights[dict_key] = extracted_weights
+    #             # Assign them directly to the unique dictionary key
+    #             dict_key = f"{index}{side}{joint}"
+    #             imitated_weights[dict_key] = extracted_weights
                 
-                joint_index += 1
-    # ===============================================================
+    #             joint_index += 1
+    # # ===============================================================
 
     # 3. Initialize Neural Networks
     cpg = CPG_SO2()
@@ -135,13 +169,13 @@ if __name__ == "__main__":
             cpg_mod_cmd[f'{index}{side}']   = {'phi': CPG_PHI, 'pause_input': 0.0, 'rewind_input': 1.0}
 
 
-    half_cycle = cpg_cycle_length // 2
+    # half_cycle = cpg_cycle_length // 2
     
-    for _ in range(half_cycle):
-        # Manually step the FL and BR oscillators forward in time
-        # before the MuJoCo simulation even begins.
-        cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
-        cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    # for _ in range(half_cycle):
+    #     # Manually step the FL and BR oscillators forward in time
+    #     # before the MuJoCo simulation even begins.
+    #     cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    #     cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
 
     # 4. Initialize Environment WITH Rendering (and ROS if you want to record bags)
     env = StickInsectEnv(enable_ros=True, render=True) 

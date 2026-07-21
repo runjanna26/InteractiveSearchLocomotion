@@ -146,6 +146,21 @@ class StickInsectEnv:
         mujoco.mj_resetData(self.model, self.data)
         mujoco.mj_forward(self.model, self.data)
         
+        # --- NEW: LET THE ROBOT SETTLE IN THE WATER BEFORE THE EPISODE STARTS ---
+        # --- LET THE ROBOT SETTLE IN THE WATER ---
+        for _ in range(int(1.0 / self.model.opt.timestep)):
+            self.data.xfrc_applied[:] = 0.0  # Clear forces here too!
+            self.hydro.apply(self.data)
+            mujoco.mj_step(self.model, self.data)
+
+        # --- NEW: WARM-UP SETTINGS ---
+        # 1. Define how long to hold the robot while the CPG starts (e.g., 1.5 seconds)
+        self.warmup_steps = int(1.5 / self.model.opt.timestep) 
+        
+        # 2. Save the exact 6-DOF state of the torso (7 position values, 6 velocity values)
+        self.fixed_qpos = np.copy(self.data.qpos[:7])
+
+
         self.start_pos = np.copy(self.data.qpos[:3])
 
         self.step_count = 0
@@ -189,6 +204,27 @@ class StickInsectEnv:
             torque = np.clip(ctrl.get_torque(), -15.0, 15.0) 
             self.data.ctrl[self.actuator_ids[name]] = torque
 
+        # ==========================================
+        # 🚨 THE GOLD STANDARD PHYSICS STEP
+        # ==========================================
+        # Step 1 computes kinematics and WIPES any ghost viewer forces.
+        mujoco.mj_step1(self.model, self.data)
+        
+        # ==========================================
+        # 🚨 MANUAL FORCE CLEARING (Guarantees zero ghost forces)
+        # ==========================================
+        self.data.xfrc_applied[:] = 0.0
+        self.data.qfrc_applied[:] = 0.0
+
+        # Apply our water forces cleanly
+        self.hydro.apply(self.data)
+        
+        # Step 2 integrates the actual movement
+        mujoco.mj_step2(self.model, self.data)
+        
+        self.step_count += 1
+
+
         # Apply Custom Hydrodynamics
         self.hydro.apply(self.data)
         # for _ in range(self.frame_skip):
@@ -201,6 +237,25 @@ class StickInsectEnv:
         
         # Track total steps taken in this rollout (Crucial for fitness averages)
         self.step_count += 1
+
+
+        if self.step_count < self.warmup_steps:
+            # Overwrite the torso's position and rotation back to the starting point
+            self.data.qpos[:7] = self.fixed_qpos
+            # Force the torso's linear and angular velocity to strictly zero
+            self.data.qvel[:6] = 0.0
+            
+            # 🚨 THE MAGIC FIX: Manually update the spatial kinematics!
+            # This does exactly what the viewer was doing in the background.
+            mujoco.mj_forward(self.model, self.data)
+            
+            # Constantly reset the start position so distance tracking ONLY begins upon release
+            self.start_pos = np.copy(self.data.qpos[:3])
+            
+            # Render visualizer if enabled, but SKIP all collision/instability math below!
+            if self.has_viewer: self.render()
+            if self.enable_ros: self._handle_ros_feedback()
+            return
 
         # ==========================================
         # 2. TRACK INSTABILITY METRICS
@@ -347,7 +402,7 @@ class StickInsectEnv:
         # ==========================================
         # roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
         
-        # Catch explosions or flips instantly
+        # # Catch explosions or flips instantly
         # if (np.isnan(self.data.qpos).any() or 
         #     np.isnan(self.data.qvel).any() or 
         #     self.data.qpos[2] > 3.0 or 
@@ -366,15 +421,18 @@ class StickInsectEnv:
         # 2. CALCULATE METRICS
         # ==========================================
         # Forward Distance & Y-Axis Drift
-        distance_walked = self.data.qpos[0] - self.start_pos[0]
+        distance_walked = (self.data.qpos[0] - self.start_pos[0])
         drift_y = abs(self.data.qpos[1] - self.start_pos[1])
         
         # Instability 
-        var_z = np.var(self.history_z) if len(self.history_z) > 0 else 0
+        std_z = np.std(self.history_z) if len(self.history_z) > 0 else 0
+        
         mean_roll = np.mean(self.history_roll) if len(self.history_roll) > 0 else 0
         mean_pitch = np.mean(self.history_pitch) if len(self.history_pitch) > 0 else 0
         mean_yaw = np.mean(self.history_yaw) if len(self.history_yaw) > 0 else 0
-        instability = var_z + mean_roll + mean_pitch + mean_yaw
+        
+        # Now std_z will only be ~50 instead of ~5000 if it sinks
+        instability = std_z + mean_roll + mean_pitch + mean_yaw
         
         # Averages for penalties
         if self.step_count > 0:
@@ -391,14 +449,15 @@ class StickInsectEnv:
         # ==========================================
         # 3. TOTAL REWARD COMPUTATION
         # ==========================================
-        w1 = 30.0      # Distance weight
-        w2 = 5.0      # Instability weight
-        w4 = 0.0      # Y-Drift penalty weight
+        w1 = 5.0      # Distance weight
+        w2 = 3.0      # Instability weight
+        w4 = 5.0      # Y-Drift penalty weight
         
         w_collision = 1000.0  # NEW: Collision penalty weight
         w_ripple    = 0.0 
         w_accel     = 0.0  
         
+
         total_reward = (w1 * distance_walked) - (w2 * instability) - (w4 * drift_y) - (w_collision * avg_collision) - (w_ripple * avg_torque_ripple) - (w_accel * avg_joint_accel)
         
         return {

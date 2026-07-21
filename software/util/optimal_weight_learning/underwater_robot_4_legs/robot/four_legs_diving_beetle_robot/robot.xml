@@ -14,14 +14,17 @@
             <body name="FR_L2" pos="0 0.113998 -0.039" quat="0.5 0.5 -0.5 0.5">
                 <inertial pos="0.000323 0.001645 -0.052271" quat="0.701208 -0.0295292 -0.0254289 0.71189" mass="0.374899" diaginertia="0.000281472 0.000222081 0.00020913" />
                 <joint name="FR_J2" pos="0 0 0" axis="0 0 1" damping="2.0" frictionloss="0.1" armature="0.05"/>
+                <geom type="capsule" size="0.02 0.08" pos="0 0 0" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                 <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FR_L2_coll_1" material="mat_legs" contype="1" conaffinity="1"/>
                 <body name="FR_L3" pos="0 0.039 -0.061002" quat="0.5 0.5 0.5 -0.5">
                     <inertial pos="0.045 0 0.03774" quat="0 -0.707107 2.44949e-07 -0.707107" mass="0.159476" diaginertia="0.000309795 0.000273197 4.09354e-05" />
                     <joint name="FR_J3" pos="0 0 0" axis="0 0 1" damping="2.0" frictionloss="0.1" armature="0.05"/>
+                    <geom type="capsule" size="0.02" fromto="0 0 0  0.09 0 0" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                     <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FR_L3_coll_1" material="mat_legs" contype="1" conaffinity="1"/>
                     <body name="FR_L4" pos="0.09 0 0.0005" quat="0.707107 0 -2.44949e-07 0.707106">
                         <inertial pos="0.000717535 -0.0330022 0.037096" quat="0.502157 0.497867 -0.499283 0.500683" mass="0.46319" diaginertia="0.000933369 0.000893362 0.000229344" />
                         <joint name="FR_J4" pos="0 0 0" axis="0 0 1"  damping="2.0" frictionloss="0.1" armature="0.05"/>
+                        <geom type="capsule" size="0.02" fromto="0 0 0  0 -0.2475 0.0385" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FR_L4_coll_1" material="mat_legs" />
                         <geom name="FOOT_FR" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_FR_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
                         <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/>
@@ -38,14 +41,17 @@
             <body name="BR_L2" pos="0 0.113998 -0.039" quat="0.5 0.5 -0.5 0.5">
                 <inertial pos="0.000323 0.001645 -0.052271" quat="0.701208 -0.0295292 -0.0254289 0.71189" mass="0.374899" diaginertia="0.000281472 0.000222081 0.00020913" />
                 <joint name="BR_J2" pos="0 0 0" axis="0 0 1" damping="2.0" frictionloss="0.1" armature="0.05"/>
+                <geom type="capsule" size="0.02 0.08" pos="0 0 0" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                 <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BR_L2_coll_1" material="mat_legs" contype="1" conaffinity="1"/>
                 <body name="BR_L3" pos="0 0.039 -0.061002" quat="0.5 0.5 0.5 -0.5">
                     <inertial pos="0.045 0 0.03774" quat="-2.44949e-07 0.707107 0 0.707107" mass="0.159476" diaginertia="0.000309795 0.000273197 4.09354e-05" />
                     <joint name="BR_J3" pos="0 0 0" axis="0 0 1"  damping="2.0" frictionloss="0.1" armature="0.05"/>
+                    <geom type="capsule" size="0.02" fromto="0 0 0  0.09 0 0" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                     <geom quat="0.707107 -0.707107 -2.44949e-07 0" type="mesh" mesh="underwater_insect_BR_L3_coll_1" material="mat_legs" contype="1" conaffinity="1"/>
                     <body name="BR_L4" pos="0.09 0 0.0005" quat="0.707107 0 -2.44949e-07 0.707106">
                         <inertial pos="0.000717535 -0.0330022 0.037096" quat="0.502157 0.497867 -0.499283 0.500682" mass="0.46319" diaginertia="0.000933369 0.000893362 0.000229344" />
                         <joint name="BR_J4" pos="0 0 0" axis="0 0 1"  damping="2.0" frictionloss="0.1" armature="0.05"/>
+                        <geom type="capsule" size="0.02" fromto="0 0 0  0 -0.2475 0.0385" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BR_L4_coll_1" material="mat_legs" />
                         <geom name="FOOT_BR" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_BR_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
                         <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/>
@@ -64,14 +70,17 @@
             <body name="FL_L2" pos="0 0.113998 -0.039" quat="0.5 0.5 -0.5 0.5">
                 <inertial pos="0.000323 0.001645 -0.052271" quat="0.701208 -0.0295292 -0.0254289 0.71189" mass="0.374899" diaginertia="0.000281472 0.000222081 0.00020913" />
                 <joint name="FL_J2" pos="0 0 0" axis="0 0 1" damping="2.0" frictionloss="0.1" armature="0.05"/>
+                <geom type="capsule" size="0.02 0.08" pos="0 0 0" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                 <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FL_L2_coll_1" material="mat_legs" contype="1" conaffinity="1"/>
                 <body name="FL_L3" pos="0 0.039 -0.061002" quat="0.5 0.5 0.5 -0.5">
                     <inertial pos="0.045 0 0.03774" quat="2.44949e-07 0.707107 0 0.707107" mass="0.159476" diaginertia="0.000309795 0.000273197 4.09354e-05" />
                     <joint name="FL_J3" pos="0 0 0" axis="0 0 1"  damping="2.0" frictionloss="0.1" armature="0.05"/>
+                    <geom type="capsule" size="0.02" fromto="0 0 0  0.09 0 0" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                     <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FL_L3_coll_1" material="mat_legs" contype="1" conaffinity="1"/>
                     <body name="FL_L4" pos="0.09 0 0.0005" quat="0.707107 0 -2.44949e-07 0.707106">
                         <inertial pos="0.000717535 -0.0330022 0.037096" quat="0.502157 0.497867 -0.499283 0.500683" mass="0.46319" diaginertia="0.000933369 0.000893362 0.000229344" />
                         <joint name="FL_J4" pos="0 0 0" axis="0 0 1"  damping="2.0" frictionloss="0.1" armature="0.05"/>
+                        <geom type="capsule" size="0.02" fromto="0 0 0  0 -0.2475 0.0385" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FL_L4_coll_1" material="mat_legs" />
                         <geom name="FOOT_FL" pos="0 -0.2475 0.0385" quat="1.22475e-07 -0.707107 -1.22475e-07 0.707107" type="mesh" mesh="underwater_insect_FL_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
                         <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/>
@@ -88,14 +97,17 @@
             <body name="BL_L2" pos="0 0.113998 -0.039" quat="0.5 0.5 -0.5 0.5">
                 <inertial pos="0.000323 0.001645 -0.052271" quat="0.701208 -0.0295292 -0.0254289 0.71189" mass="0.374899" diaginertia="0.000281472 0.000222081 0.00020913" />
                 <joint name="BL_J2" pos="0 0 0" axis="0 0 1" damping="2.0" frictionloss="0.1" armature="0.05"/>
+                <geom type="capsule" size="0.02 0.08" pos="0 0 0" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                 <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BL_L2_coll_1" material="mat_legs" contype="1" conaffinity="1"/>
                 <body name="BL_L3" pos="0 0.039 -0.061002" quat="0.5 0.5 0.5 -0.5">
                     <inertial pos="0.045 0 0.03774" quat="0 -0.707107 -2.44949e-07 -0.707107" mass="0.159476" diaginertia="0.000309795 0.000273197 4.09354e-05" />
                     <joint name="BL_J3" pos="0 0 0" axis="0 0 1"  damping="2.0" frictionloss="0.1" armature="0.05"/>
+                    <geom type="capsule" size="0.02" fromto="0 0 0  0.09 0 0" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                     <geom quat="0.707107 -0.707107 -2.44949e-07 0" type="mesh" mesh="underwater_insect_BL_L3_coll_1" material="mat_legs" contype="1" conaffinity="1"/>
                     <body name="BL_L4" pos="0.09 0 0.0005" quat="-0.707107 -2.44949e-07 0 -0.707106">
                         <inertial pos="0.000717535 -0.0330022 0.037096" quat="0.710375 0.703821 -0.00134745 -0.00136041" mass="0.46319" diaginertia="0.000893364 0.000770436 0.000392275" />
                         <joint name="BL_J4" pos="0 0 0" axis="0 0 1"  damping="2.0" frictionloss="0.1" armature="0.05"/>
+                        <geom type="capsule" size="0.02" fromto="0 0 0  0 -0.2475 0.0385" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BL_L4_coll_1" material="mat_legs" />
                         <geom name="FOOT_BL" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_BL_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
                         <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/>
