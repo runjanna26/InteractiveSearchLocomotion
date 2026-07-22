@@ -6,7 +6,7 @@
     <option timestep="0.005" integrator="implicit"/>
 
     <!-- <option density="1000.0" viscosity="0.001" /> -->
-    <option viscosity="1.5" />
+    <!-- <option viscosity="1.5" /> -->
 
 
     <!-- <include file="scene/swimming_pool_2.xml"/> -->
@@ -19,14 +19,14 @@
         <headlight diffuse="0.8 0.8 0.8" ambient="0.5 0.5 0.5" specular="0.2 0.2 0.2"/>
         <rgba haze="0.15 0.25 0.35 1"/>
         <global azimuth="120" elevation="45"/>
-        <map force="0.05" />
+        <!-- <map force="0.5" /> -->
     </visual>
 
 
     <worldbody>
         
 
-        <body name="robot" pos="0 0 0.5" euler="0 0 -90">
+        <body name="robot" pos="0 0 2.0" euler="0 0 -90">
             <freejoint name="space" />
 
             <!--light directional="true" diffuse="0.6 0.6 0.6" specular="0.8 0.8 0.8" pos="0 0 10" dir="0 0 -1" castshadow="true"/>-->

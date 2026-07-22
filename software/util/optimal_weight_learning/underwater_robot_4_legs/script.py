@@ -145,6 +145,8 @@ class StickInsectEnv:
     def reset(self):
         mujoco.mj_resetData(self.model, self.data)
         mujoco.mj_forward(self.model, self.data)
+
+        self.hydro_forces_snapshot = np.zeros((self.model.nbody, 6))
         
         # --- NEW: LET THE ROBOT SETTLE IN THE WATER BEFORE THE EPISODE STARTS ---
         # --- LET THE ROBOT SETTLE IN THE WATER ---
@@ -204,58 +206,75 @@ class StickInsectEnv:
             torque = np.clip(ctrl.get_torque(), -15.0, 15.0) 
             self.data.ctrl[self.actuator_ids[name]] = torque
 
+        # # ==========================================
+        # # 🚨 THE GOLD STANDARD PHYSICS STEP
+        # # ==========================================
+        # # Step 1 computes kinematics and WIPES any ghost viewer forces.
+        # mujoco.mj_step1(self.model, self.data)
+        
+        # # ==========================================
+        # # 🚨 MANUAL FORCE CLEARING (Guarantees zero ghost forces)
+        # # ==========================================
+        # self.data.xfrc_applied[:] = 0.0
+        # self.data.qfrc_applied[:] = 0.0
+
+        # # Apply our water forces cleanly
+        # self.hydro.apply(self.data)
+        
+        # # Step 2 integrates the actual movement
+        # mujoco.mj_step2(self.model, self.data)
+        
+        # self.step_count += 1
+
+
+        # # Apply Custom Hydrodynamics
+        # self.hydro.apply(self.data)
+        # # for _ in range(self.frame_skip):
+        # #     # GOOD: Apply hydrodynamics right before EVERY physics step
+        # #     self.hydro.apply(self.data)
+        # #     mujoco.mj_step(self.model, self.data)
+
+        # # Step MuJoCo
+        # mujoco.mj_step(self.model, self.data)
+        
+        # # Track total steps taken in this rollout (Crucial for fitness averages)
+        # self.step_count += 1
+
         # ==========================================
-        # 🚨 THE GOLD STANDARD PHYSICS STEP
+        # 🚨 THE ONLY PHYSICS STEP YOU NEED
         # ==========================================
-        # Step 1 computes kinematics and WIPES any ghost viewer forces.
         mujoco.mj_step1(self.model, self.data)
         
-        # ==========================================
-        # 🚨 MANUAL FORCE CLEARING (Guarantees zero ghost forces)
-        # ==========================================
         self.data.xfrc_applied[:] = 0.0
         self.data.qfrc_applied[:] = 0.0
 
-        # Apply our water forces cleanly
         self.hydro.apply(self.data)
-        
-        # Step 2 integrates the actual movement
+
+        self.hydro_forces_snapshot = np.copy(self.data.xfrc_applied)
+
         mujoco.mj_step2(self.model, self.data)
         
         self.step_count += 1
+        # ==========================================
 
 
-        # Apply Custom Hydrodynamics
-        self.hydro.apply(self.data)
-        # for _ in range(self.frame_skip):
-        #     # GOOD: Apply hydrodynamics right before EVERY physics step
-        #     self.hydro.apply(self.data)
-        #     mujoco.mj_step(self.model, self.data)
-
-        # Step MuJoCo
-        mujoco.mj_step(self.model, self.data)
-        
-        # Track total steps taken in this rollout (Crucial for fitness averages)
-        self.step_count += 1
-
-
-        if self.step_count < self.warmup_steps:
-            # Overwrite the torso's position and rotation back to the starting point
-            self.data.qpos[:7] = self.fixed_qpos
-            # Force the torso's linear and angular velocity to strictly zero
-            self.data.qvel[:6] = 0.0
+        # if self.step_count < self.warmup_steps:
+        #     # Overwrite the torso's position and rotation back to the starting point
+        #     self.data.qpos[:7] = self.fixed_qpos
+        #     # Force the torso's linear and angular velocity to strictly zero
+        #     self.data.qvel[:6] = 0.0
             
-            # 🚨 THE MAGIC FIX: Manually update the spatial kinematics!
-            # This does exactly what the viewer was doing in the background.
-            mujoco.mj_forward(self.model, self.data)
+        #     # 🚨 THE MAGIC FIX: Manually update the spatial kinematics!
+        #     # This does exactly what the viewer was doing in the background.
+        #     mujoco.mj_forward(self.model, self.data)
             
-            # Constantly reset the start position so distance tracking ONLY begins upon release
-            self.start_pos = np.copy(self.data.qpos[:3])
+        #     # Constantly reset the start position so distance tracking ONLY begins upon release
+        #     self.start_pos = np.copy(self.data.qpos[:3])
             
-            # Render visualizer if enabled, but SKIP all collision/instability math below!
-            if self.has_viewer: self.render()
-            if self.enable_ros: self._handle_ros_feedback()
-            return
+        #     # Render visualizer if enabled, but SKIP all collision/instability math below!
+        #     if self.has_viewer: self.render()
+        #     if self.enable_ros: self._handle_ros_feedback()
+        #     return
 
         # ==========================================
         # 2. TRACK INSTABILITY METRICS
@@ -362,33 +381,76 @@ class StickInsectEnv:
             
         self.viewer.sync()
         with self.viewer.lock():
+            # Standard MuJoCo visualizations
             self.viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT]     = True
-            self.viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE]        = True
+            # self.viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE]        = True
             self.viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE]     = True
             self.viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_COM]              = True
             self.viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
             
+            # Reset custom drawing queue for this frame
             self.viewer.user_scn.ngeom = 0 
             
-            # Draw Hydrodynamic arrows
-            for i in self.hydro.body_ids:
+            # ==========================================
+            # VISUAL SCALING (Adjust these to your liking!)
+            # ==========================================
+            FORCE_SCALE = 0.05       # Multiplier for arrow length
+            TORQUE_SCALE = 0.5      # Multiplier for torque length
+            ARROW_THICKNESS = 0.01 # How fat the arrow shaft is
+            
+            # Scan all bodies to draw their forces
+            for i in range(1, self.model.nbody):
                 pos = self.data.xpos[i]
                 
-                # Linear Force
-                force = np.array([self.data.xfrc_applied[i][0], self.data.xfrc_applied[i][1], self.data.xfrc_applied[i][2]])
-                if np.linalg.norm(force) > 1e-3 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
-                    pt2_force = pos + (force * 100) + np.array([0, 0, 10])
-                    mujoco.mjv_connector(self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], mujoco.mjtGeom.mjGEOM_ARROW, 0.005, pos, pt2_force)
-                    self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([0.0, 0.5, 1.0, 1.0])
-                    self.viewer.user_scn.ngeom += 1
-
-                # Torque
-                torque = np.array([self.data.xfrc_applied[i][3], self.data.xfrc_applied[i][4], self.data.xfrc_applied[i][5]])
-                if np.linalg.norm(torque) > 1e-3 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
-                    pt2_torque = pos + (torque * 100) + np.array([0, 0, 10])
-                    mujoco.mjv_connector(self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], mujoco.mjtGeom.mjGEOM_ARROW, 0.008, pos, pt2_torque)
+                # ------------------------------------------
+                # 1. DRAW LINEAR DRAG & BUOYANCY (BLUE ARROWS)
+                # ------------------------------------------
+                # 🚨 Reading from our snapshot, NOT the wiped xfrc_applied array!
+                force = np.array([
+                    self.hydro_forces_snapshot[i][0], 
+                    self.hydro_forces_snapshot[i][1], 
+                    self.hydro_forces_snapshot[i][2]
+                ])
+                
+                # If the force is large enough to care about, and we have memory to draw it
+                if np.linalg.norm(force) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
+                    
+                    # The tip of the arrow is the body center + the scaled force vector
+                    pt2_force = pos + (force * FORCE_SCALE)
+                    
+                    mujoco.mjv_connector(
+                        self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
+                        mujoco.mjtGeom.mjGEOM_ARROW,  # Beautiful arrows are back!
+                        ARROW_THICKNESS, 
+                        pos, 
+                        pt2_force
+                    )
+                    # Color it Bright Blue
                     self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
                     self.viewer.user_scn.ngeom += 1
+
+                # ------------------------------------------
+                # 2. DRAW ANGULAR DRAG & TORQUE (RED ARROWS)
+                # ------------------------------------------
+                # torque = np.array([
+                #     self.hydro_forces_snapshot[i][3], 
+                #     self.hydro_forces_snapshot[i][4], 
+                #     self.hydro_forces_snapshot[i][5]
+                # ])
+                
+                # if np.linalg.norm(torque) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
+                #     pt2_torque = pos + (torque * TORQUE_SCALE)
+                    
+                #     mujoco.mjv_connector(
+                #         self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
+                #         mujoco.mjtGeom.mjGEOM_ARROW, 
+                #         ARROW_THICKNESS, 
+                #         pos, 
+                #         pt2_torque
+                #     )
+                #     # Color it Bright Red
+                #     self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
+                #     self.viewer.user_scn.ngeom += 1
 
     def _handle_ros_feedback(self):
         """Keep your ROS logic cleanly separated for when you need telemetry."""
@@ -449,7 +511,7 @@ class StickInsectEnv:
         # ==========================================
         # 3. TOTAL REWARD COMPUTATION
         # ==========================================
-        w1 = 5.0      # Distance weight
+        w1 = 10.0      # Distance weight
         w2 = 3.0      # Instability weight
         w4 = 5.0      # Y-Drift penalty weight
         

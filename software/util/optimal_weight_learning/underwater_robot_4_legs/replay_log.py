@@ -19,7 +19,7 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260721_235931.json" # <-- Paste your actual log filename here
+LOG_FILE = "data/pibb_logs/pibb_training_20260722_221933.json" # <-- Paste your actual log filename here
 TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
 SIMULATION_STEPS = 100000000
 CPG_PHI = 0.05
@@ -176,13 +176,13 @@ if __name__ == "__main__":
             cpg_mod_cmd[f'{index}{side}']   = {'phi': CPG_PHI, 'pause_input': 0.0, 'rewind_input': 1.0}
 
 
-    half_cycle = cpg_cycle_length // 2
+    # half_cycle = cpg_cycle_length // 2
     
-    for _ in range(half_cycle):
-        # Manually step the FL and BR oscillators forward in time
-        # before the MuJoCo simulation even begins.
-        cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
-        cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    # for _ in range(half_cycle):
+    #     # Manually step the FL and BR oscillators forward in time
+    #     # before the MuJoCo simulation even begins.
+    #     cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    #     cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
 
     # 4. Initialize Environment WITH Rendering (and ROS if you want to record bags)
     env = StickInsectEnv(enable_ros=True, render=True) 

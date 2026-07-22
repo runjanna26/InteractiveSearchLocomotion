@@ -21,7 +21,7 @@ RENDER = False
 ROLLOUTS = 14  # Number of parallel rollouts per iteration
 SIMULATION_STEPS = 2500  # E.g., 5 seconds at 0.005s timestep
 ITERATIONS = 500
-NOISE_VARIANCE_INIT = 0.0010
+NOISE_VARIANCE_INIT = 0.0020
 BASE_PARAM_INIT = 0.000
 NUM_KERNELS = 20 
 # NUM_PARAMETERS = NUM_KERNELS * 8 # 20x8 = 160 parameters (SYMMETRICAL WEIGHT)
@@ -145,13 +145,13 @@ def evaluate_rollout(noisy_parameters, left_offsets, right_priors, simulation_st
     # ===============================================================
     # We want Front-Left (FL) and Back-Right (BR) to be 180 degrees 
     # out of phase with Front-Right (FR) and Back-Left (BL).
-    half_cycle = cpg_cycle_length // 2
+    # half_cycle = cpg_cycle_length // 2
     
-    for _ in range(half_cycle):
-        # Manually step the FL and BR oscillators forward in time
-        # before the MuJoCo simulation even begins.
-        cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
-        cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    # for _ in range(half_cycle):
+    #     # Manually step the FL and BR oscillators forward in time
+    #     # before the MuJoCo simulation even begins.
+    #     cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    #     cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
 
     # 3. Reset environment
     env.reset()
