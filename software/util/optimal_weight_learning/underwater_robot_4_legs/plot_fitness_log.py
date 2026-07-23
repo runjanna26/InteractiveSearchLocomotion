@@ -9,7 +9,7 @@ import matplotlib.animation as animation
 # ==========================================
 LOG_DIR = "data/pibb_logs/"
 # Set to a specific filename if you don't want the latest one
-SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260723_050740.json" 
+SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260723_133525.json" 
 
 # How often to refresh the plot (in milliseconds)
 REFRESH_INTERVAL_MS = 2000  
