@@ -26,7 +26,6 @@ BASE_PARAM_INIT = 0.000
 NUM_KERNELS = 20 
 # NUM_PARAMETERS = NUM_KERNELS * 8 # 20x8 = 160 parameters (SYMMETRICAL WEIGHT)
 # NUM_PARAMETERS = NUM_KERNELS * 16 # 20x16 = 320 parameters for swimming (FULLY INDEPENDENT WEIGHT)
-NUM_PARAMETERS_LOAD     = NUM_KERNELS * 16     # (FULLY INDEPENDENT WEIGHT)
 NUM_PARAMETERS_LEARN    = NUM_KERNELS * 8      # (SYMMETRICAL WEIGHT)
 
 CPG_PHI = 0.05
@@ -85,14 +84,17 @@ def evaluate_rollout(noisy_parameters, left_offsets, right_priors, simulation_st
             start_idx = joint_index * NUM_KERNELS
             end_idx = start_idx + NUM_KERNELS
             
-            # 🚨 THE FIX: Freeze Joint 1
-            if joint == 1:
-                # FREEZE: Ignore PIBB completely. Force it to the original prior knowledge.
-                learned_weights = np.array(right_priors[start_idx:end_idx])
-            else:
-                # LEARN: Use PIBB's newly generated noisy parameters (for joints 0, 2, and 3)
-                learned_weights = np.array(noisy_parameters[start_idx:end_idx])
-            
+            # # 🚨 THE FIX: Freeze Joint 1
+            # if joint == 1:
+            #     # FREEZE: Ignore PIBB completely. Force it to the original prior knowledge.
+            #     learned_weights = np.array(right_priors[start_idx:end_idx])
+            # else:
+            #     # LEARN: Use PIBB's newly generated noisy parameters (for joints 0, 2, and 3)
+            #     learned_weights = np.array(noisy_parameters[start_idx:end_idx])
+
+            # learn all joints
+            learned_weights = np.array(noisy_parameters[start_idx:end_idx])
+
             # The exact difference between Left and Right from the prior knowledge
             offset_weights = np.array(left_offsets[start_idx:end_idx])
             
