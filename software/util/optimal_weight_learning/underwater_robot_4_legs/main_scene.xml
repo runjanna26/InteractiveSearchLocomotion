@@ -26,7 +26,7 @@
     <worldbody>
         
 
-        <body name="robot" pos="0 0 2.0" euler="0 0 -90">
+        <body name="robot" pos="0 0 0.5" euler="0 0 -90">
             <freejoint name="space" />
 
             <!--light directional="true" diffuse="0.6 0.6 0.6" specular="0.8 0.8 0.8" pos="0 0 10" dir="0 0 -1" castshadow="true"/>-->

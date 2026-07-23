@@ -127,9 +127,9 @@ class StickInsectEnv:
         self.viewer.cam.trackbodyid = robot_body_id
         
         # 3. Set the default starting angle (Optional but highly recommended)
-        self.viewer.cam.distance = 3.0    # How far away to start (meters)
+        self.viewer.cam.distance = 2.0    # How far away to start (meters)
         self.viewer.cam.azimuth = 135      # Rotate left/right (degrees)
-        self.viewer.cam.elevation = -20   # Tilt up/down (degrees)
+        self.viewer.cam.elevation = -45   # Tilt up/down (degrees)
 
     def get_grf(self):
         grf = {name: 0.0 for name in FOOT_NAMES}
@@ -392,20 +392,28 @@ class StickInsectEnv:
             self.viewer.user_scn.ngeom = 0 
             
             # ==========================================
-            # VISUAL SCALING (Adjust these to your liking!)
+            # VISUAL SCALING
             # ==========================================
             FORCE_SCALE = 0.05       # Multiplier for arrow length
-            TORQUE_SCALE = 0.5      # Multiplier for torque length
-            ARROW_THICKNESS = 0.01 # How fat the arrow shaft is
+            TORQUE_SCALE = 0.5       # Multiplier for torque length
+            ARROW_THICKNESS = 0.01   # How fat the arrow shaft is
+            
+            # 🚨 THE FIX: Get the torso ID so we can skip it
+            torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "robot")
             
             # Scan all bodies to draw their forces
             for i in range(1, self.model.nbody):
+                
+                # 🚨 THE FIX: If this body is the torso, skip drawing its forces!
+                if i == torso_id:
+                    continue
+
                 pos = self.data.xpos[i]
                 
                 # ------------------------------------------
-                # 1. DRAW LINEAR DRAG & BUOYANCY (BLUE ARROWS)
+                # 1. DRAW LINEAR DRAG & BUOYANCY (RED ARROWS)
                 # ------------------------------------------
-                # 🚨 Reading from our snapshot, NOT the wiped xfrc_applied array!
+                # Reading from our snapshot, NOT the wiped xfrc_applied array!
                 force = np.array([
                     self.hydro_forces_snapshot[i][0], 
                     self.hydro_forces_snapshot[i][1], 
@@ -425,7 +433,7 @@ class StickInsectEnv:
                         pos, 
                         pt2_force
                     )
-                    # Color it Bright Blue
+                    # Color it Bright Red
                     self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
                     self.viewer.user_scn.ngeom += 1
 
