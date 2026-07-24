@@ -27,7 +27,7 @@
                         <geom type="capsule" size="0.02" fromto="0 0 0  0 -0.2475 0.0385" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FR_L4_coll_1" material="mat_legs" />
                         <geom name="FOOT_FR" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_FR_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
-                        <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/>
+                        <!-- <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/> -->
                     </body>
                 </body>
             </body>
@@ -54,7 +54,7 @@
                         <geom type="capsule" size="0.02" fromto="0 0 0  0 -0.2475 0.0385" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BR_L4_coll_1" material="mat_legs" />
                         <geom name="FOOT_BR" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_BR_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
-                        <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/>
+                        <!-- <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/> -->
                     </body>
                 </body>
             </body>
@@ -83,7 +83,7 @@
                         <geom type="capsule" size="0.02" fromto="0 0 0  0 -0.2475 0.0385" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_FL_L4_coll_1" material="mat_legs" />
                         <geom name="FOOT_FL" pos="0 -0.2475 0.0385" quat="1.22475e-07 -0.707107 -1.22475e-07 0.707107" type="mesh" mesh="underwater_insect_FL_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
-                        <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/>
+                        <!-- <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/> -->
                     </body>
                 </body>
             </body>
@@ -110,7 +110,7 @@
                         <geom type="capsule" size="0.02" fromto="0 0 0  0 -0.2475 0.0385" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
                         <geom quat="-0.707107 0.707107 0 2.44949e-07" type="mesh" mesh="underwater_insect_BL_L4_coll_1" material="mat_legs" />
                         <geom name="FOOT_BL" pos="0 -0.2475 0.0385" quat="-1.22474e-07 0.707107 1.22475e-07 -0.707107" type="mesh" mesh="underwater_insect_BL_FOOT_coll_1" solref="0.02 1" solimp="0.9 0.99 0.001"/>
-                        <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/>
+                        <!-- <geom type="sphere" size="0.02" pos="0 -0.2475 0.0385" rgba="1 1 1 1" contype="1" conaffinity="1" friction="1.5"/> -->
                     </body>
                 </body>
             </body>
