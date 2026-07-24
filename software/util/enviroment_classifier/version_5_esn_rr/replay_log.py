@@ -19,11 +19,18 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "learned_weight_set/rough_ground/weight_set_3.json" # <-- Paste your actual log filename here
-TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
-SIMULATION_STEPS = 10000
-CPG_PHI = 0.08
+gait = "water_surface"
+environment_setup = "water_surface"
 
+LOG_FILE = f"learned_weight_set/{gait}/weight_set_3.json" # <-- Paste your actual log filename here
+
+MATRIC_FILE = f"terrain_dataset/metric/{gait}_gait_on_{environment_setup}"
+
+TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
+SIMULATION_STEPS = 12000 # 12000 (1min.) 
+CPG_PHI = 0.05
+
+SAVE_METRIC_CSV = False
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
 JOINT_NAMES = [0, 1, 2, 3]
@@ -35,6 +42,9 @@ STANDING_POSE = {
     'BL': [ np.pi/6, 0.0,  np.pi/3, -2*np.pi/3]
 }
 if __name__ == "__main__":
+    save_to_file = SAVE_METRIC_CSV
+    metric_filename = MATRIC_FILE
+
     print(f"Loading log file: {LOG_FILE}")
     
     # 1. Load the history array from the log file
@@ -58,6 +68,52 @@ if __name__ == "__main__":
     print(f"Replaying Iteration {selected_data['iteration']} | Max Fitness: {fitness_score:.4f}")
 
     
+
+    # ===============================================================
+    # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior) (water surface)
+    # ===============================================================
+    print("Loading Prior Knowledge to reconstruct Left offsets...")
+    prior_knowledge = np.load('learned_weight_set/water_surface/imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
+
+    imitated_weights = {}
+    
+    joint_index = 0
+    for index in LEG_INDEX: 
+        for joint in JOINT_NAMES:
+            start_idx = joint_index * NUM_KERNELS
+            end_idx = start_idx + NUM_KERNELS
+            
+            # 1. Get the Original Priors first so we can use them for the freeze
+            right_key = f"{index}R{joint}"
+            left_key = f"{index}L{joint}"
+            
+            right_prior = np.array(prior_knowledge[right_key])
+            left_prior = np.array(prior_knowledge[left_key])
+            
+            # ==========================================
+            # 🚨 THE FIX: FREEZE JOINT 1 
+            # ==========================================
+            # if joint == 1:
+            #     # FREEZE: Ignore the JSON log. Force it to be the original prior.
+            #     learned_weights = np.copy(right_prior)
+            # else:
+            #     # LEARN: Get the optimized weights from the JSON log
+            #     learned_weights = np.array(trained_weights[start_idx:end_idx])
+
+            learned_weights = np.array(trained_weights[start_idx:end_idx])
+            
+            # Calculate the exact difference (Left - Right)
+            offset_weights = left_prior - right_prior
+            
+            # 3. Assign the pure weights to the RIGHT side
+            imitated_weights[right_key] = learned_weights
+            
+            # 4. Assign the Weights + Original Offset to the LEFT side
+            imitated_weights[left_key] = learned_weights + offset_weights
+            
+            joint_index += 1
+    # ===============================================================
+
     # # ===============================================================
     # # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior)
     # # ===============================================================
@@ -94,31 +150,31 @@ if __name__ == "__main__":
     #         joint_index += 1
     # # ===============================================================
 
-    # ===============================================================
-    # WEIGHT SYMMETRY LOGIC
-    # ===============================================================
-    imitated_weights = {}
+    # # ===============================================================
+    # # WEIGHT SYMMETRY LOGIC (walking)
+    # # ===============================================================
+    # imitated_weights = {}
     
-    # 1. We only loop through the Front ('F') and Back ('B') indices
-    joint_index = 0
-    for index in LEG_INDEX: 
-        for joint in JOINT_NAMES:
-            start_idx = joint_index * NUM_KERNELS
-            end_idx = start_idx + NUM_KERNELS
+    # # 1. We only loop through the Front ('F') and Back ('B') indices
+    # joint_index = 0
+    # for index in LEG_INDEX: 
+    #     for joint in JOINT_NAMES:
+    #         start_idx = joint_index * NUM_KERNELS
+    #         end_idx = start_idx + NUM_KERNELS
             
-            # Extract the 20 weights for this specific joint
-            extracted_weights = trained_weights[start_idx:end_idx]
+    #         # Extract the 20 weights for this specific joint
+    #         extracted_weights = trained_weights[start_idx:end_idx]
             
-            # 2. Assign these weights to the RIGHT side
-            right_key = f"{index}R{joint}"
-            imitated_weights[right_key] = extracted_weights
+    #         # 2. Assign these weights to the RIGHT side
+    #         right_key = f"{index}R{joint}"
+    #         imitated_weights[right_key] = extracted_weights
             
-            # 3. MIRROR them exactly to the LEFT side!
-            left_key = f"{index}L{joint}"
-            imitated_weights[left_key] = extracted_weights
+    #         # 3. MIRROR them exactly to the LEFT side!
+    #         left_key = f"{index}L{joint}"
+    #         imitated_weights[left_key] = extracted_weights
             
-            joint_index += 1
-    # ===============================================================
+    #         joint_index += 1
+    # # ===============================================================
 
     # # ===============================================================
     # # FULLY INDEPENDENT WEIGHT LOGIC (No Symmetry)
@@ -185,6 +241,7 @@ if __name__ == "__main__":
     
     # 5. Run the Simulation Loop
     for step in range(SIMULATION_STEPS):
+        step_start = time.perf_counter() # use perf_counter for high precision
         # Update CPGs
         for side in LEG_SIDE:
             for index in LEG_INDEX:
@@ -195,7 +252,8 @@ if __name__ == "__main__":
                 )
         
         # Create a FLAT dictionary for the environment targets (e.g. {'FR_J1': 0.1, 'FR_J2': 0.5})
-        env_targets = {}
+        joint_targets = {}
+        cpg_outputs = {}
         
         # Update RBFs
         for side in LEG_SIDE:
@@ -217,20 +275,71 @@ if __name__ == "__main__":
                     # same physical direction as the Right hip.
                     if side == 'L' and joint == 0:
                         network_output = -network_output 
+                    # if index == 'F' and joint == 1:
+                    #     network_output = -network_output 
                     
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
-                    target_angle =  network_output + baseline_angle
+                    target_angle =  network_output
+                    # target_angle =  network_output + baseline_angle
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
                     actuator_name = f"{index}{side}_J{joint+1}"  
-                    env_targets[actuator_name] = target_angle
+                    joint_targets[actuator_name] = target_angle
+                    cpg_outputs[actuator_name] = cpg_output[f'{index}{side}']['cpg_output_0']
+                    
             
         # Pass the flat dictionary to the environment
-        env.step(env_targets)
+        env.step(joint_targets, cpg_outputs)
+
+        target_duration = env.model.opt.timestep
+        while (time.perf_counter() - step_start) < target_duration:
+            pass # Busy-wait ensures perfect timing
+
+   
         
-        # Optional: Add a tiny sleep to slow down the viewer to real-time 
-        # if your computer calculates physics much faster than real-time
-        # time.sleep(0.005) 
+
+    metric = env.calculate_gait_metrics()
+    if save_to_file:
+        import os
+        import csv
+        import datetime
+        
+        # Ensure the filename ends with .csv
+        if not metric_filename.endswith('.csv'):
+            metric_filename += '.csv'
+            
+        # Create the directory if it doesn't exist yet! 
+        # (e.g., 'terrain_dataset/metric/')
+        os.makedirs(os.path.dirname(metric_filename), exist_ok=True)
+        
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        file_exists = os.path.isfile(metric_filename)
+        
+        # Use 'a' to append. newline="" prevents blank rows in Windows.
+        with open(metric_filename, mode="a", newline="") as f:
+            # Define our columns. (Added Fitness_Score since this is a replay!)
+            fieldnames = ["Timestamp", "Total_Steps", "Fitness_Score"] + list(metric.keys())
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            
+            # Write the header row ONLY if the file is brand new
+            if not file_exists:
+                writer.writeheader()
+            
+            # Prepare the row data
+            row_data = {
+                "Timestamp": timestamp, 
+                "Total_Steps": env.step_count,           # Fixed: Changed from self to env
+                "Fitness_Score": f"{fitness_score:.4f}"  # Logs the fitness from the JSON
+            }
+            
+            # Format numbers to 4 decimal places and add to row_data
+            for k, v in metric.items():                  # Fixed: Changed metrics to metric
+                row_data[k] = f"{v:.6f}"
+                
+            # Write the row to the CSV
+            writer.writerow(row_data)
+            
+        print(f"Metrics successfully saved to: {metric_filename}")
 
     print("Replay finished.")

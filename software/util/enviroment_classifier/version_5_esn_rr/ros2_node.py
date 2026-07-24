@@ -6,7 +6,9 @@ class StickInsectNode(Node):
         super().__init__('diving_beetle_controller')
         
         self.joint_cmd_sub  = self.create_subscription( Float32MultiArray, '/diving_beetle/joint_angle_commands', self.joint_cmd_callback, 1)
-        self.leg_cpg_cmd_sub  = self.create_subscription( Float32MultiArray, '/diving_beetle/cpg_output_0', self.cpg_cmd_callback, 1)
+        # self.leg_cpg_cmd_sub  = self.create_subscription( Float32MultiArray, '/diving_beetle/cpg_output_0', self.cpg_cmd_callback, 1)
+
+        self.pub_jcmd                   = self.create_publisher(Float32MultiArray, '/diving_beetle/joint_angle_commands', 1)
         
         
         self.grf_pub                    = self.create_publisher( Float32MultiArray, '/diving_beetle/foot_force_feedback', 1 )
@@ -52,14 +54,18 @@ class StickInsectNode(Node):
         self.cpg_cmd['BL'] = msg.data[3]
         self.cpg_cmd_list = msg.data
 
+    def publish_joint_cmd(self, joint_cmds):
+        msg_float32 = Float32MultiArray()
+        msg_float32.data = [float(x) for x in joint_cmds]
+        self.pub_jcmd.publish(msg_float32)
 
     def publish_grf(self, forces):
         msg = Float32MultiArray()
         msg.data = [float(f) for f in forces]
         self.grf_pub.publish(msg)
-    def publish_cpg(self):
+    def publish_cpg(self, cpg_cmds):
         msg = Float32MultiArray()
-        msg.data = [float(f) for f in self.cpg_cmd_list]
+        msg.data = [float(f) for f in cpg_cmds]
         self.cpg_pub.publish(msg)
     def publish_joint_angle(self, angles):
         msg = Float32MultiArray()

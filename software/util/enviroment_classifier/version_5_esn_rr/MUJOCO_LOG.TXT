@@ -36244,3 +36244,6 @@ WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Ti
 Mon Jul 20 21:07:33 2026
 WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 0.6350.
 
+Thu Jul 23 20:26:35 2026
+WARNING: Error opening file 'fast_rough_scene.mjb'
+

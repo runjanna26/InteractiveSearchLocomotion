@@ -9,7 +9,7 @@ class Hydrodynamics:
         self.gravity = abs(self.model.opt.gravity[2])
         
         self.Cd_side = 10.0 
-        self.Cd_end = 0.1  
+        self.Cd_end = 0.01  
         self.linear_drag_coeff = 40.0 
         self.angular_drag_coeff = 10.0 
 
@@ -95,30 +95,42 @@ class Hydrodynamics:
             # Apply upward linear force
             data.xfrc_applied[i][2] += f_buoy_mag
 
-            if i == self.torso_id:
-                local_up = rot[:, 2] # The robot's Z-axis (assuming Z is UP for the torso)
-                global_up = np.array([0.0, 0.0, 1.0])
+            # if i == self.torso_id:
+            #     local_up = rot[:, 2] # The robot's Z-axis (assuming Z is UP for the torso)
+            #     global_up = np.array([0.0, 0.0, 1.0])
                 
-                # Cross product calculates the exact axis and amount of tilt
-                tilt_axis = np.cross(local_up, global_up)
+            #     # Cross product calculates the exact axis and amount of tilt
+            #     tilt_axis = np.cross(local_up, global_up)
                 
-                # 'metacentric_height' is the simulated distance between CoM and Buoyancy. 
-                # Increase this number (e.g., to 0.1) if it still rolls. Decrease if it twitches.
-                metacentric_height = 0.05 
+            #     # 'metacentric_height' is the simulated distance between CoM and Buoyancy. 
+            #     # Increase this number (e.g., to 0.1) if it still rolls. Decrease if it twitches.
+            #     metacentric_height = 0.05 
                 
-                restoring_torque = tilt_axis * f_buoy_mag * metacentric_height * submerged_ratio
+            #     restoring_torque = tilt_axis * f_buoy_mag * metacentric_height * submerged_ratio
                 
-                # Apply the stabilizing twist
-                data.xfrc_applied[i][3] += restoring_torque[0]
-                data.xfrc_applied[i][4] += restoring_torque[1]
-                data.xfrc_applied[i][5] += restoring_torque[2]
+            #     # Apply the stabilizing twist
+            #     data.xfrc_applied[i][3] += restoring_torque[0]
+            #     data.xfrc_applied[i][4] += restoring_torque[1]
+            #     data.xfrc_applied[i][5] += restoring_torque[2]
+
+                
             # --- 3. APPLY LINEAR DRAG ---
-            local_lin_vel = data.cvel[i][3:6]
-            vel = rot @ local_lin_vel 
+            # ==========================================
+            # 🚨 THE FIX: GET EXACT GLOBAL VELOCITY
+            # ==========================================
+            # Use MuJoCo's built-in function to extract global spatial velocity (flg_local = 0)
+            obj_vel = np.zeros(6)
+            mujoco.mj_objectVelocity(self.model, data, mujoco.mjtObj.mjOBJ_BODY, i, obj_vel, 0)
+            
+            # obj_vel[0:3] is rotational, obj_vel[3:6] is translational
+            ang_vel = obj_vel[0:3]
+            vel = obj_vel[3:6]
+
+            # --- 3. APPLY LINEAR DRAG ---
             speed = np.linalg.norm(vel)
             
-            # 🚨 NEW: Prevent speed spikes from exploding the v^2 calculation
-            speed = min(speed, 10.0) # Cap hydro calculation to max 10 m/s
+            # Prevent speed spikes from exploding the v^2 calculation
+            # speed = min(speed, 200.0) 
             
             if speed > 1e-4:
                 vel_dir = vel / speed
@@ -133,9 +145,7 @@ class Hydrodynamics:
                 
                 drag_mag = (quadratic_drag + linear_drag) * submerged_ratio
                 
-                # 🚨 THE FIX: Clamp the maximum drag force relative to the part's mass!
-                # Do not allow water to apply an acceleration greater than 50 Gs
-                max_safe_force = props['mass'] * self.gravity * 5.0 
+                max_safe_force = props['mass'] * self.gravity * 50.0 
                 drag_mag = min(drag_mag, max_safe_force)
                 
                 f_drag = -drag_mag * vel_dir
@@ -144,9 +154,7 @@ class Hydrodynamics:
                 data.xfrc_applied[i][1] += f_drag[1]
                 data.xfrc_applied[i][2] += f_drag[2]
 
-            # 4. APPLY ANGULAR DRAG
-            local_ang_vel = data.cvel[i][0:3] 
-            ang_vel = rot @ local_ang_vel
+            # --- 4. APPLY ANGULAR DRAG ---
             ang_speed = np.linalg.norm(ang_vel)
             
             if ang_speed > 1e-4:

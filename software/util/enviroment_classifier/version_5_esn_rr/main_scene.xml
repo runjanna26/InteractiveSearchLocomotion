@@ -6,12 +6,8 @@
     <option timestep="0.005" integrator="implicit"/>
 
     <!-- <option density="1000.0" viscosity="0.001" /> -->
-    <option viscosity="1.5" />
+    <!-- <option viscosity="1.5" /> -->
 
-
-    <!-- <include file="scene/swimming_pool_2.xml"/> -->
-    <include file="scene/swimming_pool.xml"/>
-    <include file="robot/four_legs_diving_beetle_robot/robot_mesh.xml"/>
 
 
     <visual>
@@ -19,17 +15,29 @@
         <headlight diffuse="0.8 0.8 0.8" ambient="0.5 0.5 0.5" specular="0.2 0.2 0.2"/>
         <rgba haze="0.15 0.25 0.35 1"/>
         <global azimuth="120" elevation="45"/>
+        <!-- 🚨 THE FIX: Force arrows are now 100x longer! -->
         <map force="0.05" />
+        
+        <!-- 🚨 THE FIX: Make the arrow shafts thicker so you can see them -->
+        <scale forcewidth="0.01" />
     </visual>
+
+
+    <!-- <include file="scene/swimming_pool_2.xml"/> -->
+    <include file="scene/swimming_pool.xml"/>
+    <include file="robot/four_legs_diving_beetle_robot/robot_mesh.xml"/>
+
+
 
 
     <worldbody>
         
 
-        <body name="robot" pos="0 0 1.5" euler="0 0 -90">
+        <body name="robot" pos="0 0 0.5" euler="0 0 -90">  
+        <!-- <body name="robot" pos="0 0 1.5" euler="0 0 -90">   -->
             <freejoint name="space" />
 
-            <!--light directional="true" diffuse="0.6 0.6 0.6" specular="0.8 0.8 0.8" pos="0 0 10" dir="0 0 -1" castshadow="true"/>-->
+            <!-- <light directional="true" diffuse="0.6 0.6 0.6" specular="0.8 0.8 0.8" pos="0 0 10" dir="0 0 -1" castshadow="true"/> -->
             <camera name="tracking_cam" mode="track" pos="0 -4 2" xyaxes="1 0 0 0 1 2"/>
 
             <include file="robot/four_legs_diving_beetle_robot/robot.xml"/>
