@@ -4,6 +4,10 @@ import numpy as np
 from script import StickInsectEnv
 from cpg_rbf.cpg_so2 import CPG_SO2, CPG_LOCO
 from cpg_rbf.rbf import RBF
+import os
+import subprocess
+import signal
+import datetime
 
 '''
 How to use it to visualize learning:
@@ -19,7 +23,7 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-gait = "water_surface"
+gait = "rough_ground"
 environment_setup = "water_surface"
 
 LOG_FILE = f"learned_weight_set/{gait}/weight_set_3.json" # <-- Paste your actual log filename here
@@ -31,6 +35,8 @@ SIMULATION_STEPS = 12000 # 12000 (1min.)
 CPG_PHI = 0.05
 
 SAVE_METRIC_CSV = False
+SAVE_ROS_BAG = True
+
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
 JOINT_NAMES = [0, 1, 2, 3]
@@ -69,50 +75,50 @@ if __name__ == "__main__":
 
     
 
-    # ===============================================================
-    # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior) (water surface)
-    # ===============================================================
-    print("Loading Prior Knowledge to reconstruct Left offsets...")
-    prior_knowledge = np.load('learned_weight_set/water_surface/imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
+    # # ===============================================================
+    # # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior) (water surface)
+    # # ===============================================================
+    # print("Loading Prior Knowledge to reconstruct Left offsets...")
+    # prior_knowledge = np.load('learned_weight_set/water_surface/imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
 
-    imitated_weights = {}
+    # imitated_weights = {}
     
-    joint_index = 0
-    for index in LEG_INDEX: 
-        for joint in JOINT_NAMES:
-            start_idx = joint_index * NUM_KERNELS
-            end_idx = start_idx + NUM_KERNELS
+    # joint_index = 0
+    # for index in LEG_INDEX: 
+    #     for joint in JOINT_NAMES:
+    #         start_idx = joint_index * NUM_KERNELS
+    #         end_idx = start_idx + NUM_KERNELS
             
-            # 1. Get the Original Priors first so we can use them for the freeze
-            right_key = f"{index}R{joint}"
-            left_key = f"{index}L{joint}"
+    #         # 1. Get the Original Priors first so we can use them for the freeze
+    #         right_key = f"{index}R{joint}"
+    #         left_key = f"{index}L{joint}"
             
-            right_prior = np.array(prior_knowledge[right_key])
-            left_prior = np.array(prior_knowledge[left_key])
+    #         right_prior = np.array(prior_knowledge[right_key])
+    #         left_prior = np.array(prior_knowledge[left_key])
             
-            # ==========================================
-            # 🚨 THE FIX: FREEZE JOINT 1 
-            # ==========================================
-            # if joint == 1:
-            #     # FREEZE: Ignore the JSON log. Force it to be the original prior.
-            #     learned_weights = np.copy(right_prior)
-            # else:
-            #     # LEARN: Get the optimized weights from the JSON log
-            #     learned_weights = np.array(trained_weights[start_idx:end_idx])
+    #         # ==========================================
+    #         # 🚨 THE FIX: FREEZE JOINT 1 
+    #         # ==========================================
+    #         # if joint == 1:
+    #         #     # FREEZE: Ignore the JSON log. Force it to be the original prior.
+    #         #     learned_weights = np.copy(right_prior)
+    #         # else:
+    #         #     # LEARN: Get the optimized weights from the JSON log
+    #         #     learned_weights = np.array(trained_weights[start_idx:end_idx])
 
-            learned_weights = np.array(trained_weights[start_idx:end_idx])
+    #         learned_weights = np.array(trained_weights[start_idx:end_idx])
             
-            # Calculate the exact difference (Left - Right)
-            offset_weights = left_prior - right_prior
+    #         # Calculate the exact difference (Left - Right)
+    #         offset_weights = left_prior - right_prior
             
-            # 3. Assign the pure weights to the RIGHT side
-            imitated_weights[right_key] = learned_weights
+    #         # 3. Assign the pure weights to the RIGHT side
+    #         imitated_weights[right_key] = learned_weights
             
-            # 4. Assign the Weights + Original Offset to the LEFT side
-            imitated_weights[left_key] = learned_weights + offset_weights
+    #         # 4. Assign the Weights + Original Offset to the LEFT side
+    #         imitated_weights[left_key] = learned_weights + offset_weights
             
-            joint_index += 1
-    # ===============================================================
+    #         joint_index += 1
+    # # ===============================================================
 
     # # ===============================================================
     # # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior)
@@ -150,31 +156,31 @@ if __name__ == "__main__":
     #         joint_index += 1
     # # ===============================================================
 
-    # # ===============================================================
-    # # WEIGHT SYMMETRY LOGIC (walking)
-    # # ===============================================================
-    # imitated_weights = {}
+    # ===============================================================
+    # WEIGHT SYMMETRY LOGIC (walking)
+    # ===============================================================
+    imitated_weights = {}
     
-    # # 1. We only loop through the Front ('F') and Back ('B') indices
-    # joint_index = 0
-    # for index in LEG_INDEX: 
-    #     for joint in JOINT_NAMES:
-    #         start_idx = joint_index * NUM_KERNELS
-    #         end_idx = start_idx + NUM_KERNELS
+    # 1. We only loop through the Front ('F') and Back ('B') indices
+    joint_index = 0
+    for index in LEG_INDEX: 
+        for joint in JOINT_NAMES:
+            start_idx = joint_index * NUM_KERNELS
+            end_idx = start_idx + NUM_KERNELS
             
-    #         # Extract the 20 weights for this specific joint
-    #         extracted_weights = trained_weights[start_idx:end_idx]
+            # Extract the 20 weights for this specific joint
+            extracted_weights = trained_weights[start_idx:end_idx]
             
-    #         # 2. Assign these weights to the RIGHT side
-    #         right_key = f"{index}R{joint}"
-    #         imitated_weights[right_key] = extracted_weights
+            # 2. Assign these weights to the RIGHT side
+            right_key = f"{index}R{joint}"
+            imitated_weights[right_key] = extracted_weights
             
-    #         # 3. MIRROR them exactly to the LEFT side!
-    #         left_key = f"{index}L{joint}"
-    #         imitated_weights[left_key] = extracted_weights
+            # 3. MIRROR them exactly to the LEFT side!
+            left_key = f"{index}L{joint}"
+            imitated_weights[left_key] = extracted_weights
             
-    #         joint_index += 1
-    # # ===============================================================
+            joint_index += 1
+    # ===============================================================
 
     # # ===============================================================
     # # FULLY INDEPENDENT WEIGHT LOGIC (No Symmetry)
@@ -237,9 +243,34 @@ if __name__ == "__main__":
     env = StickInsectEnv(enable_ros=True, render=True) 
     env.reset()
     
+
+    # ==========================================
+    # START ROS 2 BAG RECORDING
+    # ==========================================
+    if SAVE_ROS_BAG:
+        bag_process = None
+        if env.enable_ros:
+            # Create a unique bag name to prevent ROS crashes if the folder already exists
+            timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            bag_dir = f"classification_model_training/rosbags/{gait}_gait_on_{environment_setup}"
+            
+            # Ensure the parent directory exists
+            os.makedirs(os.path.dirname(bag_dir), exist_ok=True)
+            
+            print(f"🎬 Starting ROS 2 bag recording: {bag_dir}")
+            
+            # Launch the recording in the background (-a records all topics)
+            # We suppress stdout/stderr so it doesn't spam your terminal
+            bag_process = subprocess.Popen(
+                ["ros2", "bag", "record", "-a", "-o", bag_dir],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+    # ==========================================
+
     print("Starting replay...")
     
-    # 5. Run the Simulation Loop
+    # 5. ==================================================================================== Run the Simulation Loop ==============================================================================================================================
     for step in range(SIMULATION_STEPS):
         step_start = time.perf_counter() # use perf_counter for high precision
         # Update CPGs
@@ -275,13 +306,18 @@ if __name__ == "__main__":
                     # same physical direction as the Right hip.
                     if side == 'L' and joint == 0:
                         network_output = -network_output 
-                    # if index == 'F' and joint == 1:
-                    #     network_output = -network_output 
+
+                    # for walking
+                    if side == 'L' and joint == 1:
+                        network_output = -network_output 
+                    # for swimming
+                    # if side == 'L' and joint == 1:
+                    #     network_output = -network_output - np.pi
                     
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
-                    target_angle =  network_output
-                    # target_angle =  network_output + baseline_angle
+                    # target_angle =  network_output
+                    target_angle =  network_output + baseline_angle
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
                     actuator_name = f"{index}{side}_J{joint+1}"  
@@ -295,8 +331,19 @@ if __name__ == "__main__":
         target_duration = env.model.opt.timestep
         while (time.perf_counter() - step_start) < target_duration:
             pass # Busy-wait ensures perfect timing
-
-   
+    # ========================================================================================================================================================================
+    print("Replay finished.")
+    
+    # ==========================================
+    # STOP ROS 2 BAG RECORDING
+    # ==========================================
+    if bag_process is not None:
+        print("🛑 Stopping ROS 2 bag recording and saving file...")
+        # Send SIGINT (Ctrl+C) so ROS 2 properly closes the sqlite3 database
+        bag_process.send_signal(signal.SIGINT)
+        bag_process.wait() # Wait for the file to finish saving
+        print("✅ ROS bag successfully saved!")
+    # ==========================================
         
 
     metric = env.calculate_gait_metrics()
@@ -342,4 +389,8 @@ if __name__ == "__main__":
             
         print(f"Metrics successfully saved to: {metric_filename}")
 
-    print("Replay finished.")
+    
+
+   
+
+    

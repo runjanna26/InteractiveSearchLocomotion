@@ -33,7 +33,7 @@
     <worldbody>
         
 
-        <body name="robot" pos="0 0 0.5" euler="0 0 -90">  
+        <body name="robot" pos="0 0 1.5" euler="0 0 -90">  
         <!-- <body name="robot" pos="0 0 1.5" euler="0 0 -90">   -->
             <freejoint name="space" />
 

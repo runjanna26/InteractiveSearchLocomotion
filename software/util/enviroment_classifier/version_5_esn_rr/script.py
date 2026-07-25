@@ -81,11 +81,11 @@ class StickInsectEnv:
     def _build_environment(self):
         x_start = -20
         tg = TerrainGenerator()
-        # terrain_xml             = tg.generate_rough_terrain(    name = 'rough_terrain_1',   n_rows=100, n_cols=100, start_pos=(x_start+15, 0, 1.5))
         # terrain_xml                 = tg.generate_flat_terrain(     name = 'flat_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
         # terrain_xml                 = tg.generate_soft_terrain(     name = 'soft_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
         # terrain_xml                 = tg.generate_muddy_terrain(     name = 'muddy_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
         # terrain_xml                 = tg.generate_slippery_terrain (     name = 'slippery_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
+        # terrain_xml             = tg.generate_rough_terrain(    name = 'rough_terrain_1',   n_rows=100, n_cols=100, start_pos=(x_start+15, 0, 1.5))
         
         terrain_xml                 = tg.generate_flat_terrain(     name = 'water_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, -1.5))
 
