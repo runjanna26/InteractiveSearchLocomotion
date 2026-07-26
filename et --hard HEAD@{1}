@@ -1,0 +1,17 @@
+[33m9bac03c[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: rebase (continue) (finish): returning to refs/heads/main
+[33m9bac03c[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: pull (start): checkout 9bac03c2d35fead4eb896d78fa44ad111673e504
+[33mc0d0622[m HEAD@{2}: commit (merge): update
+[33m6ea86c1[m HEAD@{3}: commit: learned cnn rnn model
+[33mdd620e2[m HEAD@{4}: pull: Fast-forward
+[33ma0774e4[m HEAD@{5}: pull: Fast-forward
+[33m9761c2f[m HEAD@{6}: pull: Fast-forward
+[33m4d9ac31[m HEAD@{7}: commit: update collect data for terrain classification
+[33me018017[m HEAD@{8}: pull: Fast-forward
+[33md8809af[m HEAD@{9}: pull --tags origin main: Fast-forward
+[33m59134c0[m HEAD@{10}: commit: update re-experiment for
+[33mbf9eefa[m HEAD@{11}: pull: Fast-forward
+[33me1dce07[m HEAD@{12}: pull: Fast-forward
+[33m1a67eac[m HEAD@{13}: commit: update
+[33m02628fd[m HEAD@{14}: pull --tags origin main: Fast-forward
+[33m604c0ba[m HEAD@{15}: pull --tags origin main: Fast-forward
+[33mc6e0877[m HEAD@{16}: clone: from github.com:runjanna26/InteractiveSearchLocomotion.git
