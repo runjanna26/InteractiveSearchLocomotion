@@ -1,0 +1,41 @@
+<mujoco>
+    <compiler meshdir="."/>
+    <statistic extent="1.5" meansize=".05" />
+
+    <option timestep="0.005" integrator="implicit"/>
+
+    <default>
+        <default class="visualgeom">
+        <geom material="visualgeom" condim="1" contype="0" conaffinity="0" />
+        </default>
+    </default>
+
+    <include file="scene/swimming_pool.xml"/>
+    <include file="robot/robot_mesh.xml"/>
+
+
+    <visual>
+        <quality shadowsize="4096" />
+        <headlight diffuse="0.8 0.8 0.8" ambient="0.5 0.5 0.5" specular="0.2 0.2 0.2"/>
+        <rgba haze="0.15 0.25 0.35 1"/>
+        <global azimuth="120" elevation="45"/>
+    </visual>
+
+
+    <worldbody>
+        
+        <body name="robot" pos="0 0 2.5" euler="0 0 -90">
+            <!-- <freejoint name="space" /> -->
+
+            <light directional="true" diffuse="0.6 0.6 0.6" specular="0.8 0.8 0.8" pos="0 0 10" dir="0 0 -1" castshadow="true"/>
+            <camera name="tracking_cam" mode="track" pos="0 -4 2" xyaxes="1 0 0 0 1 2"/>
+
+            <include file="robot/robot.xml"/>
+        </body>
+        INCLUDE_TERRAIN
+    </worldbody>
+
+    <include file="robot/robot_actuator.xml"/>
+    
+    
+</mujoco>

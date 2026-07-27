@@ -1,0 +1,23 @@
+<mujocoinclude>
+    <asset>
+        <mesh name="BODY"       file="BODY.STL"/>
+        <mesh name="FL_HIP"     file="FL_HIP.STL"/>
+        <mesh name="FL_THIGH"   file="FL_THIGH.STL"/>
+        <mesh name="FL_CALF"    file="FL_CALF.STL"/>
+        <mesh name="FL_TIP"     file="FL_TIP.STL"/>
+        <mesh name="FR_HIP"     file="FR_HIP.STL"/>
+        <mesh name="FR_THIGH"   file="FR_THIGH.STL"/>
+        <mesh name="FR_CALF"    file="FR_CALF.STL"/>
+        <mesh name="FR_TIP"     file="FR_TIP.STL"/>
+        <mesh name="RL_HIP"     file="RL_HIP.STL"/>
+        <mesh name="RL_THIGH"   file="RL_THIGH.STL"/>
+        <mesh name="RL_CALF"    file="RL_CALF.STL"/>
+        <mesh name="RL_TIP"     file="RL_TIP.STL"/>
+        <mesh name="RR_HIP"     file="RR_HIP.STL"/>
+        <mesh name="RR_THIGH"   file="RR_THIGH.STL"/>
+        <mesh name="RR_CALF"    file="RR_CALF.STL"/>
+        <mesh name="RR_TIP"     file="RR_TIP.STL"/>
+        <material name="matplane" rgba="0.5 0.5 0.9 1" reflectance="0.25" texuniform="true"/>
+        <material name="visualgeom" rgba="0.055 0.055 0.065 1" />
+    </asset>
+</mujocoinclude>

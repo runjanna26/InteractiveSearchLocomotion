@@ -1,0 +1,56 @@
+<mujocoinclude>
+    <actuator>
+        <motor name="FL_J1" joint="FL_J1" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="FR_J1" joint="FR_J1" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="BL_J1" joint="BL_J1" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="BR_J1" joint="BR_J1" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="FL_J2" joint="FL_J2" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="FR_J2" joint="FR_J2" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="BL_J2" joint="BL_J2" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="BR_J2" joint="BR_J2" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="FL_J3" joint="FL_J3" ctrllimited="true" ctrlrange="-320 320" gear="1" />
+        <motor name="FR_J3" joint="FR_J3" ctrllimited="true" ctrlrange="-320 320" gear="1" />
+        <motor name="BL_J3" joint="BL_J3" ctrllimited="true" ctrlrange="-320 320" gear="1" />
+        <motor name="BR_J3" joint="BR_J3" ctrllimited="true" ctrlrange="-320 320" gear="1" />
+    </actuator>
+
+    <sensor>
+        <!-- <gyro name="imu_gyro" site="imu_site" noise="0.005" /> -->
+        <actuatorpos name="FL_J1_p" actuator="FL_J1" />
+        <actuatorvel name="FL_J1_v" actuator="FL_J1" />
+        <actuatorfrc name="FL_J1_f" actuator="FL_J1" />
+        <actuatorpos name="FL_J2_p" actuator="FL_J2" />
+        <actuatorvel name="FL_J2_v" actuator="FL_J2" />
+        <actuatorfrc name="FL_J2_f" actuator="FL_J2" />
+        <actuatorpos name="FL_J3_p" actuator="FL_J3" />
+        <actuatorvel name="FL_J3_v" actuator="FL_J3" />
+        <actuatorfrc name="FL_J3_f" actuator="FL_J3" />
+        <actuatorpos name="FR_J1_p" actuator="FR_J1" />
+        <actuatorvel name="FR_J1_v" actuator="FR_J1" />
+        <actuatorfrc name="FR_J1_f" actuator="FR_J1" />
+        <actuatorpos name="FR_J2_p" actuator="FR_J2" />
+        <actuatorvel name="FR_J2_v" actuator="FR_J2" />
+        <actuatorfrc name="FR_J2_f" actuator="FR_J2" />
+        <actuatorpos name="FR_J3_p" actuator="FR_J3" />
+        <actuatorvel name="FR_J3_v" actuator="FR_J3" />
+        <actuatorfrc name="FR_J3_f" actuator="FR_J3" />
+        <actuatorpos name="BL_J1_p" actuator="BL_J1" />
+        <actuatorvel name="BL_J1_v" actuator="BL_J1" />
+        <actuatorfrc name="BL_J1_f" actuator="BL_J1" />
+        <actuatorpos name="BL_J2_p" actuator="BL_J2" />
+        <actuatorvel name="BL_J2_v" actuator="BL_J2" />
+        <actuatorfrc name="BL_J2_f" actuator="BL_J2" />
+        <actuatorpos name="BL_J3_p" actuator="BL_J3" />
+        <actuatorvel name="BL_J3_v" actuator="BL_J3" />
+        <actuatorfrc name="BL_J3_f" actuator="BL_J3" />
+        <actuatorpos name="BR_J1_p" actuator="BR_J1" />
+        <actuatorvel name="BR_J1_v" actuator="BR_J1" />
+        <actuatorfrc name="BR_J1_f" actuator="BR_J1" />
+        <actuatorpos name="BR_J2_p" actuator="BR_J2" />
+        <actuatorvel name="BR_J2_v" actuator="BR_J2" />
+        <actuatorfrc name="BR_J2_f" actuator="BR_J2" />
+        <actuatorpos name="BR_J3_p" actuator="BR_J3" />
+        <actuatorvel name="BR_J3_v" actuator="BR_J3" />
+        <actuatorfrc name="BR_J3_f" actuator="BR_J3" />
+    </sensor>
+</mujocoinclude>
