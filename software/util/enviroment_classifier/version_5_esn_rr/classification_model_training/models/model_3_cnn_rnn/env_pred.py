@@ -217,7 +217,7 @@ class CNN_RNN_Classifier:
 
     def load_model(self, filepath="cnn_rnn_model_params.pt"):
         """Loads weights, scaler, and topology from a saved file."""
-        data = torch.load(filepath, map_location=self.device)
+        data = torch.load(filepath, map_location=self.device, weights_only=False)
         
         h_params = data['hyperparams']
         self.num_filters = h_params['num_filters']
@@ -241,6 +241,28 @@ class CNN_RNN_Classifier:
         print(f"   • Sequence Length:{self.seq_len} steps")
         print(f"   • Input Channels: {self.n_inputs} (F/T axes)")
         print("-" * 40 + "\n")
+
+    def get_model_size(self):
+        """Calculates and returns the total number of trainable parameters in the CNN-RNN model."""
+        if self.model is None:
+            raise ValueError("Model is not initialized. Call fit() or load_model() first.")
+            
+        # Count all parameters that require gradients (are trainable)
+        total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        
+        # Format the output nicely
+        if total_params >= 1_000_000:
+            formatted_size = f"{total_params / 1_000_000:.2f}M"
+        elif total_params >= 1_000:
+            formatted_size = f"{total_params / 1_000:.2f}K"
+        else:
+            formatted_size = str(total_params)
+            
+        print("\n⚙️ CNN-RNN Parameter Breakdown:")
+        print(f"   • Base Architecture: CNN Filters = {self.num_filters}, GRU Hidden = {self.rnn_hidden}")
+        print(f"   • Total Trainable Parameters: {total_params} ({formatted_size})\n")
+        
+        return total_params
 
 
 # import numpy as np
