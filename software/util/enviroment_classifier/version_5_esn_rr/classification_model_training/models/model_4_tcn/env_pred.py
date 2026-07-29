@@ -231,7 +231,8 @@ class TCN_Classifier:
 
     def load_model(self, filepath="tcn_model_params.pt"):
         """Loads weights, scaler, and topology from a saved file."""
-        data = torch.load(filepath, map_location=self.device)
+        torch.serialization.add_safe_globals([StandardScaler])
+        data = torch.load(filepath, map_location=self.device, weights_only=False)
         
         h_params = data['hyperparams']
         self.variant = h_params['variant']
