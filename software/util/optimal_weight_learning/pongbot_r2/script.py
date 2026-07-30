@@ -104,10 +104,10 @@ class StickInsectEnv:
 
             if "J3" in name:
                 # The Calf is very light (~0.7kg). Use much softer parameters!
-                self.controllers[name] = MuscleModel(_a=0.05, _b=10.0, _beta=0.05, _init_pos=0.0)
+                self.controllers[name] = MuscleModel(_a=0.02, _b=35.0, _beta=0.05, _init_pos=0.0)
             else:
                 # The Hip (J1) and Thigh (J2) are heavy (~5.4kg). They need the high power.
-                self.controllers[name] = MuscleModel(_a=0.05, _b=80.0, _beta=0.05, _init_pos=0.0)
+                self.controllers[name] = MuscleModel(_a=0.02, _b=35.0, _beta=0.05, _init_pos=0.0)
     def _init_foot_sensors(self):
         foot_geom_ids = {}
         for name in FOOT_NAMES:
@@ -219,13 +219,15 @@ class StickInsectEnv:
             
             # 🚨 COMMENT OUT the actual network target
             target = targets.get(name, 0.0)
+            # print(target)
             
             # 🚨 INJECT your sine wave here
             # target = sine_target
 
             ctrl.calculate(target, q, dq, self.model.opt.timestep)
 
-            torque = ctrl.get_torque()
+            # torque = ctrl.get_torque()
+            torque = np.clip(ctrl.get_torque(), -80.0, 80.0) 
             self.data.ctrl[self.actuator_ids[name]] = torque
 
         # # ==========================================
@@ -490,9 +492,9 @@ class StickInsectEnv:
         # ==========================================
         # 1. EARLY SAFEGUARD (Must execute first)
         # ==========================================
-        # roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
+        roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
         
-        # # Catch explosions or flips instantly
+        # Catch explosions or flips instantly
         # if (np.isnan(self.data.qpos).any() or 
         #     np.isnan(self.data.qvel).any() or 
         #     self.data.qpos[2] > 3.0 or 
@@ -506,6 +508,7 @@ class StickInsectEnv:
         #         "slippage": 0.0,
         #         "total_reward": -1000.0
         #     }
+        
 
         # ==========================================
         # 2. CALCULATE METRICS
@@ -523,6 +526,8 @@ class StickInsectEnv:
         
         # Now std_z will only be ~50 instead of ~5000 if it sinks
         instability = std_z + mean_roll + mean_pitch + mean_yaw
+
+        heading_drift =  np.abs(mean_yaw - 2.56591247924722)
         
         # Averages for penalties
         if self.step_count > 0:
@@ -540,15 +545,16 @@ class StickInsectEnv:
         # 3. TOTAL REWARD COMPUTATION
         # ==========================================
         w1 = 10.0      # Distance weight
-        w2 = 3.0      # Instability weight
+        w2 = 100.0      # Instability weight
         w4 = 5.0      # Y-Drift penalty weight
         
         w_collision = 1000.0  # NEW: Collision penalty weight
         w_ripple    = 0.0 
         w_accel     = 0.0  
+        w_heading   = 10.0
         
 
-        total_reward = (w1 * distance_walked) - (w2 * instability) - (w4 * drift_y) - (w_collision * avg_collision) - (w_ripple * avg_torque_ripple) - (w_accel * avg_joint_accel)
+        total_reward = (w1 * distance_walked) - (w2 * instability) - (w4 * drift_y) - (w_collision * avg_collision) - (w_ripple * avg_torque_ripple) - (w_accel * avg_joint_accel) - (w_heading * heading_drift)
         
         return {
             "distance_walked":  (w1 * distance_walked),
