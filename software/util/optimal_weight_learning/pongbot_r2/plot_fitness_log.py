@@ -9,10 +9,10 @@ import matplotlib.animation as animation
 # ==========================================
 LOG_DIR = "data/pibb_logs/"
 # Set to a specific filename if you don't want the latest one
-SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260723_133525.json" 
+SPECIFIC_LOG_FILE = "data/pibb_logs/pibb_training_20260731_001759.json" 
 
 # How often to refresh the plot (in milliseconds)
-REFRESH_INTERVAL_MS = 2000  
+REFRESH_INTERVAL_MS = 1000  
 
 def get_latest_log_file(directory):
     """Finds the most recently created JSON log file in the directory."""

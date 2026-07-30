@@ -14,9 +14,10 @@
         <body name="FR_CALF" pos="0 0 -0.35">
           <inertial pos="-0.00611749 -0.000233756 -0.15163" quat="0.695198 -0.136525 -0.137648 0.69218" mass="0.761702" diaginertia="0.0189273 0.017213 0.00178299"/>
           <joint name="FR_J3" pos="0 0 0" axis="0 1 0" actuatorfrcrange="-320 320" damping="0.0" frictionloss="0.1" armature="0.05"/>
-          <geom type="mesh" rgba="0.055 0.055 0.065 1" mesh="FR_CALF" contype="0" conaffinity="0"/>
+          <geom type="mesh" rgba="0.055 0.055 0.065 1" mesh="FR_CALF" contype="0" conaffinity="0" group="1"/>
+          <geom name="FR_calf_collision" type="capsule" fromto="0 0 0  0 0 -0.35" size="0.04" rgba="1 0 0 0.0" group="0"/>
           <geom pos="0 0 -0.35" quat="1 0 0 0" type="mesh" rgba="0.055 0.055 0.065 1" mesh="FR_TIP"/>
-          <geom name="FR_foot" pos="0 0 -0.35" type="sphere" size="0.03" rgba="0.8 0.2 0.2 1" friction="1 0.5 0.5"/>
+          <geom name="FR_foot" pos="0 0 -0.35" type="sphere" size="0.03" rgba="0.8 0.2 0.2 0" friction="1 0.5 0.5"/>
         </body>
       </body>
     </body>
@@ -34,9 +35,10 @@
         <body name="FL_CALF" pos="0 0 -0.35">
           <inertial pos="-0.00611749 -0.000233756 -0.15163" quat="0.695198 -0.136525 -0.137648 0.69218" mass="0.761702" diaginertia="0.0189273 0.017213 0.00178299"/>
           <joint name="FL_J3" pos="0 0 0" axis="0 1 0" actuatorfrcrange="-320 320" damping="0.0" frictionloss="0.1" armature="0.05"/>
-          <geom type="mesh" rgba="0.055 0.055 0.065 1" mesh="FL_CALF" contype="0" conaffinity="0"/>
+          <geom type="mesh" rgba="0.055 0.055 0.065 1" mesh="FL_CALF" contype="0" conaffinity="0" group="1"/>
+          <geom name="FL_calf_collision" type="capsule" fromto="0 0 0  0 0 -0.35" size="0.04" rgba="1 0 0 0.0" group="0"/>
           <geom pos="0 0 -0.35" quat="1 0 0 0" type="mesh" rgba="0.055 0.055 0.065 1" mesh="FL_TIP"/>
-          <geom name="FL_foot" pos="0 0 -0.35" type="sphere" size="0.03" rgba="0.8 0.2 0.2 1" friction="1 0.5 0.5"/>
+          <geom name="FL_foot" pos="0 0 -0.35" type="sphere" size="0.03" rgba="0.8 0.2 0.2 0" friction="1 0.5 0.5"/>
         </body>
       </body>
     </body>
@@ -52,9 +54,10 @@
         <body name="BL_CALF" pos="0 0 -0.35">
           <inertial pos="-0.00611749 -0.000233756 -0.15163" quat="0.695198 -0.136525 -0.137648 0.69218" mass="0.761702" diaginertia="0.0189273 0.017213 0.00178299"/>
           <joint name="BL_J3" pos="0 0 0" axis="0 1 0" actuatorfrcrange="-320 320" damping="0.0" frictionloss="0.1" armature="0.05"/>
-          <geom type="mesh" rgba="0.055 0.055 0.065 1" mesh="RL_CALF" contype="0" conaffinity="0"/>
+          <geom type="mesh" rgba="0.055 0.055 0.065 1" mesh="RL_CALF" contype="0" conaffinity="0" group="1"/>
+          <geom name="BL_calf_collision" type="capsule" fromto="0 0 0  0 0 -0.35" size="0.04" rgba="1 0 0 0.0" group="0"/>
           <geom pos="0 0 -0.35" quat="1 0 0 0" type="mesh" rgba="0.055 0.055 0.065 1" mesh="RL_TIP"/>
-          <geom name="BL_foot" pos="0 0 -0.35" type="sphere" size="0.03" rgba="0.8 0.2 0.2 1" friction="1 0.5 0.5"/>
+          <geom name="BL_foot" pos="0 0 -0.35" type="sphere" size="0.03" rgba="0.8 0.2 0.2 0" friction="1 0.5 0.5"/>
         </body>
       </body>
     </body>
@@ -69,9 +72,10 @@
         <body name="BR_CALF" pos="0 0 -0.35">
           <inertial pos="-0.00611749 -0.000233756 -0.15163" quat="0.695198 -0.136525 -0.137648 0.69218" mass="0.761702" diaginertia="0.0189273 0.017213 0.00178299"/>
           <joint name="BR_J3" pos="0 0 0" axis="0 1 0" actuatorfrcrange="-320 320" damping="0.0" frictionloss="0.1" armature="0.05"/>
-          <geom type="mesh" rgba="0.055 0.055 0.065 1" mesh="RR_CALF" contype="0" conaffinity="0"/>
+          <geom type="mesh" rgba="0.055 0.055 0.065 1" mesh="RR_CALF" contype="0" conaffinity="0" group="1"/>
+          <geom name="BR_calf_collision" type="capsule" fromto="0 0 0  0 0 -0.35" size="0.04" rgba="1 0 0 0.0" group="0"/>
           <geom pos="0 0 -0.35" quat="1 0 0 0" type="mesh" rgba="0.055 0.055 0.065 1" mesh="RR_TIP"/>
-          <geom name="BR_foot" pos="0 0 -0.35" type="sphere" size="0.03" rgba="0.8 0.2 0.2 1" friction="1 0.5 0.5"/>
+          <geom name="BR_foot" pos="0 0 -0.35" type="sphere" size="0.03" rgba="0.8 0.2 0.2 0" friction="1 0.5 0.5"/>
         </body>
       </body>
     </body>

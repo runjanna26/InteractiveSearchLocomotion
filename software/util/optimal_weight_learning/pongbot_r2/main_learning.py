@@ -17,11 +17,11 @@ os.environ["MKL_NUM_THREADS"] = "1"
 # ======================================================
 # CONFIGURATION
 # ======================================================
-RENDER = True
-ROLLOUTS = 1  # Number of parallel rollouts per iteration
-SIMULATION_STEPS = 12000  # E.g., 5 seconds at 0.005s timestep
-ITERATIONS = 500
-NOISE_VARIANCE_INIT = 0.0020
+RENDER = False
+ROLLOUTS = 6  # Number of parallel rollouts per iteration
+SIMULATION_STEPS = 3600  # E.g., 5 seconds at 0.005s timestep
+ITERATIONS = 300
+NOISE_VARIANCE_INIT = 0.0010
 # NOISE_VARIANCE_INIT = 0.1
 BASE_PARAM_INIT = 0.000
 NUM_KERNELS = 20 
@@ -75,68 +75,108 @@ def evaluate_rollout(noisy_parameters, left_offsets, right_priors, simulation_st
     cpg_output = {}
     cpg_mod_cmd = {}
 
+    # ===============================================================
+    # UNIFIED LEG WEIGHT LOGIC (All 4 legs share the same weights)
+    # ===============================================================
+    imitated_weights = {}
+    
+    # We only extract 3 joints (0, 1, 2) from the noisy_parameters array
+    for joint in JOINT_NAMES: 
+        start_idx = joint * NUM_KERNELS
+        end_idx = start_idx + NUM_KERNELS
+        
+        if joint == 0:
+            # 🚨 FREEZE: Ignore PIBB's exploration noise.
+            extracted_weights = np.zeros(NUM_KERNELS)
+        else:
+            # LEARN: Use PIBB's noisy parameters for J1 and J2
+            extracted_weights = noisy_parameters[start_idx:end_idx]
+        
+        # Now, broadcast this EXACT same set of weights to all four legs!
+        for side in LEG_SIDE:       # ['R', 'L']
+            for index in LEG_INDEX: # ['F', 'B']
+                dict_key = f"{index}{side}{joint}"
+                imitated_weights[dict_key] = extracted_weights
+    # ===============================================================
 
     # # ===============================================================
-    # # RESIDUAL SYMMETRY LOGIC (With Joint 1 Frozen!)
+    # # FULLY INDEPENDENT WEIGHT LOGIC (Scratch Learning - Joint 0 Frozen)
     # # ===============================================================
     # imitated_weights = {}
     
+    # # Slice the flat 240-length array into 12 distinct joints
+    # joint_index = 0
+    # for side in LEG_SIDE:       # ['R', 'L']
+    #     for index in LEG_INDEX: # ['F', 'B']
+    #         for joint in JOINT_NAMES: # [0, 1, 2]
+                
+    #             start_idx = joint_index * NUM_KERNELS
+    #             end_idx = start_idx + NUM_KERNELS
+                
+    #             if joint == 0:
+    #                 # 🚨 FREEZE: Ignore PIBB's exploration noise.
+    #                 # Force to zero so it just holds the standing pose.
+    #                 extracted_weights = np.zeros(NUM_KERNELS)
+    #             else:
+    #                 # LEARN: Use PIBB's noisy parameters for J1 and J2
+    #                 extracted_weights = noisy_parameters[start_idx:end_idx]
+                
+    #             dict_key = f"{index}{side}{joint}"
+    #             imitated_weights[dict_key] = extracted_weights
+                
+    #             joint_index += 1
+    # # ===============================================================
+    
+    # # ===============================================================
+    # # WEIGHT SYMMETRY LOGIC
+    # # ===============================================================
+    # imitated_weights = {}
+    
+    # # 1. We only loop through the Front ('F') and Back ('B') indices
     # joint_index = 0
     # for index in LEG_INDEX: 
     #     for joint in JOINT_NAMES:
     #         start_idx = joint_index * NUM_KERNELS
     #         end_idx = start_idx + NUM_KERNELS
             
-    #         # # 🚨 THE FIX: Freeze Joint 1
-    #         # if joint == 1:
-    #         #     # FREEZE: Ignore PIBB completely. Force it to the original prior knowledge.
-    #         #     learned_weights = np.array(right_priors[start_idx:end_idx])
-    #         # else:
-    #         #     # LEARN: Use PIBB's newly generated noisy parameters (for joints 0, 2, and 3)
-    #         #     learned_weights = np.array(noisy_parameters[start_idx:end_idx])
-
-    #         # learn all joints
-    #         learned_weights = np.array(noisy_parameters[start_idx:end_idx])
-
-    #         # The exact difference between Left and Right from the prior knowledge
-    #         offset_weights = np.array(left_offsets[start_idx:end_idx])
+    #         # Extract the 20 weights for this specific joint
+    #         extracted_weights = noisy_parameters[start_idx:end_idx]
             
-    #         # 1. Assign to RIGHT side
+    #         # 2. Assign these weights to the RIGHT side
     #         right_key = f"{index}R{joint}"
-    #         imitated_weights[right_key] = learned_weights
-        
-    #         # 2. Assign to LEFT side (Learned update + Original offset)
+    #         imitated_weights[right_key] = extracted_weights
+            
+    #         # 3. MIRROR them exactly to the LEFT side!
     #         left_key = f"{index}L{joint}"
-    #         imitated_weights[left_key] = learned_weights + offset_weights
+    #         imitated_weights[left_key] = extracted_weights
             
     #         joint_index += 1
     # # ===============================================================
-    
 
-    # ===============================================================
-    # FULLY INDEPENDENT WEIGHT LOGIC (No Symmetry) (Learn)
-    # ===============================================================
-    imitated_weights = {}
+    # # ===============================================================
+    # # FULLY INDEPENDENT WEIGHT LOGIC (No Symmetry) (Learn)
+    # # ===============================================================
+    # imitated_weights = {}
     
-    # We must loop through BOTH sides now, exactly matching the order
-    # that base_parameters was packed in the main loop!
-    joint_index = 0
-    for side in LEG_SIDE:       # ['R', 'L']
-        for index in LEG_INDEX: # ['F', 'B']
-            for joint in JOINT_NAMES: # [0, 1, 2, 3]
+    # # We must loop through BOTH sides now, exactly matching the order
+    # # that base_parameters was packed in the main loop!
+    # joint_index = 0
+    # for side in LEG_SIDE:       # ['R', 'L']
+    #     for index in LEG_INDEX: # ['F', 'B']
+    #         for joint in JOINT_NAMES: # [0, 1, 2, 3]
                 
-                start_idx = joint_index * NUM_KERNELS
-                end_idx = start_idx + NUM_KERNELS
+    #             start_idx = joint_index * NUM_KERNELS
+    #             end_idx = start_idx + NUM_KERNELS
                 
-                # Extract the 20 weights for this specific independent joint
-                extracted_weights = noisy_parameters[start_idx:end_idx]
+    #             # Extract the 20 weights for this specific independent joint
+    #             extracted_weights = noisy_parameters[start_idx:end_idx]
                 
-                # Assign them directly to the unique dictionary key
-                dict_key = f"{index}{side}{joint}"
-                imitated_weights[dict_key] = extracted_weights
+    #             # Assign them directly to the unique dictionary key
+    #             dict_key = f"{index}{side}{joint}"
+    #             imitated_weights[dict_key] = extracted_weights
                 
-                joint_index += 1
-    # ===============================================================
+    #             joint_index += 1
+    # # ===============================================================
 
     # 2. Setup initial CPG states
     for side in LEG_SIDE:
@@ -150,13 +190,13 @@ def evaluate_rollout(noisy_parameters, left_offsets, right_priors, simulation_st
     # ===============================================================
     # We want Front-Left (FL) and Back-Right (BR) to be 180 degrees 
     # out of phase with Front-Right (FR) and Back-Left (BL).
-    # half_cycle = cpg_cycle_length // 2
+    half_cycle = cpg_cycle_length // 2
     
-    # for _ in range(half_cycle):
-    #     # Manually step the FL and BR oscillators forward in time
-    #     # before the MuJoCo simulation even begins.
-    #     cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
-    #     cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+    for _ in range(half_cycle):
+        # Manually step the FL and BR oscillators forward in time
+        # before the MuJoCo simulation even begins.
+        cpg_output['FL'] = cpg_modulated['FL'].modulate_cpg(CPG_PHI, 0.0, 1.0)
+        cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
 
     # 3. Reset environment
     env.reset()
@@ -199,8 +239,8 @@ def evaluate_rollout(noisy_parameters, left_offsets, right_priors, simulation_st
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
                     # target_angle = network_output
-                    # target_angle = baseline_angle + network_outpute
-                    target_angle = baseline_angle 
+                    target_angle = baseline_angle + network_output
+                    # target_angle = baseline_angle 
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
                     actuator_name = f"{index}{side}_J{joint+1}"  

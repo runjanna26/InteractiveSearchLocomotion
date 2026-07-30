@@ -46,7 +46,7 @@ class MuscleModel:
         self.D = self.F * self.gen_vel_error()
 
         # self.K = 35
-        # self.D = 0.5
+        # self.D = 5
 
         self.pos_des_prev = self.pos_des
 
@@ -55,15 +55,14 @@ class MuscleModel:
     def gen_track_error(self): return self.gen_pos_error() + self.beta * self.gen_vel_error()
     def gen_adapt_scalar(self): 
         return self.a / (1.0 + (self.b * (np.abs(self.gen_track_error()))**2))
-    
-    def get_torque(self):
-        # Limits to prevent explosion
-        # self.K = np.clip(self.K, 0.0, 500.0)
-        # self.D = np.clip(self.D, 0.0, 5.0)
-        # self.F = np.clip(self.F, -20.0, 20.0)
+    # def gen_adapt_scalar(self): 
+    #     scalar = self.a / (1.0 + (self.b * (np.abs(self.gen_track_error()))**2))
+    #     # 🚨 THE FIX: Set a hard floor so the gain cannot explode to infinity
+    #     return max(scalar, 0.01) 
 
+    def get_torque(self):
         # Torque Command
-        return -self.F - (self.K * self.gen_pos_error()) - (self.D * self.gen_vel_error())
+        return -np.clip(self.F, -20.0, 20.0) - (np.clip(self.K, 0.0, 500.0) * self.gen_pos_error()) - (np.clip(self.D, 0.0, 5.0) * self.gen_vel_error())
     
     def get_power_damping(self):
         # Energy dissipated by damping: E_damp = ∫ D(t) * (q(t))^2 dt
