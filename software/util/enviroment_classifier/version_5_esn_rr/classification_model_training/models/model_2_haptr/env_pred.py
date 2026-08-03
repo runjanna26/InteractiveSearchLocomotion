@@ -200,9 +200,8 @@ class HAPTR_Classifier:
 
     def load_model(self, filepath="haptr_model_params.pt"):
         """Loads weights, topology, and Scaler from a saved file."""
-        # Allow safe loading of the StandardScaler object
-        torch.serialization.add_safe_globals([StandardScaler])
-        
+        # 🚨 FIX: Removed add_safe_globals to prevent AttributeError on older PyTorch versions
+        # weights_only=False allows pickle to safely load the StandardScaler
         data = torch.load(filepath, map_location=self.device, weights_only=False)
         
         # Restore parameters
@@ -212,7 +211,7 @@ class HAPTR_Classifier:
         self.seq_len = h_params['seq_len']
         self.n_inputs = h_params['n_inputs']
         
-        # 🌟 NEW: Restore Scaler
+        # 🌟 Restore Scaler
         self.scaler = pickle.loads(data['scaler'])
         
         if self.variant == "Light":

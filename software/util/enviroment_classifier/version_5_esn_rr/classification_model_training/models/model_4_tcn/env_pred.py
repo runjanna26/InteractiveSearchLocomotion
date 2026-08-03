@@ -231,7 +231,7 @@ class TCN_Classifier:
 
     def load_model(self, filepath="tcn_model_params.pt"):
         """Loads weights, scaler, and topology from a saved file."""
-        torch.serialization.add_safe_globals([StandardScaler])
+        # 🚨 FIX: Removed add_safe_globals to prevent AttributeError on older PyTorch versions
         data = torch.load(filepath, map_location=self.device, weights_only=False)
         
         h_params = data['hyperparams']
@@ -240,7 +240,10 @@ class TCN_Classifier:
         self.seq_len = h_params['seq_len']
         self.n_inputs = h_params['n_inputs']
         
-        self.scaler = data['scaler'] # NEW: Load the fitted scaler
+        # Load the fitted scaler
+        # (Note: If you saved this using pickle.dumps() in the save_model method, 
+        # you will need to change this to: pickle.loads(data['scaler']))
+        self.scaler = data['scaler'] 
         
         # Reconstruct hyperparams based on variant mapping
         if self.variant == "Light":

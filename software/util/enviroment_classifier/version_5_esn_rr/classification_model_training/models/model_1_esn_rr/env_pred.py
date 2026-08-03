@@ -147,8 +147,9 @@ class ESN_RR_Classification:
         print(f"ESN and Scaler saved to {filepath}")
 
     def load_model(self, filepath="esn_model_params.pt"):
-        torch.serialization.add_safe_globals([StandardScaler])
-        checkpoint = torch.load(filepath, map_location='cpu', weights_only=True)
+        # 🚨 FIX: Removed add_safe_globals and changed weights_only to False 
+        # to ensure compatibility with older PyTorch versions.
+        checkpoint = torch.load(filepath, map_location='cpu', weights_only=False)
         
         self.n_res = int(checkpoint['hyperparams']['n_res'])
         self.leak_rate = float(checkpoint['hyperparams']['leak_rate'])
@@ -156,7 +157,6 @@ class ESN_RR_Classification:
         self.ignore_time_column = checkpoint['hyperparams'].get('ignore_time_column', False)
         self.output_steps = checkpoint['hyperparams'].get('output_steps', 'last')
         
-        # 🚨 ADDED .cpu() to prevent CUDA errors
         self.W_in = checkpoint['weights']['W_in'].cpu().numpy()
         self.W_res = checkpoint['weights']['W_res'].cpu().numpy()
         self.W_out = checkpoint['weights']['W_out'].cpu().numpy()
@@ -166,6 +166,7 @@ class ESN_RR_Classification:
         self.W_in_pt = checkpoint['weights']['W_in'].to(dtype=torch.float32, device=self.device)
         self.W_res_pt = checkpoint['weights']['W_res'].to(dtype=torch.float32, device=self.device)
         self.W_out_pt = checkpoint['weights']['W_out'].to(dtype=torch.float32, device=self.device)
+        
 
         print(f"\n[SUCCESS] ESN Model loaded from: '{filepath}'")
         print("-" * 50)
