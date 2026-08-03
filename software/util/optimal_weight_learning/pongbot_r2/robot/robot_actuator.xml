@@ -8,10 +8,10 @@
         <motor name="FR_J2" joint="FR_J2" ctrllimited="true" ctrlrange="-120 120" gear="1" />
         <motor name="BL_J2" joint="BL_J2" ctrllimited="true" ctrlrange="-120 120" gear="1" />
         <motor name="BR_J2" joint="BR_J2" ctrllimited="true" ctrlrange="-120 120" gear="1" />
-        <motor name="FL_J3" joint="FL_J3" ctrllimited="true" ctrlrange="-320 320" gear="1" />
-        <motor name="FR_J3" joint="FR_J3" ctrllimited="true" ctrlrange="-320 320" gear="1" />
-        <motor name="BL_J3" joint="BL_J3" ctrllimited="true" ctrlrange="-320 320" gear="1" />
-        <motor name="BR_J3" joint="BR_J3" ctrllimited="true" ctrlrange="-320 320" gear="1" />
+        <motor name="FL_J3" joint="FL_J3" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="FR_J3" joint="FR_J3" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="BL_J3" joint="BL_J3" ctrllimited="true" ctrlrange="-120 120" gear="1" />
+        <motor name="BR_J3" joint="BR_J3" ctrllimited="true" ctrlrange="-120 120" gear="1" />
     </actuator>
 
     <sensor>

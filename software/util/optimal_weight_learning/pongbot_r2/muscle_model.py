@@ -62,7 +62,7 @@ class MuscleModel:
 
     def get_torque(self):
         # Torque Command
-        return -np.clip(self.F, -20.0, 20.0) - (np.clip(self.K, 0.0, 500.0) * self.gen_pos_error()) - (np.clip(self.D, 0.0, 5.0) * self.gen_vel_error())
+        return -np.clip(self.F, -80.0, 80.0) - (np.clip(self.K, 0.0, 500.0) * self.gen_pos_error()) - (np.clip(self.D, 0.0, 5.0) * self.gen_vel_error())
     
     def get_power_damping(self):
         # Energy dissipated by damping: E_damp = ∫ D(t) * (q(t))^2 dt

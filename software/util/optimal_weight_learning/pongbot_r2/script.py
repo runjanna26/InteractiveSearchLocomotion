@@ -104,10 +104,10 @@ class StickInsectEnv:
 
             if "J3" in name:
                 # The Calf is very light (~0.7kg). Use much softer parameters!
-                self.controllers[name] = MuscleModel(_a=0.02, _b=35.0, _beta=0.05, _init_pos=0.0)
+                self.controllers[name] = MuscleModel(_a=0.01, _b=35.0, _beta=0.05, _init_pos=0.0)
             else:
                 # The Hip (J1) and Thigh (J2) are heavy (~5.4kg). They need the high power.
-                self.controllers[name] = MuscleModel(_a=0.02, _b=35.0, _beta=0.05, _init_pos=0.0)
+                self.controllers[name] = MuscleModel(_a=0.01, _b=35.0, _beta=0.05, _init_pos=0.0)
     def _init_foot_sensors(self):
         foot_geom_ids = {}
         for name in FOOT_NAMES:
@@ -175,6 +175,8 @@ class StickInsectEnv:
 
 
         self.start_pos = np.copy(self.data.qpos[:3])
+        _, _, start_yaw = self.quat_to_euler(self.data.qpos[3:7])
+        self.start_yaw = start_yaw
 
         self.step_count = 0
         
@@ -217,17 +219,19 @@ class StickInsectEnv:
             q = self.data.qpos[self.qpos_ids[name]]
             dq = self.data.qvel[self.qvel_ids[name]]
             
-            # 🚨 COMMENT OUT the actual network target
-            target = targets.get(name, 0.0)
-            # print(target)
+            # ==========================================
+            # 🚨 JUST LIMIT VELOCITY (Hard Physics Clamp)
+            # ==========================================
+            MAX_VEL = 10.0
+            # Force the velocity to stay between -10.0 and +10.0
+            dq_clipped = np.clip(dq, -MAX_VEL, MAX_VEL)
+            self.data.qvel[self.qvel_ids[name]] = dq_clipped 
             
-            # 🚨 INJECT your sine wave here
-            # target = sine_target
+            # Pass the CLIPPED velocity to your controller so it doesn't freak out
+            target = targets.get(name, 0.0)
+            ctrl.calculate(target, q, dq_clipped, self.model.opt.timestep)
 
-            ctrl.calculate(target, q, dq, self.model.opt.timestep)
-
-            # torque = ctrl.get_torque()
-            torque = np.clip(ctrl.get_torque(), -80.0, 80.0) 
+            torque = np.clip(ctrl.get_torque(), -120.0, 120.0) 
             self.data.ctrl[self.actuator_ids[name]] = torque
 
         # # ==========================================
@@ -304,9 +308,9 @@ class StickInsectEnv:
         self.history_z.append(self.data.qpos[2])
         roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
         
-        self.history_roll.append(abs(roll))
-        self.history_pitch.append(abs(pitch))
-        self.history_yaw.append(abs(yaw))
+        self.history_roll.append(roll)
+        self.history_pitch.append(pitch)
+        self.history_yaw.append(yaw)
         
         # ==========================================
         # 3. TRACK COLLISION (Exponential Inverse Distance)
@@ -495,19 +499,19 @@ class StickInsectEnv:
         roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
         
         # Catch explosions or flips instantly
-        # if (np.isnan(self.data.qpos).any() or 
-        #     np.isnan(self.data.qvel).any() or 
-        #     self.data.qpos[2] > 3.0 or 
-        #     abs(roll) > 1.5 or 
-        #     abs(pitch) > 1.5):
+        if (np.isnan(self.data.qpos).any() or 
+            np.isnan(self.data.qvel).any() or 
+            self.data.qpos[2] > 3.0 or 
+            abs(roll) > 1.5 or 
+            abs(pitch) > 1.5):
             
-        #     return {
-        #         "distance_walked": 0.0,
-        #         "instability": 0.0,
-        #         "collision": 0.0,
-        #         "slippage": 0.0,
-        #         "total_reward": -1000.0
-        #     }
+            return {
+                "distance_walked": 0.0,
+                "instability": 0.0,
+                "collision": 0.0,
+                "slippage": 0.0,
+                "total_reward": -1000.0
+            }
         
 
         # ==========================================
@@ -516,18 +520,34 @@ class StickInsectEnv:
         # Forward Distance & Y-Axis Drift
         distance_walked = (self.data.qpos[0] - self.start_pos[0])
         drift_y = abs(self.data.qpos[1] - self.start_pos[1])
-        
-        # Instability 
+        # print(distance_walked)
+        # if distance_walked < 0:
+        #     distance_walked = distance_walked * 10.0  # Multiply negative distance to ruin the score
+
+        # Instability (Use Standard Deviation to punish wobbling!)
         std_z = np.std(self.history_z) if len(self.history_z) > 0 else 0
         
-        mean_roll = np.mean(self.history_roll) if len(self.history_roll) > 0 else 0
-        mean_pitch = np.mean(self.history_pitch) if len(self.history_pitch) > 0 else 0
-        mean_yaw = np.mean(self.history_yaw) if len(self.history_yaw) > 0 else 0
+        std_roll = np.std(self.history_roll) if len(self.history_roll) > 0 else 0
+        std_pitch = np.std(self.history_pitch) if len(self.history_pitch) > 0 else 0
         
-        # Now std_z will only be ~50 instead of ~5000 if it sinks
-        instability = std_z + mean_roll + mean_pitch + mean_yaw
-
-        heading_drift =  np.abs(mean_yaw - 2.56591247924722)
+        # Add up the standard deviations
+        instability = std_z + std_roll + std_pitch
+        
+    
+        # Calculate Heading Drift Dynamically
+        if len(self.history_yaw) > 0:
+            final_yaw = self.history_yaw[-1] # Where is it facing at the very end?
+            
+            # Shortest angular distance between current yaw and start yaw
+            yaw_diff = final_yaw - self.start_yaw
+            
+            # Normalize the angle to be strictly between -pi and +pi
+            yaw_diff = (yaw_diff + np.pi) % (2 * np.pi) - np.pi 
+            
+            heading_drift = abs(yaw_diff)
+        else:
+            heading_drift = 0.0
+        # print(heading_drift)
         
         # Averages for penalties
         if self.step_count > 0:
@@ -545,13 +565,13 @@ class StickInsectEnv:
         # 3. TOTAL REWARD COMPUTATION
         # ==========================================
         w1 = 10.0      # Distance weight
-        w2 = 100.0      # Instability weight
-        w4 = 5.0      # Y-Drift penalty weight
+        w2 = 20.0      # Instability weight
+        w4 = 10.0      # Y-Drift penalty weight
         
         w_collision = 1000.0  # NEW: Collision penalty weight
         w_ripple    = 0.0 
         w_accel     = 0.0  
-        w_heading   = 10.0
+        w_heading   = 20.0
         
 
         total_reward = (w1 * distance_walked) - (w2 * instability) - (w4 * drift_y) - (w_collision * avg_collision) - (w_ripple * avg_torque_ripple) - (w_accel * avg_joint_accel) - (w_heading * heading_drift)

@@ -19,8 +19,8 @@ os.environ["MKL_NUM_THREADS"] = "1"
 # ======================================================
 RENDER = False
 ROLLOUTS = 6  # Number of parallel rollouts per iteration
-SIMULATION_STEPS = 3600  # E.g., 5 seconds at 0.005s timestep
-ITERATIONS = 300
+SIMULATION_STEPS = 12000  # E.g., 5 seconds at 0.005s timestep
+ITERATIONS = 200
 NOISE_VARIANCE_INIT = 0.0010
 # NOISE_VARIANCE_INIT = 0.1
 BASE_PARAM_INIT = 0.000

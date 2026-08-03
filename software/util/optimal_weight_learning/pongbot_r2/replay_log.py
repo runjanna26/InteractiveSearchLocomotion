@@ -15,8 +15,8 @@ Set TARGET_ITERATION = -1 to watch the final optimized pattern.
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260731_010356.json" # <-- Paste your actual log filename here
-TARGET_ITERATION = -1  
+LOG_FILE = "data/pibb_logs/pibb_training_20260802_183609.json" # <-- Paste your actual log filename here
+TARGET_ITERATION = -1
 SIMULATION_STEPS = 100000
 CPG_PHI = 0.05
 
@@ -146,6 +146,8 @@ if __name__ == "__main__":
     
     # 5. Run the Simulation Loop
     for step in range(SIMULATION_STEPS):
+        step_start = time.perf_counter() 
+
         for side in LEG_SIDE:
             for index in LEG_INDEX:
                 cpg_output[f'{index}{side}'] = cpg_modulated[f'{index}{side}'].modulate_cpg(
@@ -174,7 +176,8 @@ if __name__ == "__main__":
             
         env.step(env_targets)
         
-        # Slow down physics to match real-time visual playback
-        # time.sleep(0.005) 
+        target_duration = env.model.opt.timestep
+        while (time.perf_counter() - step_start) < target_duration:
+            pass # Busy-wait ensures perfect timing
 
     print("Replay finished.")
