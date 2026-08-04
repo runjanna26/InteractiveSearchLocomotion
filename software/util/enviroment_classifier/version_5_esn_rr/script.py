@@ -4,6 +4,7 @@ import mujoco
 import mujoco.viewer
 import rclpy
 import math
+from collections import deque
 
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -77,6 +78,18 @@ class StickInsectEnv:
         #  'BL_J1', 'BL_J2', 'BL_J3', 'BL_J4']
 
         # ['FR', 'BR', 'FL', 'BL']
+        
+        # --- NEW: Foot Trails Initialization ---
+        self.trail_length = 200
+        self.foot_trails = {name: deque(maxlen=self.trail_length) for name in FOOT_NAMES}
+        
+        # Colors for the feet trails (RGBA)
+        self.trail_colors = {
+            'FOOT_FR': np.array([1.0, 0.0, 0.0, 1.0]), # Red
+            'FOOT_BR': np.array([0.0, 1.0, 0.0, 1.0]), # Green
+            'FOOT_FL': np.array([0.0, 0.0, 1.0, 1.0]), # Blue
+            'FOOT_BL': np.array([1.0, 0.0, 1.0, 1.0])  # Magenta
+        }
 
     def _build_environment(self):
         x_start = -20
@@ -153,9 +166,10 @@ class StickInsectEnv:
         self.viewer.cam.trackbodyid = robot_body_id
         
         # 3. Set the default starting angle (Optional but highly recommended)
-        self.viewer.cam.distance = 2.0    # How far away to start (meters)
-        self.viewer.cam.azimuth = 135      # Rotate left/right (degrees)
-        self.viewer.cam.elevation = -45   # Tilt up/down (degrees)
+        self.viewer.cam.distance = 1.5    # How far away to start (meters)
+        self.viewer.cam.azimuth = 180      # Rotate left/right (degrees)
+        self.viewer.cam.elevation = 0   # Tilt up/down (degrees)
+        # self.viewer.cam.elevation = -45   # Tilt up/down (degrees)
 
     def get_grf(self):
         grf = {name: 0.0 for name in FOOT_NAMES}
@@ -171,6 +185,10 @@ class StickInsectEnv:
     def reset(self):
         mujoco.mj_resetData(self.model, self.data)
         mujoco.mj_forward(self.model, self.data)
+
+        # --- NEW: Clear trails on reset ---
+        for trail in self.foot_trails.values():
+            trail.clear()
 
         self.hydro_forces_snapshot = np.zeros((self.model.nbody, 6))
         
@@ -423,6 +441,14 @@ class StickInsectEnv:
         self.accumulated_joint_accel += step_accel
 
 
+   
+        
+        # --- NEW: Record Foot Positions for Trails ---
+        for name, gid in self.foot_geom_ids.items():
+            # Append a copy of the current global 3D position of the foot geom
+            self.foot_trails[name].append(self.data.geom_xpos[gid].copy())
+        # ==========================================
+
         # ==========================================
         # 6. RENDERING & ROS
         # ==========================================
@@ -483,6 +509,7 @@ class StickInsectEnv:
                     self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
                     self.viewer.user_scn.ngeom += 1
 
+
             # ------------------------------------------
             # 2. DRAW GROUND REACTION FORCES (GREEN ARROWS)
             # ------------------------------------------
@@ -521,6 +548,39 @@ class StickInsectEnv:
             #             # Color it Bright Green
             #             self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([0.0, 1.0, 0.0, 1.0])
             #             self.viewer.user_scn.ngeom += 1
+            # ------------------------------------------
+            # 3. DRAW FOOT TRAILS
+            # ------------------------------------------
+            for name, trail in self.foot_trails.items():
+                if len(trail) > 1:
+                    color = self.trail_colors[name]
+                    for i in range(len(trail) - 1):
+                        # Prevent overflow of maximum allowed custom geoms in viewer
+                        if self.viewer.user_scn.ngeom >= self.viewer.user_scn.maxgeom:
+                            break
+                        
+                        geom = self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom]
+                        
+                        # Initialize a geometry for the line segment
+                        mujoco.mjv_initGeom(
+                            geom, 
+                            type=mujoco.mjtGeom.mjGEOM_LINE, 
+                            size=np.zeros(3), 
+                            pos=np.zeros(3), 
+                            mat=np.zeros(9), 
+                            rgba=color 
+                        )
+                        
+                        # Connect point A to point B (width = 3.0)
+                        mujoco.mjv_connector(
+                            geom, 
+                            mujoco.mjtGeom.mjGEOM_LINE, 
+                            3.0,          # width
+                            trail[i],     # from_
+                            trail[i+1]    # to
+                        )
+                        
+                        self.viewer.user_scn.ngeom += 1
 
         self.viewer.sync()
 

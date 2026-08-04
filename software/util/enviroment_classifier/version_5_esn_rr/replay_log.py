@@ -23,8 +23,8 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-gait = "rough_ground"
-environment_setup = "water_surface"
+gait = "solid_ground"
+environment_setup = "solid_ground"
 
 LOG_FILE = f"learned_weight_set/{gait}/weight_set_3.json" # <-- Paste your actual log filename here
 
@@ -35,7 +35,7 @@ SIMULATION_STEPS = 12000 # 12000 (1min.)
 CPG_PHI = 0.05
 
 SAVE_METRIC_CSV = False
-SAVE_ROS_BAG = True
+SAVE_ROS_BAG = False
 
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]

@@ -36247,3 +36247,6 @@ WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Ti
 Thu Jul 23 20:26:35 2026
 WARNING: Error opening file 'fast_rough_scene.mjb'
 
+Tue Aug  4 18:53:30 2026
+ERROR: mjv_updateCamera: track body id is outside valid range
+
