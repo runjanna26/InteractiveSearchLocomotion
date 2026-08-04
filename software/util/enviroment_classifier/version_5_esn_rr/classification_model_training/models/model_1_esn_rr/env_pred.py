@@ -185,7 +185,27 @@ class ESN_RR_Classification:
         print(f"   • Expected Features:      {self.scaler.n_features_in_ if self.scaler else 'N/A'}")
         print(f"   • Target Device:          {self.device.type.upper()}")
         print("-" * 50 + "\n")
-
+    def get_model_size(self):
+        """Returns the total number of parameters stored in the ESN matrices."""
+        if not hasattr(self, 'W_out') or self.W_out is None:
+            raise ValueError("Model is not initialized. Call fit() or load_model() first.")
+            
+        # Safely handle both NumPy arrays (.size) and PyTorch tensors (.numel())
+        in_size = self.W_in.size if hasattr(self.W_in, 'size') else self.W_in.numel()
+        res_size = self.W_res.size if hasattr(self.W_res, 'size') else self.W_res.numel()
+        out_size = self.W_out.size if hasattr(self.W_out, 'size') else self.W_out.numel()
+        
+        total_params = in_size + res_size + out_size
+        
+        if total_params >= 1_000_000:
+            formatted_size = f"{total_params / 1_000_000:.2f}M"
+        elif total_params >= 1_000:
+            formatted_size = f"{total_params / 1_000:.2f}K"
+        else:
+            formatted_size = str(total_params)
+            
+        print(f"Total ESN Parameters (W_in, W_res, W_out): {total_params} ({formatted_size})")
+        return total_params
 # =========================================================================================================
 #                                   ESN CLASS (No Scaler and No mean)
 # =========================================================================================================
