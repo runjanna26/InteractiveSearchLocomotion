@@ -13,7 +13,7 @@ from math import isfinite
 import numpy as np
 import warnings
 from .rmd_motor_can import *
-
+import subprocess
 
 # A class to manage the low level CAN communication protocols
 class CAN_Manager(object):
@@ -28,26 +28,44 @@ class CAN_Manager(object):
     Used to keep track of one instantation of the class to make a singleton object
     """
     
+    # def __new__(cls):
+    #     """
+    #     Makes a singleton object to manage a socketcan_native CAN bus.
+    #     """
+    #     if not cls._instance:
+    #         cls._instance = super(CAN_Manager, cls).__new__(cls)
+    #         print("Initializing CAN_Manager")
+    #         # verify the CAN bus is currently down
+    #         os.system( f'echo {robot_pwd} | sudo -S /sbin/ip link set can0 down' )
+    #         # start the CAN bus back up
+    #         os.system( 'sudo /sbin/ip link set can0 up type can bitrate 500000' )
+            
+    #         # create a python-can bus object
+    #         cls._instance.bus = can.interface.Bus(channel='can0', bustype='slcan', bitrate=500000) # socketcan_native / socketcan
+    #         # create a python-can notifier object, which motors can later subscribe to
+    #         cls._instance.notifier = can.Notifier(bus=cls._instance.bus, listeners=[])
+    #         print("Connected on: " + str(cls._instance.bus))
+
+    #     return cls._instance
     def __new__(cls):
-        """
-        Makes a singleton object to manage a socketcan_native CAN bus.
-        """
         if not cls._instance:
             cls._instance = super(CAN_Manager, cls).__new__(cls)
             print("Initializing CAN_Manager")
-            # verify the CAN bus is currently down
-            os.system( f'echo {robot_pwd} | sudo -S /sbin/ip link set can0 down' )
-            # start the CAN bus back up
-            os.system( 'sudo /sbin/ip link set can0 up type can bitrate 1000000' )
+            
+            # Use subprocess to pass the password securely to sudo -S
+            subprocess.run(['sudo', '-S', '/sbin/ip', 'link', 'set', 'can0', 'down'], 
+                           input=robot_pwd + '\n', text=True, check=False, capture_output=True)
+            
+            subprocess.run(['sudo', '-S', '/sbin/ip', 'link', 'set', 'can0', 'up', 'type', 'can', 'bitrate', '1000000'], 
+                           input=robot_pwd + '\n', text=True, check=False, capture_output=True)
             
             # create a python-can bus object
-            cls._instance.bus = can.interface.Bus(channel='can0', bustype='socketcan') # socketcan_native / socketcan
-            # create a python-can notifier object, which motors can later subscribe to
+            cls._instance.bus = can.interface.Bus(channel='can0', bustype='socketcan')
             cls._instance.notifier = can.Notifier(bus=cls._instance.bus, listeners=[])
             print("Connected on: " + str(cls._instance.bus))
 
         return cls._instance
-
+    
     def __init__(self):
         """
         ALl initialization happens in __new__
@@ -56,12 +74,19 @@ class CAN_Manager(object):
         self.debug = False
 
         
+    # def __del__(self):
+    #     """
+    #     # shut down the CAN bus when the object is deleted
+    #     # This may not ever get called, so keep a reference and explicitly delete if this is important.
+    #     """
+    #     os.system( 'sudo /sbin/ip link set can0 down' ) 
+
     def __del__(self):
         """
-        # shut down the CAN bus when the object is deleted
-        # This may not ever get called, so keep a reference and explicitly delete if this is important.
+        shut down the CAN bus when the object is deleted
         """
-        os.system( 'sudo /sbin/ip link set can0 down' ) 
+        subprocess.run(['sudo', '-S', '/sbin/ip', 'link', 'set', 'can0', 'down'], 
+                       input=robot_pwd + '\n', text=True, check=False, capture_output=True)
 
     # subscribe a motor object to the CAN bus to be updated upon message reception
     def add_motor(self, exo):

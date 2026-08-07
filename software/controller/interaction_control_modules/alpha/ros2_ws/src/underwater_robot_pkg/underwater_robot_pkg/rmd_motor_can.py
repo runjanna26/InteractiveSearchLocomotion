@@ -68,13 +68,31 @@ CAN_ID_WRITE_MOTOR_ID           = 0x00
 
 
 motor_param = {
-                'X4-10': {
-                    'max_torque':   10.0, 
-                    'max_speed':    25.0, 
-                    'max_current':  7.8,  
-                    'Kt': 0.85              # Torque constant, Nm/A
-                    } 
-              }
+    'X4-10': {
+        'P_MIN': -12.5, 'P_MAX': 12.5,
+        'V_MIN': -45.0, 'V_MAX': 45.0,
+        'T_MIN': -24.0, 'T_MAX': 24.0,
+        'Kp_MIN': 0.0,  'Kp_MAX': 500.0,
+        'Kd_MIN': 0.0,  'Kd_MAX': 5.0,
+        'Kt': 0.85
+    },
+    'X4-36': {
+        'P_MIN': -12.5, 'P_MAX': 12.5,
+        'V_MIN': -2.5,  'V_MAX': 2.5,
+        'T_MIN': -34.0, 'T_MAX': 34.0,
+        'Kp_MIN': 0.0,  'Kp_MAX': 500.0,
+        'Kd_MIN': 0.0,  'Kd_MAX': 5.0,
+        'Kt': 1.9
+    },
+    'X4-36_driven': {
+        'P_MIN': -12.5, 'P_MAX': 12.5,
+        'V_MIN': -45.0, 'V_MAX': 45.0,
+        'T_MIN': -34.0, 'T_MAX': 34.0,
+        'Kp_MIN': 0.0,  'Kp_MAX': 500.0,
+        'Kd_MIN': 0.0,  'Kd_MAX': 5.0,
+        'Kt': 1.9
+    }
+}
 
 ERROR = {'MotorStall':              0x0002,
          'LowVoltage':              0x0004,
@@ -89,7 +107,7 @@ ERROR = {'MotorStall':              0x0002,
          'EncoderDataError':        0x4000}
 
 class rmd_motor_can():
-    def __init__(self, motor_id, can_manager) -> None:
+    def __init__(self, motor_id, can_manager, motor_type='X4-36') -> None:
         self.debug = False
         self.print_feedback = False
 
@@ -98,7 +116,7 @@ class rmd_motor_can():
             ...
         else:
             self.can_manager = can_manager
-            self.type = 'X4-10'
+            self.type = motor_type # FIX: Set type dynamically instead of hardcoding 'X4-10'
             self.can_manager.add_motor(self)
 
         # Control variables
@@ -173,48 +191,143 @@ class rmd_motor_can():
             Kd: The velocity gain
             Tff: The additional current
         """
-        position_uint16     = self.float_to_uint(position, -12.5, 12.5, 16)
-        velocity_uint12     = self.float_to_uint(velocity, -45, 45, 12)
-        Kp_uint12           = self.float_to_uint(Kp, 0, 500, 12)
-        Kd_uint12           = self.float_to_uint(Kd, 0, 5, 12)
-        Tff_uint12          = self.float_to_uint(Tff, -24, 24, 12)
+        # Load the configuration for the current motor type
+        cfg = motor_param[self.type]
+        # Use the dictionary bounds dynamically
+        position_uint16 = self.float_to_uint(position, cfg['P_MIN'],  cfg['P_MAX'],  16)
+        velocity_uint12 = self.float_to_uint(velocity, cfg['V_MIN'],  cfg['V_MAX'],  12)
+        Kp_uint12       = self.float_to_uint(Kp,       cfg['Kp_MIN'], cfg['Kp_MAX'], 12)
+        Kd_uint12       = self.float_to_uint(Kd,       cfg['Kd_MIN'], cfg['Kd_MAX'], 12)
+        Tff_uint12      = self.float_to_uint(Tff,      cfg['T_MIN'],  cfg['T_MAX'],  12)
 
+        # Fully explicit masking to prevent bit-bleed
         data = [
-            position_uint16 >> 8,
-            position_uint16 & 0x00FF,
-            (velocity_uint12) >> 4,
-            ((velocity_uint12&0x00F)<<4) | (Kp_uint12) >> 8,
-            (Kp_uint12&0x0FF),
-            (Kd_uint12) >> 4,
-            ((Kd_uint12&0x00F)<<4) | (Tff_uint12) >> 8,
-            (Tff_uint12&0x0FF)
+            (position_uint16 >> 8) & 0xFF,
+            position_uint16 & 0xFF,
+            (velocity_uint12 >> 4) & 0xFF,
+            ((velocity_uint12 & 0x0F) << 4) | ((Kp_uint12 >> 8) & 0x0F),
+            Kp_uint12 & 0xFF,
+            (Kd_uint12 >> 4) & 0xFF,
+            ((Kd_uint12 & 0x0F) << 4) | ((Tff_uint12 >> 8) & 0x0F),
+            Tff_uint12 & 0xFF
         ]
         self.can_manager.send_can_msg(0x400 + self.motor_id, data)
 
+    def send_motor_velocity(self, vel_des):
+        """
+        Sends a standard RMD velocity command (0xA2).
+        Mirrors C++ AKMotor::send_motor_velocity
+        """
+        # Convert rad/s to degrees/s, multiplied by 100 as per C++
+        v_int = int(vel_des * 57.29578 * 100)
+        
+        # Handle Python negative numbers for bitwise operations (32-bit signed int)
+        if v_int < 0:
+            v_int = (1 << 32) + v_int
+
+        data = [
+            0xA2, 
+            0xFF, # Match C++ message.data[1] = 0xFF;
+            0x00, 
+            0x00,
+            v_int & 0xFF,
+            (v_int >> 8) & 0xFF,
+            (v_int >> 16) & 0xFF,
+            (v_int >> 24) & 0xFF
+        ]
+        
+        # Send on standard ID (0x140 + motor_id)
+        self.can_manager.send_can_msg(0x140 + self.motor_id, data)
+
+    def send_motor_position(self, pos_des, vel_max=45.0):
+        """
+        Sends a standard RMD position command (0xA4) with speed limit.
+        Mirrors C++ AKMotor::send_motor_position
+        """
+        # Convert rads to degrees * 100
+        p_int = int(pos_des * 57.2957795 * 100)
+        
+        # Handle Python negative numbers (32-bit signed int)
+        if p_int < 0:
+            p_int = (1 << 32) + p_int
+            
+        # Convert max rad/s to degrees/s
+        v_max_int = int(vel_max * 57.2957795)
+        
+        data = [
+            0xA4, 
+            0x00,
+            v_max_int & 0xFF,
+            (v_max_int >> 8) & 0xFF,
+            p_int & 0xFF,
+            (p_int >> 8) & 0xFF,
+            (p_int >> 16) & 0xFF,
+            (p_int >> 24) & 0xFF
+        ]
+        
+        self.can_manager.send_can_msg(0x140 + self.motor_id, data)
+        
+    def send_motor_torque(self, torque_des):
+        """
+        Sends a standard RMD torque/current command (0xA1).
+        This replaces the MIT controller for MyActuator motors.
+        """
+        # 1. Limit the requested torque to the motor's safety bounds
+        torque_des = self.limit_value(
+            torque_des, 
+            motor_param[self.type]['T_MIN'], 
+            motor_param[self.type]['T_MAX']
+        )
+        
+        # 2. Convert torque (Nm) to current (Amps) using the Torque Constant (Kt)
+        current_des = torque_des / motor_param[self.type]['Kt']
+        
+        # 3. Convert current to RMD's expected 0.01A integer scale
+        iq_int = int(current_des * 100)
+        
+        # 4. Handle Python negative numbers for 16-bit signed integer packing
+        if iq_int < 0:
+            iq_int = (1 << 16) + iq_int
+            
+        data = [
+            0xA1, 
+            0x00, 
+            0x00, 
+            0x00, 
+            iq_int & 0xFF, 
+            (iq_int >> 8) & 0xFF, 
+            0x00, 
+            0x00
+        ]
+        
+        self.can_manager.send_can_msg(0x140 + self.motor_id, data)
+        
     def update(self):
-
-
-        if np.abs(self.desired_velocity) > motor_param[self.type]['max_speed']:
+        if np.abs(self.desired_velocity) > motor_param[self.type]['V_MAX']:
             print('Velocity command exceeds maximum speed limit')
 
-        # if np.abs(self.desired_torque) > motor_param[self.type]['max_torque']:
-        #     print('Torque command exceeds maximum torque limit')
-
-        self.desired_velocity   = self.limit_value(self.desired_velocity, -motor_param[self.type]['max_speed'], motor_param[self.type]['max_speed'])
-        # self.desired_torque     = self.limit_value(self.desired_torque, -motor_param[self.type]['max_torque'], motor_param[self.type]['max_torque'])
-
+        self.desired_velocity = self.limit_value(
+            self.desired_velocity, 
+            motor_param[self.type]['V_MIN'], 
+            motor_param[self.type]['V_MAX']
+        )
 
         # Send control command
-        self.MIT_controller(self.desired_position, 
-                            self.desired_velocity, 
-                            self.Kp, 
-                            self.Kd, 
-                            self.desired_torque)
-        # Request feedback
-        self.can_manager.send_can_msg(SINGLE + self.motor_id, [READ_SINGLE_TURN_OUTPUT_SHAFT_ANGLE_ID, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-        self.can_manager.send_can_msg(SINGLE + self.motor_id, [READ_MULTI_TURN_OUTPUT_SHAFT_ANGLE_ID, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-        self.can_manager.send_can_msg(SINGLE + self.motor_id, [READ_MOTOR_STATUS_1_ID, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-        self.can_manager.send_can_msg(SINGLE + self.motor_id, [READ_MOTOR_STATUS_2_ID, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]) 
+        # self.MIT_controller(self.desired_position, 
+        #                     self.desired_velocity, 
+        #                     self.Kp, 
+        #                     self.Kd, 
+        #                     self.desired_torque)
+        
+        # self.send_motor_velocity(self.desired_velocity)
+        
+        self.send_motor_torque(self.desired_torque)
+                            
+        # FIX: Remove these! Polling 0x140 while in MIT mode will glitch the motor's state machine.
+        self.can_manager.send_can_msg(SINGLE + self.motor_id, [READ_SINGLE_TURN_OUTPUT_SHAFT_ANGLE_ID,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+        self.can_manager.send_can_msg(SINGLE + self.motor_id, [READ_MULTI_TURN_OUTPUT_SHAFT_ANGLE_ID,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+        self.can_manager.send_can_msg(SINGLE + self.motor_id, [READ_MOTOR_STATUS_1_ID,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+        self.can_manager.send_can_msg(SINGLE + self.motor_id, [READ_MOTOR_STATUS_2_ID,  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
 
     # ================== Listen message ================= #
     def parse_feedback_message(self, id, data):
@@ -305,21 +418,23 @@ class rmd_motor_can():
 
 
     # ================= Utility functions ================ #
-    def float_to_uint(self,x,x_min,x_max,num_bits):
+    def float_to_uint(self, x, x_min, x_max, bits):
         """
-        Interpolates a floating point number to an unsigned integer of num_bits length.
-        A number of x_max will be the largest integer of num_bits, and x_min would be 0.
-
-        args:
-            x: The floating point number to convert
-            x_min: The minimum value for the floating point number
-            x_max: The maximum value for the floating point number
-            num_bits: The number of bits for the unsigned integer
+        Exactly mirrors the C++ AKMotor::float_to_uint function.
+        We intentionally use (1 << bits) instead of (1 << bits) - 1, 
+        and int() truncation to match the C++ firmware quirk.
         """
-        span = x_max-x_min
-        bitratio = float((1<<num_bits)/span)
-        x = self.limit_value(x,x_min,x_max-(2/bitratio))
-        return self.limit_value(int((x- x_min)*( bitratio )),0,int((x_max-x_min)*bitratio) )
+        span = float(x_max - x_min)
+        
+        # Clamp bounds
+        if x < x_min:
+            x = x_min
+        elif x > x_max:
+            x = x_max
+            
+        # Match C++ exact math: (x - x_min) * (float(1 << bits) / span)
+        # int() ensures we truncate the decimal just like a C++ (uint16_t) cast
+        return int((x - x_min) * (float(1 << bits) / span))
 
     def uint_to_float(self, x,x_min,x_max,num_bits):
         """

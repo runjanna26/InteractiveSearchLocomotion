@@ -119,16 +119,16 @@ class MuscleModel:
         self.vel_des = vel_des_raw
 
         # # Adaptive Impedance Control
-        adapt_scalar = self.gen_adapt_scalar()
-        if abs(adapt_scalar) < 1e-6: adapt_scalar = 1e-6
-        self.F = self.gen_track_error() / adapt_scalar
-        self.K = self.F * self.gen_pos_error()
-        self.D = self.F * self.gen_vel_error() + self.D_offset
+        # adapt_scalar = self.gen_adapt_scalar()
+        # if abs(adapt_scalar) < 1e-6: adapt_scalar = 1e-6
+        # self.F = self.gen_track_error() / adapt_scalar
+        # self.K = self.F * self.gen_pos_error()
+        # self.D = self.F * self.gen_vel_error() + self.D_offset
 
         # Default Impedance Control
-        # self.F = 0.0
-        # self.K = 20.0
-        # self.D = 1.0
+        self.F = 0.0
+        self.K = 10.0
+        self.D = 3.0
         
         
 

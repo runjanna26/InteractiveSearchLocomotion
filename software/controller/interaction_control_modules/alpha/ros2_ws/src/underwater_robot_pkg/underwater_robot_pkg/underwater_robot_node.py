@@ -56,34 +56,60 @@ class RobotNode(Node):
 
 
         self.can_manager = CAN_Manager()
-        self.can_manager.check_all_motors()
+        # self.can_manager.check_all_motors()
         self.can_manager.reset_all_motors()
         
-        self.motor_ids = [0x02, 0x01]  # List of motor IDs to initialize
+        self.motor_ids = [2]  # List of motor IDs to initialize
         self.motors = []
         self.muscles = []
-        self.init_pos           = [- np.pi/2 - np.pi/4, - np.pi/4]
+        self.init_pos       = [0.0, 0.0]
+        # self.init_pos     = [-np.pi/10, - np.pi/4]
         
-        for motor_id in self.motor_ids:
-            motor = rmd_motor_can(motor_id=motor_id, can_manager=self.can_manager)
+        for i, motor_id in enumerate(self.motor_ids):
+            motor = rmd_motor_can(motor_id=motor_id, can_manager=self.can_manager, motor_type='X4-36_driven')  
             self.motors.append(motor)
+            
+            # 1. Request the actual physical position from the motor BEFORE starting MIT mode
+            # 0x140 is SINGLE command ID, 0x60 is READ_MULTI_TURN_OUTPUT_SHAFT_ANGLE_ID
+            self.can_manager.send_can_msg(0x140 + motor.motor_id, [0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+            
+            # 2. Wait a fraction of a second for the CAN listener to receive and parse the reply
+            motor.reboot()  # Reboot the motor to ensure it's in a known state        
+            time.sleep(0.05)
+            
+            # 3. Retrieve the real position and overwrite the hardcoded 0.0
+            actual_pos = motor.feedback_multi_turn_position
+            self.init_pos[i] = actual_pos
+            
+            # 4. Command the motor to stay EXACTLY where it physically is
+            motor.set_desired_position_radian(actual_pos)
+            motor.set_desired_velocity_radian_per_second(0.0)
+            motor.set_desired_stiffness(0.0)
+            motor.set_desired_damping(0.0)
+            motor.set_desired_torque(0.0)
+            
+            
+            # 5. Send the first MIT command to safely wake up the inverter
+            motor.update()
+            time.sleep(0.01)
+
             muscle = MuscleModel(_a            = 1.0,
                                  _b            = 20.0,
-                                 _beta         = 0.0,             # made motor oscillation smaller after holding
-                                 _init_pos     = self.init_pos[self.motors.index(motor)],
-                                 number_motor = 2)
+                                 _beta         = 0.0,             
+                                 _init_pos     = self.init_pos[i],
+                                 number_motor = 1)
             self.muscles.append(muscle)
-            print(f'Motor {motor_id} initialized with position {self.init_pos[self.motors.index(motor)]} radians')
+            self.get_logger().info(f'Motor {motor_id} safely initialized at physical position {self.init_pos[i]:.3f} radians')
     
         # self.encoder = AS5X47()
 
 
-        ros_node_freq = 1000 #Hz
-        self.timer = self.create_timer((1/ros_node_freq), self.timer_callback)
-        # self.max_runtime = 15  # seconds
-        self.max_runtime = -1  # loop forever
-        self.iteration = 1
-        self.start_time = self.get_clock().now().nanoseconds / 1e9  # Start time in seconds
+        ros_node_freq       = 100 # Hz
+        self.timer          = self.create_timer((1/ros_node_freq), self.timer_callback)
+        # self.max_runtime  = 15  # seconds
+        self.max_runtime    = -1  # loop forever
+        self.iteration      = 1
+        self.start_time     = self.get_clock().now().nanoseconds / 1e9  # Start time in seconds
         self.get_logger().info(f'Node period {self.max_runtime} seconds, {self.iteration} iterations')
 
         
@@ -102,6 +128,9 @@ class RobotNode(Node):
     #                                               ROS Loop
     # =========================================================================================================
     def timer_callback(self):
+        ...
+        # print("Timer callback triggered")
+        # self.can_manager.check_all_motors()
         
         current_time = self.get_clock().now().nanoseconds / 1e9  # Convert nanoseconds to seconds
         t = current_time - self.start_time  # Elapsed time since start
@@ -110,8 +139,8 @@ class RobotNode(Node):
         # ======================= Start ROS Loop ========================= #
 
         # Setup sinusoidal oscillation parameters 
-        A_max = np.pi/4                                     # Amplitude (radians)
-        frequency = 0.5                                       # Frequency (Hz)
+        A_max = np.pi/8                                     # Amplitude (radians)
+        frequency = 0.4                                     # Frequency (Hz)
         ramp_time = 2                                       # Ramp time constant
         amplitude = A_max * (1 - np.exp(-t / ramp_time))    # Sine wave (radians)
         omega = 2 * np.pi * frequency    
@@ -121,56 +150,65 @@ class RobotNode(Node):
                    amplitude * np.sin(omega * t + np.pi/4)]  # Desired position (radians)
         vel_des = [amplitude * omega * np.cos(omega * t),
                    amplitude * omega * np.cos(omega * t + np.pi/4)]  # Desired velocity (radians/second)
-        # ------ Desired trajectories for position and velocity (zero) ------ #
-        # pos_des = [0, 0]
-        # vel_des = [0, 0]
+        # ------ Desired trajectories for position and velocity (T-pose) ------ #
+        #pos_des = [0.0, 0.0]
+        #vel_des = [0.0, 0.0]
+        # ------ Desired trajectories for position and velocity (Stand pose) ------ #
+        # pos_des = [0.0, 0.0]
+        # pos_des = [-np.pi/6, -3*np.pi/4]
         
+        # vel_des = [0.0, 0.0]
+        
+        # print( self.motors[0].feedback_multi_turn_position, self.motors[1].feedback_multi_turn_position)
 
         # ========================= Online Adaptive Impedance Control ========================= #
         self.muscles[0].calculate(pos_des = pos_des[0], 
                                   pos_fb  = self.motors[0].feedback_multi_turn_position,        # It has been minus init_pos in class
                                   vel_fb  = self.motors[0].feedback_velocity)               
-        self.muscles[1].calculate(pos_des = pos_des[1], 
-                                  pos_fb  = self.motors[1].feedback_multi_turn_position,        # It has been minus init_pos in class
-                                  vel_fb  = self.motors[1].feedback_velocity)      
+        # self.muscles[1].calculate(pos_des = pos_des[1], 
+        #                           pos_fb  = self.motors[1].feedback_multi_turn_position,        # It has been minus init_pos in class
+        #                           vel_fb  = self.motors[1].feedback_velocity)      
 
         # ======================= Set motor command ======================= #
+        # self.motors[0].set_desired_position_radian(pos_des[0] + self.init_pos[0])  
+        # self.motors[0].set_desired_velocity_radian_per_second(vel_des[0])
 
-        self.motors[0].set_desired_position_radian(pos_des[0] + self.init_pos[0])  
-        self.motors[0].set_desired_velocity_radian_per_second(vel_des[0])
-
-        self.motors[1].set_desired_position_radian(pos_des[1] + self.init_pos[1])
-        self.motors[1].set_desired_velocity_radian_per_second(vel_des[1])
+        # self.motors[1].set_desired_position_radian(pos_des[1] + self.init_pos[1])
+        # self.motors[1].set_desired_velocity_radian_per_second(vel_des[1])
+        
+        # self.motors[0].set_desired_velocity_radian_per_second(11.0)
         
         
         # ---------- stiffness and damping are constants ---------- #
-        # self.motors[0].set_desired_stiffness(20)
-        # self.motors[0].set_desired_damping(5)
+        # self.motors[0].set_desired_stiffness(5)
+        # self.motors[0].set_desired_damping(1)
         # self.motors[0].set_desired_torque(0)
         
-        # self.motors[1].set_desired_stiffness(20)
-        # self.motors[1].set_desired_damping(5)
+        # self.motors[1].set_desired_stiffness(1)
+        # self.motors[1].set_desired_damping(0)
         # self.motors[1].set_desired_torque(0)
         
-        # ---------- stiffness, damping and feedforward torque are adaptive ---------- #
-        self.motors[0].set_desired_stiffness(self.muscles[0].get_stiffness())
-        self.motors[0].set_desired_damping(self.muscles[0].get_damping())
-        self.motors[0].set_desired_torque(self.muscles[0].get_feedforward_force())
+        # # ---------- stiffness, damping and feedforward torque are adaptive ---------- #
+        # # self.motors[0].set_desired_stiffness(self.muscles[0].get_stiffness())
+        # # self.motors[0].set_desired_damping(self.muscles[0].get_damping())
+        # # self.motors[0].set_desired_torque(self.muscles[0].get_feedforward_force())
 
-        self.motors[1].set_desired_stiffness(self.muscles[1].get_stiffness())
-        self.motors[1].set_desired_damping(self.muscles[1].get_damping())
-        self.motors[1].set_desired_torque(self.muscles[1].get_feedforward_force())
+        # # self.motors[1].set_desired_stiffness(self.muscles[1].get_stiffness())
+        # # self.motors[1].set_desired_damping(self.muscles[1].get_damping())
+        # # self.motors[1].set_desired_torque(self.muscles[1].get_feedforward_force())
 
 
-        # Direct torque control (No limit stiffness and damping)
-        # self.motors[0].set_desired_torque(np.sign(self.motors[0].feedback_velocity)*0.2)  # Add friction compensation
-        # self.motors[0].set_desired_torque(self.muscles[0].tau + np.sign(self.motors[0].feedback_velocity)*0.2) 
-        # self.motors[0].set_desired_torque(self.muscles[0].tau) 
+        # # Direct torque control (No limit stiffness and damping)
+        # # self.motors[0].set_desired_torque(np.sign(self.motors[0].feedback_velocity)*0.2)  # Add friction compensation
+        # # self.motors[0].set_desired_torque(self.muscles[0].tau + np.sign(self.motors[0].feedback_velocity)*0.2) 
+        self.motors[0].set_desired_torque(self.muscles[0].tau) 
 
 
         # ======================= Send motor command ======================= #
         self.motors[0].update()
-        self.motors[1].update()
+        # self.motors[1].update()
+        
+        # print(self.motors[0].feedback_multi_turn_position)
         # ======================= Read feedbacks ======================= #
         # self.position_enc  = np.deg2rad(self.encoder.read_angle())
         # =========================== Publish messages =========================== #
@@ -211,8 +249,8 @@ class RobotNode(Node):
         msg.data = [float(muscle.F) for muscle in self.muscles]
         self.robot_joint_tff_des.publish(msg)
 
-        # msg.data = [float(self.position_enc)]
-        # self.joint_enc_pos_fb.publish(msg)
+        # # msg.data = [float(self.position_enc)]
+        # # self.joint_enc_pos_fb.publish(msg)
 
         for motor in self.motors:
              if motor.error_state:
