@@ -1,0 +1,2 @@
+source /home/refine2/InteractiveSearchLocomotion/software/controller/dave_loadcell_setup/wheel_module_esp32s3_pio/build/gdbinit/symbols
+source /home/refine2/InteractiveSearchLocomotion/software/controller/dave_loadcell_setup/wheel_module_esp32s3_pio/build/gdbinit/connect

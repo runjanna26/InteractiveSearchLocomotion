@@ -1,0 +1,105 @@
+
+=============== X-axis Force ===============
+Weight: 5.0 N
+
+Loadcell 1 Force: -186728.00 N, Loadcell 2 Force: 41180.00 N
+Loadcell 1 Force: -187966.00 N, Loadcell 2 Force: 39920.00 N
+Loadcell 1 Force: -188124.00 N, Loadcell 2 Force: 38908.00 N
+Loadcell 1 Force: -188577.00 N, Loadcell 2 Force: 38895.00 N
+Loadcell 1 Force: -189140.00 N, Loadcell 2 Force: 38650.00 N
+Loadcell 1 Force: -189244.00 N, Loadcell 2 Force: 38712.00 N
+Loadcell 1 Force: -190167.00 N, Loadcell 2 Force: 36296.00 N
+Loadcell 1 Force: -190060.00 N, Loadcell 2 Force: 35344.00 N
+Loadcell 1 Force: -190980.00 N, Loadcell 2 Force: 34958.00 N
+Loadcell 1 Force: -190623.00 N, Loadcell 2 Force: 33493.00 N
+
+Weight: 10.0 N
+Loadcell 1 Force: -374277.00 N, Loadcell 2 Force: 18317.00 N
+Loadcell 1 Force: -375577.00 N, Loadcell 2 Force: 18618.00 N
+Loadcell 1 Force: -378509.00 N, Loadcell 2 Force: 18520.00 N
+Loadcell 1 Force: -379159.00 N, Loadcell 2 Force: 19027.00 N
+Loadcell 1 Force: -379239.00 N, Loadcell 2 Force: 18480.00 N
+Loadcell 1 Force: -379141.00 N, Loadcell 2 Force: 17850.00 N
+Loadcell 1 Force: -379744.00 N, Loadcell 2 Force: 16614.00 N
+Loadcell 1 Force: -379874.00 N, Loadcell 2 Force: 18782.00 N
+Loadcell 1 Force: -379366.00 N, Loadcell 2 Force: 19663.00 N
+Loadcell 1 Force: -379039.00 N, Loadcell 2 Force: 19361.00 N
+Loadcell 1 Force: -378519.00 N, Loadcell 2 Force: 19746.00 N
+
+Weight: 15.0 N
+Loadcell 1 Force: -565261.00 N, Loadcell 2 Force: 54799.00 N
+Loadcell 1 Force: -565810.00 N, Loadcell 2 Force: 53788.00 N
+Loadcell 1 Force: -565725.00 N, Loadcell 2 Force: 53155.00 N
+Loadcell 1 Force: -566323.00 N, Loadcell 2 Force: 53916.00 N
+Loadcell 1 Force: -565156.00 N, Loadcell 2 Force: 55435.00 N
+Loadcell 1 Force: -564791.00 N, Loadcell 2 Force: 55780.00 N
+Loadcell 1 Force: -565454.00 N, Loadcell 2 Force: 54600.00 N
+Loadcell 1 Force: -564704.00 N, Loadcell 2 Force: 54753.00 N
+Loadcell 1 Force: -564696.00 N, Loadcell 2 Force: 55434.00 N
+Loadcell 1 Force: -564655.00 N, Loadcell 2 Force: 55482.00 N
+Loadcell 1 Force: -564666.00 N, Loadcell 2 Force: 55305.00 N
+
+Weight: 20.0 N
+Loadcell 1 Force: -745806.00 N, Loadcell 2 Force: 34872.00 N
+Loadcell 1 Force: -744429.00 N, Loadcell 2 Force: 35144.00 N
+Loadcell 1 Force: -745070.00 N, Loadcell 2 Force: 32312.00 N
+Loadcell 1 Force: -749664.00 N, Loadcell 2 Force: 33068.00 N
+Loadcell 1 Force: -759433.00 N, Loadcell 2 Force: 33347.00 N
+Loadcell 1 Force: -761588.00 N, Loadcell 2 Force: 32845.00 N
+Loadcell 1 Force: -761375.00 N, Loadcell 2 Force: 31769.00 N
+Loadcell 1 Force: -760839.00 N, Loadcell 2 Force: 32562.00 N
+Loadcell 1 Force: -759996.00 N, Loadcell 2 Force: 33162.00 N
+Loadcell 1 Force: -759324.00 N, Loadcell 2 Force: 33787.00 N
+Loadcell 1 Force: -759296.00 N, Loadcell 2 Force: 33225.00 N
+
+=============== Y-axis Force ===============
+Weight: 5.0 N
+Loadcell 1 Force: -10312.00 N, Loadcell 2 Force: -172218.00 N
+Loadcell 1 Force: -10608.00 N, Loadcell 2 Force: -170671.00 N
+Loadcell 1 Force: -10453.00 N, Loadcell 2 Force: -173637.00 N
+Loadcell 1 Force: -10621.00 N, Loadcell 2 Force: -172854.00 N
+Loadcell 1 Force: -11290.00 N, Loadcell 2 Force: -173601.00 N
+Loadcell 1 Force: -10954.00 N, Loadcell 2 Force: -173927.00 N
+Loadcell 1 Force: -11210.00 N, Loadcell 2 Force: -174455.00 N
+Loadcell 1 Force: -10909.00 N, Loadcell 2 Force: -177053.00 N
+Loadcell 1 Force: -10926.00 N, Loadcell 2 Force: -175456.00 N
+Loadcell 1 Force: -11721.00 N, Loadcell 2 Force: -173206.00 N
+Loadcell 1 Force: -12358.00 N, Loadcell 2 Force: -178218.00 N
+
+Weight: 10.0 N
+Loadcell 1 Force: -29491.00 N, Loadcell 2 Force: -360364.00 N
+Loadcell 1 Force: -29523.00 N, Loadcell 2 Force: -360376.00 N
+Loadcell 1 Force: -30561.00 N, Loadcell 2 Force: -361954.00 N
+Loadcell 1 Force: -31821.00 N, Loadcell 2 Force: -357175.00 N
+Loadcell 1 Force: -31585.00 N, Loadcell 2 Force: -358184.00 N
+Loadcell 1 Force: -30992.00 N, Loadcell 2 Force: -359711.00 N
+Loadcell 1 Force: -30978.00 N, Loadcell 2 Force: -362865.00 N
+Loadcell 1 Force: -30997.00 N, Loadcell 2 Force: -365906.00 N
+Loadcell 1 Force: -31001.00 N, Loadcell 2 Force: -360335.00 N
+Loadcell 1 Force: -31052.00 N, Loadcell 2 Force: -358237.00 N
+Loadcell 1 Force: -30506.00 N, Loadcell 2 Force: -356902.00 N
+
+Weight: 15.0 N
+Loadcell 1 Force: -25533.00 N, Loadcell 2 Force: -549951.00 N
+Loadcell 1 Force: -25719.00 N, Loadcell 2 Force: -544560.00 N
+Loadcell 1 Force: -25163.00 N, Loadcell 2 Force: -538930.00 N
+Loadcell 1 Force: -25119.00 N, Loadcell 2 Force: -538873.00 N
+Loadcell 1 Force: -24956.00 N, Loadcell 2 Force: -536302.00 N
+Loadcell 1 Force: -25748.00 N, Loadcell 2 Force: -537772.00 N
+Loadcell 1 Force: -27059.00 N, Loadcell 2 Force: -540718.00 N
+Loadcell 1 Force: -27327.00 N, Loadcell 2 Force: -538811.00 N
+Loadcell 1 Force: -25725.00 N, Loadcell 2 Force: -534368.00 N
+Loadcell 1 Force: -25620.00 N, Loadcell 2 Force: -536557.00 N
+
+Weight: 20.0 N
+Loadcell 1 Force: -3199.00 N, Loadcell 2 Force: -716865.00 N
+Loadcell 1 Force: -9131.00 N, Loadcell 2 Force: -722960.00 N
+Loadcell 1 Force: -8185.00 N, Loadcell 2 Force: -722866.00 N
+Loadcell 1 Force: -13084.00 N, Loadcell 2 Force: -718367.00 N
+Loadcell 1 Force: -9790.00 N, Loadcell 2 Force: -719936.00 N
+Loadcell 1 Force: -9348.00 N, Loadcell 2 Force: -722850.00 N
+Loadcell 1 Force: -9117.00 N, Loadcell 2 Force: -720542.00 N
+Loadcell 1 Force: -8528.00 N, Loadcell 2 Force: -717786.00 N
+Loadcell 1 Force: -1279.00 N, Loadcell 2 Force: -716342.00 N
+Loadcell 1 Force: -5964.00 N, Loadcell 2 Force: -716311.00 N
+Loadcell 1 Force: -8526.00 N, Loadcell 2 Force: -735184.00 N
