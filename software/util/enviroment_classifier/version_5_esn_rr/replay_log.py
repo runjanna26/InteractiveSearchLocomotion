@@ -23,10 +23,10 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-gait = "solid_ground"
+gait = "water_surface"
 environment_setup = "solid_ground"
 
-LOG_FILE = f"learned_weight_set/{gait}/weight_set_3.json" # <-- Paste your actual log filename here
+LOG_FILE = f"learned_weight_set/{gait}/weight_set_2.json" # <-- Paste your actual log filename here
 
 MATRIC_FILE = f"terrain_dataset/metric/{gait}_gait_on_{environment_setup}"
 
@@ -75,50 +75,50 @@ if __name__ == "__main__":
 
     
 
-    # # ===============================================================
-    # # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior) (water surface)
-    # # ===============================================================
-    # print("Loading Prior Knowledge to reconstruct Left offsets...")
-    # prior_knowledge = np.load('learned_weight_set/water_surface/imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
+    # ===============================================================
+    # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior) (water surface)
+    # ===============================================================
+    print("Loading Prior Knowledge to reconstruct Left offsets...")
+    prior_knowledge = np.load('learned_weight_set/water_surface/imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
 
-    # imitated_weights = {}
+    imitated_weights = {}
     
-    # joint_index = 0
-    # for index in LEG_INDEX: 
-    #     for joint in JOINT_NAMES:
-    #         start_idx = joint_index * NUM_KERNELS
-    #         end_idx = start_idx + NUM_KERNELS
+    joint_index = 0
+    for index in LEG_INDEX: 
+        for joint in JOINT_NAMES:
+            start_idx = joint_index * NUM_KERNELS
+            end_idx = start_idx + NUM_KERNELS
             
-    #         # 1. Get the Original Priors first so we can use them for the freeze
-    #         right_key = f"{index}R{joint}"
-    #         left_key = f"{index}L{joint}"
+            # 1. Get the Original Priors first so we can use them for the freeze
+            right_key = f"{index}R{joint}"
+            left_key = f"{index}L{joint}"
             
-    #         right_prior = np.array(prior_knowledge[right_key])
-    #         left_prior = np.array(prior_knowledge[left_key])
+            right_prior = np.array(prior_knowledge[right_key])
+            left_prior = np.array(prior_knowledge[left_key])
             
-    #         # ==========================================
-    #         # 🚨 THE FIX: FREEZE JOINT 1 
-    #         # ==========================================
-    #         # if joint == 1:
-    #         #     # FREEZE: Ignore the JSON log. Force it to be the original prior.
-    #         #     learned_weights = np.copy(right_prior)
-    #         # else:
-    #         #     # LEARN: Get the optimized weights from the JSON log
-    #         #     learned_weights = np.array(trained_weights[start_idx:end_idx])
+            # ==========================================
+            # 🚨 THE FIX: FREEZE JOINT 1 
+            # ==========================================
+            # if joint == 1:
+            #     # FREEZE: Ignore the JSON log. Force it to be the original prior.
+            #     learned_weights = np.copy(right_prior)
+            # else:
+            #     # LEARN: Get the optimized weights from the JSON log
+            #     learned_weights = np.array(trained_weights[start_idx:end_idx])
 
-    #         learned_weights = np.array(trained_weights[start_idx:end_idx])
+            learned_weights = np.array(trained_weights[start_idx:end_idx])
             
-    #         # Calculate the exact difference (Left - Right)
-    #         offset_weights = left_prior - right_prior
+            # Calculate the exact difference (Left - Right)
+            offset_weights = left_prior - right_prior
             
-    #         # 3. Assign the pure weights to the RIGHT side
-    #         imitated_weights[right_key] = learned_weights
+            # 3. Assign the pure weights to the RIGHT side
+            imitated_weights[right_key] = learned_weights
             
-    #         # 4. Assign the Weights + Original Offset to the LEFT side
-    #         imitated_weights[left_key] = learned_weights + offset_weights
+            # 4. Assign the Weights + Original Offset to the LEFT side
+            imitated_weights[left_key] = learned_weights + offset_weights
             
-    #         joint_index += 1
-    # # ===============================================================
+            joint_index += 1
+    # ===============================================================
 
     # # ===============================================================
     # # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior)
@@ -156,31 +156,31 @@ if __name__ == "__main__":
     #         joint_index += 1
     # # ===============================================================
 
-    # ===============================================================
-    # WEIGHT SYMMETRY LOGIC (walking)
-    # ===============================================================
-    imitated_weights = {}
+    # # ===============================================================
+    # # WEIGHT SYMMETRY LOGIC (walking)
+    # # ===============================================================
+    # imitated_weights = {}
     
-    # 1. We only loop through the Front ('F') and Back ('B') indices
-    joint_index = 0
-    for index in LEG_INDEX: 
-        for joint in JOINT_NAMES:
-            start_idx = joint_index * NUM_KERNELS
-            end_idx = start_idx + NUM_KERNELS
+    # # 1. We only loop through the Front ('F') and Back ('B') indices
+    # joint_index = 0
+    # for index in LEG_INDEX: 
+    #     for joint in JOINT_NAMES:
+    #         start_idx = joint_index * NUM_KERNELS
+    #         end_idx = start_idx + NUM_KERNELS
             
-            # Extract the 20 weights for this specific joint
-            extracted_weights = trained_weights[start_idx:end_idx]
+    #         # Extract the 20 weights for this specific joint
+    #         extracted_weights = trained_weights[start_idx:end_idx]
             
-            # 2. Assign these weights to the RIGHT side
-            right_key = f"{index}R{joint}"
-            imitated_weights[right_key] = extracted_weights
+    #         # 2. Assign these weights to the RIGHT side
+    #         right_key = f"{index}R{joint}"
+    #         imitated_weights[right_key] = extracted_weights
             
-            # 3. MIRROR them exactly to the LEFT side!
-            left_key = f"{index}L{joint}"
-            imitated_weights[left_key] = extracted_weights
+    #         # 3. MIRROR them exactly to the LEFT side!
+    #         left_key = f"{index}L{joint}"
+    #         imitated_weights[left_key] = extracted_weights
             
-            joint_index += 1
-    # ===============================================================
+    #         joint_index += 1
+    # # ===============================================================
 
     # # ===============================================================
     # # FULLY INDEPENDENT WEIGHT LOGIC (No Symmetry)
@@ -308,16 +308,16 @@ if __name__ == "__main__":
                         network_output = -network_output 
 
                     # for walking
-                    if side == 'L' and joint == 1:
-                        network_output = -network_output 
-                    # for swimming
                     # if side == 'L' and joint == 1:
-                    #     network_output = -network_output - np.pi
+                    #     network_output = -network_output 
+                    # for swimming
+                    if side == 'L' and joint == 1:
+                        network_output = -network_output - np.pi
                     
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
-                    # target_angle =  network_output
-                    target_angle =  network_output + baseline_angle
+                    target_angle =  network_output
+                    # target_angle =  network_output + baseline_angle
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
                     actuator_name = f"{index}{side}_J{joint+1}"  
