@@ -4,6 +4,7 @@ import numpy as np
 from script import StickInsectEnv
 from cpg_rbf.cpg_so2 import CPG_SO2, CPG_LOCO
 from cpg_rbf.rbf import RBF
+from gait_cycle_cut.gait_cycle_cut import OnlineGaitSegmenter
 import os
 import subprocess
 import signal
@@ -23,19 +24,28 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
+TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
+SIMULATION_STEPS = 2000 # 12000 (1min.) 
+CPG_PHI = 0.05
+
 gait = "water_surface"
 environment_setup = "solid_ground"
 
-LOG_FILE = f"learned_weight_set/{gait}/weight_set_2.json" # <-- Paste your actual log filename here
+SAVE_ROS_BAG = False
 
-MATRIC_FILE = f"terrain_dataset/metric/{gait}_gait_on_{environment_setup}"
-
-TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
-SIMULATION_STEPS = 12000 # 12000 (1min.) 
-CPG_PHI = 0.05
+LOG_FILE = f"learned_weight_set/{gait}/weight_set_2.json" 
 
 SAVE_METRIC_CSV = False
-SAVE_ROS_BAG = False
+MATRIC_FILE = f"terrain_dataset/metric/{gait}_gait_on_{environment_setup}"
+
+
+SAVE_EXTRACTED_WEIGHTS = False 
+EXTRACTED_WEIGHTS_FILE = f"learned_weight_set/{gait}/extracted_weights.npz" 
+
+RECORD_TRAJECTORY = True
+recorded_trajectory = {}  # Will store lists of angles for each joint
+EXTRACTED_TRAJ_FILE = f"learned_weight_set/{gait}/target_trajectory.json"
+
 
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
@@ -207,6 +217,80 @@ if __name__ == "__main__":
     #             joint_index += 1
     # # ===============================================================
 
+    # imitated_weights = {k: np.array(v) for k, v in imitated_weights.items()}
+    # # ===============================================================
+    # # STEP 1: BAKE INVERSIONS & OFFSETS (DO THIS FIRST!)
+    # # ===============================================================
+    # for index in LEG_INDEX: # Loops through ['F', 'B']
+        
+    #     # 1. Left hip (J0) inversion is always applied
+    #     key_L0 = f"{index}L0"
+    #     if key_L0 in imitated_weights:
+    #         imitated_weights[key_L0] = -imitated_weights[key_L0]
+            
+    #     # 2. Left J1 inversion depends on the gait
+    #     key_L1 = f"{index}L1"
+    #     if key_L1 in imitated_weights:
+    #         if "ground" in gait:
+    #             # For walking: network_output = -network_output
+    #             imitated_weights[key_L1] = -imitated_weights[key_L1]
+    #             print(f"Applied walking gait")
+                
+    #         elif "water" in gait:
+    #             # For swimming: network_output = -network_output - np.pi
+    #             imitated_weights[key_L1] = -imitated_weights[key_L1]
+    #             print(f"Applied swimming gait")
+
+
+    # ===============================================================
+    # STEP 2: BAKE STANDING POSE / BASELINE (DO THIS SECOND!)
+    # ===============================================================
+    # for side in LEG_SIDE:       # ['R', 'L']
+    #     for index in LEG_INDEX: # ['F', 'B']
+    #         for joint in JOINT_NAMES: # [0, 1, 2, 3]
+                
+    #             key = f"{index}{side}{joint}"
+    #             if "ground" in gait:    
+    #                 if key in imitated_weights:
+    #                     # 1. Fetch the baseline angle from your dictionary
+    #                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
+                        
+    #                     # 2. Add the baseline angle to the weights
+    #                     imitated_weights[key] = imitated_weights[key] + baseline_angle
+
+    # ==========================================
+    # SAVE THE SELECTED WEIGHTS AS JSON
+    # ==========================================
+    if SAVE_EXTRACTED_WEIGHTS:
+        import os
+        import json
+        
+        json_filename = f"learned_weight_set/{gait}/extracted_weights.json"
+        os.makedirs(os.path.dirname(json_filename), exist_ok=True)
+        
+        # Convert all numpy arrays in the dictionary to lists
+        json_ready_weights = {key: value.tolist() for key, value in imitated_weights.items()}
+        
+        with open(json_filename, "w") as f:
+            json.dump(json_ready_weights, f, indent=4)
+            
+        print(f"✅ Reconstructed weights saved to JSON: {json_filename}")
+    # ==========================================
+
+
+    # ==========================================
+    # SETUP ONLINE SEGMENTER
+    # ==========================================
+    segmenter = OnlineGaitSegmenter()
+    latest_complete_cycle = None
+    
+    # Create a fixed order of joint names so we can map them back later
+    ordered_actuator_names = []
+    for side in LEG_SIDE:
+        for index in LEG_INDEX:
+            for joint in JOINT_NAMES:
+                ordered_actuator_names.append(f"{index}{side}_J{joint+1}")
+
     # 3. Initialize Neural Networks
     cpg = CPG_SO2()
     rbf = RBF(nc=NUM_KERNELS)
@@ -298,35 +382,61 @@ if __name__ == "__main__":
                         imitated_weights[f'{index}{side}{joint}']
                     )
                     
-                    # ==========================================
-                    # NEW: MECHANICAL INVERSION FOR LEFT HIP
-                    # ==========================================
-                    # Because the Left hip (J0) axis is mirrored in the XML, 
-                    # we must invert the network output to make it swing the 
-                    # same physical direction as the Right hip.
+                    # # ==========================================
+                    # # NEW: MECHANICAL INVERSION FOR LEFT HIP
+                    # # ==========================================
+                    # # Because the Left hip (J0) axis is mirrored in the XML, 
+                    # # we must invert the network output to make it swing the 
+                    # # same physical direction as the Right hip.
                     if side == 'L' and joint == 0:
                         network_output = -network_output 
 
-                    # for walking
-                    # if side == 'L' and joint == 1:
-                    #     network_output = -network_output 
-                    # for swimming
+                    # # for walking
+                    # # if side == 'L' and joint == 1:
+                    # #     network_output = -network_output 
+                    # # for swimming
                     if side == 'L' and joint == 1:
                         network_output = -network_output - np.pi
                     
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
-                    target_angle =  network_output
                     # target_angle =  network_output + baseline_angle
+                    target_angle =  network_output
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
                     actuator_name = f"{index}{side}_J{joint+1}"  
                     joint_targets[actuator_name] = target_angle
                     cpg_outputs[actuator_name] = cpg_output[f'{index}{side}']['cpg_output_0']
                     
+                    # ==========================================
+                    # RECORD THE FINAL ANGLE
+                    # ==========================================
+                    if RECORD_TRAJECTORY:
+                        if actuator_name not in recorded_trajectory:
+                            recorded_trajectory[actuator_name] = []
+                        # Cast to standard python float() to avoid JSON serialization errors with numpy floats
+                        recorded_trajectory[actuator_name].append(float(target_angle))
             
         # Pass the flat dictionary to the environment
         env.step(joint_targets, cpg_outputs)
+
+        # ==========================================
+        # FEED DATA TO SEGMENTER
+        # ==========================================
+        if RECORD_TRAJECTORY:
+            # 1. Grab all 16 target angles in the exact order we defined above
+            current_joint_angles = [joint_targets[name] for name in ordered_actuator_names]
+            
+            # 2. Use one of the CPG outputs as our "clock" (FR leg is standard)
+            reference_cpg = cpg_output['FR']['cpg_output_0']
+            
+            # 3. Add to segmenter
+            cycle = segmenter.add_data_point(reference_cpg, current_joint_angles)
+            
+            # 4. If a cycle just finished, store it! 
+            if cycle is not None:
+                latest_complete_cycle = cycle
+        # ==========================================
 
         target_duration = env.model.opt.timestep
         while (time.perf_counter() - step_start) < target_duration:
@@ -335,59 +445,95 @@ if __name__ == "__main__":
     print("Replay finished.")
     
     # ==========================================
+    # SAVE THE RECORDED TRAJECTORY TO JSON
+    # ==========================================
+    if RECORD_TRAJECTORY:
+        # ==========================================
+        # NORMALIZE AND SAVE THE LAST CYCLE TO JSON
+        # ==========================================
+        if latest_complete_cycle is not None:
+            print(f"Normalizing the last captured cycle to {cpg_cycle_length} points...")
+            
+            # 1. Normalize the cycle to perfectly match your CPG cycle length
+            normalized_cycle = segmenter.normalize_cycle(
+                latest_complete_cycle, 
+                num_points=cpg_cycle_length
+            )
+            
+            # 2. Convert the 2D numpy array back into a dictionary using our ordered names
+            final_trajectory_dict = {}
+            for idx, name in enumerate(ordered_actuator_names):
+                # Convert to standard Python lists for JSON saving
+                final_trajectory_dict[name] = normalized_cycle[:, idx].tolist()
+                
+            # 3. Save to JSON
+            import os
+            import json
+            
+            traj_filename = EXTRACTED_TRAJ_FILE
+            os.makedirs(os.path.dirname(traj_filename), exist_ok=True)
+            
+            with open(traj_filename, "w") as f:
+                json.dump(final_trajectory_dict, f, indent=4)
+                
+            print(f"✅ One perfect gait cycle successfully saved to: {traj_filename}")
+        else:
+            print("⚠️ Warning: No complete cycles were detected during the simulation.")
+    # ==========================================
     # STOP ROS 2 BAG RECORDING
     # ==========================================
-    if bag_process is not None:
-        print("🛑 Stopping ROS 2 bag recording and saving file...")
-        # Send SIGINT (Ctrl+C) so ROS 2 properly closes the sqlite3 database
-        bag_process.send_signal(signal.SIGINT)
-        bag_process.wait() # Wait for the file to finish saving
-        print("✅ ROS bag successfully saved!")
+    if SAVE_ROS_BAG:
+        if bag_process is not None:
+            print("🛑 Stopping ROS 2 bag recording and saving file...")
+            # Send SIGINT (Ctrl+C) so ROS 2 properly closes the sqlite3 database
+            bag_process.send_signal(signal.SIGINT)
+            bag_process.wait() # Wait for the file to finish saving
+            print("✅ ROS bag successfully saved!")
     # ==========================================
         
 
-    metric = env.calculate_gait_metrics()
-    if save_to_file:
-        import os
-        import csv
-        import datetime
+    # metric = env.calculate_gait_metrics()
+    # if save_to_file:
+    #     import os
+    #     import csv
+    #     import datetime
         
-        # Ensure the filename ends with .csv
-        if not metric_filename.endswith('.csv'):
-            metric_filename += '.csv'
+    #     # Ensure the filename ends with .csv
+    #     if not metric_filename.endswith('.csv'):
+    #         metric_filename += '.csv'
             
-        # Create the directory if it doesn't exist yet! 
-        # (e.g., 'terrain_dataset/metric/')
-        os.makedirs(os.path.dirname(metric_filename), exist_ok=True)
+    #     # Create the directory if it doesn't exist yet! 
+    #     # (e.g., 'terrain_dataset/metric/')
+    #     os.makedirs(os.path.dirname(metric_filename), exist_ok=True)
         
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        file_exists = os.path.isfile(metric_filename)
+    #     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    #     file_exists = os.path.isfile(metric_filename)
         
-        # Use 'a' to append. newline="" prevents blank rows in Windows.
-        with open(metric_filename, mode="a", newline="") as f:
-            # Define our columns. (Added Fitness_Score since this is a replay!)
-            fieldnames = ["Timestamp", "Total_Steps", "Fitness_Score"] + list(metric.keys())
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+    #     # Use 'a' to append. newline="" prevents blank rows in Windows.
+    #     with open(metric_filename, mode="a", newline="") as f:
+    #         # Define our columns. (Added Fitness_Score since this is a replay!)
+    #         fieldnames = ["Timestamp", "Total_Steps", "Fitness_Score"] + list(metric.keys())
+    #         writer = csv.DictWriter(f, fieldnames=fieldnames)
             
-            # Write the header row ONLY if the file is brand new
-            if not file_exists:
-                writer.writeheader()
+    #         # Write the header row ONLY if the file is brand new
+    #         if not file_exists:
+    #             writer.writeheader()
             
-            # Prepare the row data
-            row_data = {
-                "Timestamp": timestamp, 
-                "Total_Steps": env.step_count,           # Fixed: Changed from self to env
-                "Fitness_Score": f"{fitness_score:.4f}"  # Logs the fitness from the JSON
-            }
+    #         # Prepare the row data
+    #         row_data = {
+    #             "Timestamp": timestamp, 
+    #             "Total_Steps": env.step_count,           # Fixed: Changed from self to env
+    #             "Fitness_Score": f"{fitness_score:.4f}"  # Logs the fitness from the JSON
+    #         }
             
-            # Format numbers to 4 decimal places and add to row_data
-            for k, v in metric.items():                  # Fixed: Changed metrics to metric
-                row_data[k] = f"{v:.6f}"
+    #         # Format numbers to 4 decimal places and add to row_data
+    #         for k, v in metric.items():                  # Fixed: Changed metrics to metric
+    #             row_data[k] = f"{v:.6f}"
                 
-            # Write the row to the CSV
-            writer.writerow(row_data)
+    #         # Write the row to the CSV
+    #         writer.writerow(row_data)
             
-        print(f"Metrics successfully saved to: {metric_filename}")
+    #     print(f"Metrics successfully saved to: {metric_filename}")
 
     
 

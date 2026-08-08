@@ -404,61 +404,57 @@ class StickInsectEnv:
             # Scan all bodies to draw their forces
             for i in range(1, self.model.nbody):
                 
-                # 🚨 THE FIX: If this body is the torso, skip drawing its forces!
                 if i == torso_id:
                     continue
 
-                pos = self.data.xpos[i]
+                # 🚨 THE FIX: Find the center of the actual geometry (the paddle)
+                geom_id = -1
+                for g in range(self.model.ngeom):
+                    if self.model.geom_bodyid[g] == i:
+                        # Grab the geometry type
+                        g_type = self.model.geom_type[g]
+                        # If it's a Box (paddle) or Capsule (thigh), this is our target!
+                        if g_type in [mujoco.mjtGeom.mjGEOM_BOX, mujoco.mjtGeom.mjGEOM_CAPSULE, mujoco.mjtGeom.mjGEOM_CYLINDER]:
+                            geom_id = g
+                            break
+                
+                # Fallback if no paddle/capsule exists
+                if geom_id == -1:
+                    for g in range(self.model.ngeom):
+                        if self.model.geom_bodyid[g] == i:
+                            geom_id = g
+                            break
+                            
+                # DRAW THE ARROW AT THE GEOMETRY CENTER (CENTER OF PRESSURE)
+                if geom_id != -1:
+                    pos = self.data.geom_xpos[geom_id]
+                else:
+                    pos = self.data.xipos[i] # Fallback to Center of Inertia
                 
                 # ------------------------------------------
                 # 1. DRAW LINEAR DRAG & BUOYANCY (RED ARROWS)
                 # ------------------------------------------
-                # Reading from our snapshot, NOT the wiped xfrc_applied array!
                 force = np.array([
                     self.hydro_forces_snapshot[i][0], 
                     self.hydro_forces_snapshot[i][1], 
                     self.hydro_forces_snapshot[i][2]
                 ])
                 
-                # If the force is large enough to care about, and we have memory to draw it
                 if np.linalg.norm(force) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
                     
-                    # The tip of the arrow is the body center + the scaled force vector
                     pt2_force = pos + (force * FORCE_SCALE)
                     
                     mujoco.mjv_connector(
                         self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
-                        mujoco.mjtGeom.mjGEOM_ARROW,  # Beautiful arrows are back!
+                        mujoco.mjtGeom.mjGEOM_ARROW,  
                         ARROW_THICKNESS, 
                         pos, 
                         pt2_force
                     )
-                    # Color it Bright Red
                     self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
                     self.viewer.user_scn.ngeom += 1
 
-                # ------------------------------------------
-                # 2. DRAW ANGULAR DRAG & TORQUE (RED ARROWS)
-                # ------------------------------------------
-                # torque = np.array([
-                #     self.hydro_forces_snapshot[i][3], 
-                #     self.hydro_forces_snapshot[i][4], 
-                #     self.hydro_forces_snapshot[i][5]
-                # ])
-                
-                # if np.linalg.norm(torque) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
-                #     pt2_torque = pos + (torque * TORQUE_SCALE)
-                    
-                #     mujoco.mjv_connector(
-                #         self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
-                #         mujoco.mjtGeom.mjGEOM_ARROW, 
-                #         ARROW_THICKNESS, 
-                #         pos, 
-                #         pt2_torque
-                #     )
-                #     # Color it Bright Red
-                #     self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
-                #     self.viewer.user_scn.ngeom += 1
+   
 
     def _handle_ros_feedback(self):
         """Keep your ROS logic cleanly separated for when you need telemetry."""

@@ -26,5 +26,7 @@
         <mesh name="underwater_insect_BL_L4_coll_1"         file="meshes/underwater_insect_BL_L4_coll_1.stl" />
         <mesh name="underwater_insect_BL_FOOT_coll_1"       file="meshes/underwater_insect_BL_FOOT_coll_1.stl" />
 
+        <mesh name="underwater_insect_BL_L4_coll_1_new"       file="meshes/L4.stl" />
+
     </asset>
 </mujocoinclude>
