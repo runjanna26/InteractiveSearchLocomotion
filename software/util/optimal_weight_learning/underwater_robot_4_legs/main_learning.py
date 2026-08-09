@@ -192,6 +192,13 @@ def evaluate_rollout(noisy_parameters, left_offsets, right_priors, simulation_st
                     # same physical direction as the Right hip.
                     if side == 'L' and joint == 0:
                         network_output = -network_output 
+                        
+                    # # for walking
+                    # # if side == 'L' and joint == 1:
+                    # #     network_output = -network_output 
+                    # # for swimming
+                    if side == 'L' and joint == 1:
+                        network_output = -network_output - np.pi
                     
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
