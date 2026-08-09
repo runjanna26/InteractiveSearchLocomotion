@@ -19,7 +19,7 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260723_050740.json" # <-- Paste your actual log filename here
+LOG_FILE = "data/pibb_logs/pibb_training_20260808_222002.json" # <-- Paste your actual log filename here
 TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
 SIMULATION_STEPS = 100000000
 CPG_PHI = 0.05
@@ -82,12 +82,13 @@ if __name__ == "__main__":
             # ==========================================
             # 🚨 THE FIX: FREEZE JOINT 1 
             # ==========================================
-            if joint == 1:
-                # FREEZE: Ignore the JSON log. Force it to be the original prior.
-                learned_weights = np.copy(right_prior)
-            else:
-                # LEARN: Get the optimized weights from the JSON log
-                learned_weights = np.array(trained_weights[start_idx:end_idx])
+            # if joint == 1:
+            #     # FREEZE: Ignore the JSON log. Force it to be the original prior.
+            #     learned_weights = np.copy(right_prior)
+            # else:
+            #     # LEARN: Get the optimized weights from the JSON log
+            #     learned_weights = np.array(trained_weights[start_idx:end_idx])
+            learned_weights = np.array(trained_weights[start_idx:end_idx])
             
             # Calculate the exact difference (Left - Right)
             offset_weights = left_prior - right_prior
@@ -224,6 +225,13 @@ if __name__ == "__main__":
                     # same physical direction as the Right hip.
                     if side == 'L' and joint == 0:
                         network_output = -network_output 
+                        
+                    # # for walking
+                    # # if side == 'L' and joint == 1:
+                    # #     network_output = -network_output 
+                    # # for swimming
+                    if side == 'L' and joint == 1:
+                        network_output = -network_output - np.pi
                     
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
