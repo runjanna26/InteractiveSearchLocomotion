@@ -166,9 +166,9 @@ class StickInsectEnv:
         self.viewer.cam.trackbodyid = robot_body_id
         
         # 3. Set the default starting angle (Optional but highly recommended)
-        self.viewer.cam.distance = 1.5    # How far away to start (meters)
+        self.viewer.cam.distance = 2    # How far away to start (meters)
         self.viewer.cam.azimuth = 180      # Rotate left/right (degrees)
-        self.viewer.cam.elevation = 0   # Tilt up/down (degrees)
+        self.viewer.cam.elevation = -90   # Tilt up/down (degrees)
         # self.viewer.cam.elevation = -45   # Tilt up/down (degrees)
 
     def get_grf(self):

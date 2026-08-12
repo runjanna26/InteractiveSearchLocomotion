@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
         target_duration = env.model.opt.timestep
         while (time.perf_counter() - step_start) < target_duration:
-            pass # Busy-wait ensures perfect timing
+            time.sleep(0.0001) # Yields the CPU instead of locking it
 
     print("Replay finished.")
     

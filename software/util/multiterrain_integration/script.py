@@ -1,0 +1,760 @@
+import threading
+import time
+import numpy as np
+import mujoco
+import mujoco.viewer
+import rclpy
+import math
+from collections import deque
+
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+
+# Assuming these are available in your workspace
+from ros2_node import StickInsectNode
+from muscle_model import MuscleModel
+from hydrodynamic import Hydrodynamics
+from generate_terrain import TerrainGenerator
+
+FOOT_NAMES = ['FOOT_FR', 'FOOT_BR', 'FOOT_FL', 'FOOT_BL']
+JOINT_GROUPS = ['FR', 'BR', 'FL', 'BL']
+NUM_JOINTS_PER_GROUP = 4
+
+class StickInsectEnv:
+    def __init__(self, start_time=1.0, enable_ros=False, render=False):
+        """
+        Object-oriented wrapper for the MuJoCo simulation to allow for rapid 
+        episodic resets during PIBB optimization.
+        """
+        self.start_time = start_time
+        self.enable_ros = enable_ros
+        self.has_viewer = render
+        self.robot_fixed = False
+
+        self.frame_skip = 1
+        
+        # 1. Generate Terrain and Load Model
+        self._build_environment()
+        
+        # 2. Initialize Custom Physics and Controllers
+        self.hydro = Hydrodynamics(self.model, water_level=0.8)
+        self._init_controllers()
+        self.foot_geom_ids = self._init_foot_sensors()
+        
+        # 3. Optional ROS Initialization (Best kept OFF during fast training)
+        if self.enable_ros:
+            if not rclpy.ok():
+                rclpy.init()
+            self.ros_node = StickInsectNode()
+            
+            # Spin ROS in a background thread
+            self.executor = rclpy.executors.SingleThreadedExecutor()
+            self.executor.add_node(self.ros_node)
+            self.ros_thread = threading.Thread(target=self.executor.spin, daemon=True)
+            self.ros_thread.start()
+            
+        # 4. Viewer Initialization
+        if self.has_viewer:
+            self.viewer = mujoco.viewer.launch_passive(self.model, self.data, show_left_ui=False, show_right_ui=False)
+            self._setup_camera()
+
+        # ROS2 parameters
+        self.joint_angles_cmd = []
+        self.joint_cpg_output = []
+
+        self.joint_angle_fb = []
+        self.joint_velocity_fb = []
+        self.joint_stiffness_fb = []
+        self.joint_damping_fb = []
+        self.joint_torque_feedforward_fb = []
+        self.joint_torque_output_fb = []
+        self.joint_damping_power_fb = [] 
+        self.joint_names = []    
+
+        self.leg_stiffness_fb = []
+        self.leg_damping_fb = []
+        self.leg_torque_feedforward_fb = []
+
+        self.grf_fb = []
+
+        # ['FR_J1', 'FR_J2', 'FR_J3', 'FR_J4', 
+        #  'BR_J1', 'BR_J2', 'BR_J3', 'BR_J4', 
+        #  'FL_J1', 'FL_J2', 'FL_J3', 'FL_J4', 
+        #  'BL_J1', 'BL_J2', 'BL_J3', 'BL_J4']
+
+        # ['FR', 'BR', 'FL', 'BL']
+        
+        # --- NEW: Foot Trails Initialization ---
+        self.trail_length = 50
+        self.foot_trails = {name: deque(maxlen=self.trail_length) for name in FOOT_NAMES}
+        
+        # Colors for the feet trails (RGBA)
+        self.trail_colors = {
+            'FOOT_FR': np.array([1.0, 0.0, 0.0, 1.0]), # Red
+            'FOOT_BR': np.array([0.0, 1.0, 0.0, 1.0]), # Green
+            'FOOT_FL': np.array([0.0, 0.0, 1.0, 1.0]), # Blue
+            'FOOT_BL': np.array([1.0, 0.0, 1.0, 1.0])  # Magenta
+        }
+
+    def _build_environment(self):
+        x_start = -1
+        tg = TerrainGenerator()
+        solid_terrain_xml                = tg.generate_flat_terrain(  name = 'flat_terrain_1',            n_rows=25,    n_cols=50,            start_pos=(x_start, 0, 1.0))
+        soft_terrain_xml                 = tg.generate_soft_terrain(  name = 'soft_terrain_1',            n_rows=25,    n_cols=50,            start_pos=(x_start+(6.25)*3, 0, 0.90))
+        muddy_terrain_xml                = tg.generate_muddy_terrain( name = 'muddy_terrain_1',           n_rows=25,    n_cols=50,             start_pos=(x_start+(6.25)*2, 0, 0.93))
+        slippery_terrain_xml             = tg.generate_slippery_terrain ( name = 'slippery_terrain_1',    n_rows=25,    n_cols=50,     start_pos=(x_start+(6.25)*1, 0, 0.90))
+        # rough_terrain_xml                = tg.generate_rough_terrain(     name = 'rough_terrain_1',   n_rows=25, n_cols=25,         start_pos=(x_start+(6.25)*2, 0, 1.0))
+        # water_terrain_xml                = tg.generate_flat_terrain(  name = 'flat_terrain_1',    n_rows=25,  n_cols=25,            start_pos=(x_start, 0, 10.0))
+        
+        terrain_xml = solid_terrain_xml  + muddy_terrain_xml + slippery_terrain_xml + soft_terrain_xml
+        
+        # terrain_xml  = water_terrain_xml
+
+        
+        
+        with open("main_scene.xml", "r") as f:
+            base_xml = f.read()
+        complete_xml = base_xml.replace("INCLUDE_TERRAIN", terrain_xml, 1)
+        self.model = mujoco.MjModel.from_xml_string(complete_xml)
+
+        # self.model = mujoco.MjModel.from_binary_path("fast_rough_scene.mjb")
+
+
+        self.data = mujoco.MjData(self.model)
+
+        # mujoco.mj_saveModel(self.model, "fast_rough_scene.mjb", None)
+        # print("Binary model saved!")
+
+    def _get_actuator_name(self, idx):
+        addr = self.model.name_actuatoradr[idx]
+        return self.model.names[addr:].decode().split('\x00', 1)[0]
+
+    def _init_controllers(self):
+        self.controllers = {}
+        self.actuator_ids = {}
+        self.qpos_ids = {}
+        self.qvel_ids = {}
+
+        for i in range(self.model.nu):
+            name = self._get_actuator_name(i)
+            joint_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)
+            
+            if joint_id == -1:
+                continue
+
+            self.actuator_ids[name] = i
+            self.qpos_ids[name] = self.model.jnt_qposadr[joint_id]
+            self.qvel_ids[name] = self.model.jnt_dofadr[joint_id]
+
+            self.controllers[name] = MuscleModel(_a=0.5, _b=10.0, _beta=0.0, _init_pos=0.0)
+
+    def _init_foot_sensors(self):
+        foot_geom_ids = {}
+        for name in FOOT_NAMES:
+            gid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, name)
+            if gid == -1:
+                gid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, name)
+            if gid == -1:
+                gid = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, name.upper())
+            
+            if gid != -1:
+                foot_geom_ids[name] = gid
+        return foot_geom_ids
+
+    def _setup_camera(self):
+        robot_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "robot")
+        
+        # 2. Change the default Free Camera into a Tracking Camera
+        self.viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+        self.viewer.cam.trackbodyid = robot_body_id
+        
+        # 3. Set the default starting angle (Optional but highly recommended)
+        self.viewer.cam.distance = 2    # How far away to start (meters)
+        self.viewer.cam.azimuth = 135      # Rotate left/right (degrees)
+        # self.viewer.cam.elevation = -90   # Tilt up/down (degrees)
+        self.viewer.cam.elevation = -45   # Tilt up/down (degrees)
+
+    def get_grf(self):
+        grf = {name: 0.0 for name in FOOT_NAMES}
+        for i in range(self.data.ncon):
+            contact = self.data.contact[i]
+            for name, gid in self.foot_geom_ids.items():
+                if contact.geom1 == gid or contact.geom2 == gid:
+                    force = np.zeros(6)
+                    mujoco.mj_contactForce(self.model, self.data, i, force)
+                    grf[name] += force[0]
+        return [grf[name] for name in FOOT_NAMES]
+    
+    def reset(self):
+        mujoco.mj_resetData(self.model, self.data)
+        mujoco.mj_forward(self.model, self.data)
+
+        # --- NEW: Clear trails on reset ---
+        for trail in self.foot_trails.values():
+            trail.clear()
+
+        self.hydro_forces_snapshot = np.zeros((self.model.nbody, 6))
+        
+        # --- NEW: LET THE ROBOT SETTLE IN THE WATER BEFORE THE EPISODE STARTS ---
+        # --- LET THE ROBOT SETTLE IN THE WATER ---
+        for _ in range(int(1.0 / self.model.opt.timestep)):
+            self.data.xfrc_applied[:] = 0.0  # Clear forces here too!
+            self.hydro.apply(self.data)
+            mujoco.mj_step(self.model, self.data)
+
+        # --- NEW: WARM-UP SETTINGS ---
+        # 1. Define how long to hold the robot while the CPG starts (e.g., 1.5 seconds)
+        self.warmup_steps = int(1.5 / self.model.opt.timestep) 
+        
+        # 2. Save the exact 6-DOF state of the torso (7 position values, 6 velocity values)
+        self.fixed_qpos = np.copy(self.data.qpos[:7])
+
+
+        self.start_pos = np.copy(self.data.qpos[:3])
+
+        self.step_count = 0
+        
+        # --- History Tracking for Fitness ---
+        self.history_z = []
+        self.history_roll = []
+        self.history_pitch = []
+        self.history_yaw = []
+        
+        self.accumulated_collision = 0.0
+        self.contact_steps = 0
+        self.slipping_steps = 0
+
+        # New trackers for smoothness
+        self.accumulated_torque_ripple = 0.0
+        self.accumulated_joint_accel = 0.0
+        self.step_count = 0
+
+        self.total_energy_consumed = 0.0
+        self.total_time = 0.0
+
+        # Array to hold the torques from the previous timestep
+        self.prev_ctrl = np.zeros(self.model.nu)
+
+    def step(self, targets, cpg_outputs):
+        """
+        Takes target joint positions (e.g. from CPG-RBF network), 
+        applies MuscleModel math, handles hydrodynamics, and steps physics.
+        """
+        
+        # ==========================================
+        # 1. APPLY CONTROL
+        # ==========================================
+        self.feedback_clear()
+        step_energy = 0.0 # NEW
+
+        
+        for name, ctrl in self.controllers.items():
+            q = self.data.qpos[self.qpos_ids[name]]
+            dq = self.data.qvel[self.qvel_ids[name]]
+            
+            # Prevent exploding targets
+            cpg_out = cpg_outputs.get(name, 0.0)
+            
+            target = np.clip(targets.get(name, 0.0), -3.14, 3.14) 
+            ctrl.calculate(target, q, dq, self.model.opt.timestep)
+
+            # Prevent exploding torques
+            torque = np.clip(ctrl.get_torque(), -15.0, 15.0) 
+            self.data.ctrl[self.actuator_ids[name]] = torque
+
+            # --- GRF FEEDBACK ---
+            self.joint_cpg_output.append(cpg_out)
+            self.joint_angles_cmd.append(target)
+            self.joint_angle_fb.append(q)
+            self.joint_velocity_fb.append(dq)
+            self.joint_stiffness_fb.append(ctrl.K)
+            self.joint_damping_fb.append(ctrl.D)
+            self.joint_torque_feedforward_fb.append(ctrl.F)
+            self.joint_torque_output_fb.append(ctrl.get_torque())
+            self.joint_damping_power_fb.append(ctrl.get_power_damping())
+            self.joint_names.append(name)
+
+            step_energy += abs(torque * dq) * self.model.opt.timestep
+        self.grf_fb = self.get_grf()
+
+        self.leg_stiffness_fb = [sum(self.joint_stiffness_fb[0:4]), 
+                                    sum(self.joint_stiffness_fb[4:8]), 
+                                    sum(self.joint_stiffness_fb[8:12]), 
+                                    sum(self.joint_stiffness_fb[12:16])]
+        self.leg_damping_fb = [sum(self.joint_damping_fb[0:4]), 
+                                sum(self.joint_damping_fb[4:8]), 
+                                sum(self.joint_damping_fb[8:12]), 
+                                sum(self.joint_damping_fb[12:16])]
+        self.leg_torque_feedforward_fb = [sum(self.joint_torque_feedforward_fb[0:4]), 
+                                            sum(self.joint_torque_feedforward_fb[4:8]), 
+                                            sum(self.joint_torque_feedforward_fb[8:12]), 
+                                            sum(self.joint_torque_feedforward_fb[12:16])]
+
+
+        
+        self.total_energy_consumed += step_energy
+        self.total_time += self.model.opt.timestep 
+
+        # ==========================================
+        # 🚨 THE ONLY PHYSICS STEP YOU NEED
+        # ==========================================
+        mujoco.mj_step1(self.model, self.data)
+        
+        self.data.xfrc_applied[:] = 0.0
+        self.data.qfrc_applied[:] = 0.0
+
+        self.hydro.apply(self.data)
+
+        self.hydro_forces_snapshot = np.copy(self.data.xfrc_applied)
+
+        mujoco.mj_step2(self.model, self.data)
+        
+        self.step_count += 1
+
+        # ==========================================
+        # 2. TRACK INSTABILITY METRICS
+        # ==========================================
+        self.history_z.append(self.data.qpos[2])
+        roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
+        
+        self.history_roll.append(abs(roll))
+        self.history_pitch.append(abs(pitch))
+        self.history_yaw.append(abs(yaw))
+        
+        # ==========================================
+        # 3. TRACK COLLISION
+        # ==========================================
+        step_collision = 0.0
+        
+        # Loop through every physical contact detected by MuJoCo in this timestep
+        for i in range(self.data.ncon):
+            contact = self.data.contact[i]
+            
+            # Get the ID of the main body that each colliding geometry belongs to
+            body1_id = self.model.geom_bodyid[contact.geom1]
+            body2_id = self.model.geom_bodyid[contact.geom2]
+            
+            # Convert those IDs into string names (e.g., 'FR_calf', 'FR_thigh')
+            body1_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, body1_id)
+            body2_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, body2_id)
+            
+            # Safely check if they have names
+            if body1_name and body2_name:
+                # List your leg prefixes
+                for prefix in ['FR_', 'FL_', 'BR_', 'BL_']:
+                    # If BOTH colliding bodies start with the exact same prefix...
+                    if body1_name.startswith(prefix) and body2_name.startswith(prefix):
+                        # ...it is an intra-leg collision! 
+                        # Add a flat penalty for this frame.
+                        step_collision += 1.0
+                        break # Stop checking prefixes
+                        
+        self.accumulated_collision += step_collision
+        # print(self.accumulated_collision)
+
+        # ==========================================
+        # 4. TRACK SLIPPAGE (Optimized to prevent double-counting)
+        # ==========================================
+        # First, gather all unique feet touching the ground this step
+        contacting_feet_gids = set()
+        foot_gids_set = set(self.foot_geom_ids.values())
+        
+        for i in range(self.data.ncon):
+            contact = self.data.contact[i]
+            if contact.geom1 in foot_gids_set:
+                contacting_feet_gids.add(contact.geom1)
+            if contact.geom2 in foot_gids_set:
+                contacting_feet_gids.add(contact.geom2)
+
+        # Now, only calculate velocity ONCE per contacting foot
+        foot_vel = np.zeros(6)
+        for gid in contacting_feet_gids:
+            self.contact_steps += 1
+            mujoco.mj_objectVelocity(self.model, self.data, mujoco.mjtObj.mjOBJ_GEOM, gid, foot_vel, 0)
+            
+            # If XY velocity is high during contact, it is slipping
+            horizontal_speed = np.linalg.norm(foot_vel[:2])
+            if horizontal_speed > 0.05:
+                self.slipping_steps += 1
+
+        
+        # Difference between current motor commands and previous commands
+        torque_diff = self.data.ctrl - self.prev_ctrl
+        self.accumulated_torque_ripple += np.sum(np.square(torque_diff))
+        
+        # Save current control for the next step
+        self.prev_ctrl = np.copy(self.data.ctrl)
+
+        # 2. Joint Acceleration (Shakiness)
+        step_accel = 0.0
+        for name in self.controllers.keys():
+            # self.data.qacc holds the accelerations computed by MuJoCo
+            step_accel += abs(self.data.qacc[self.qvel_ids[name]])
+        self.accumulated_joint_accel += step_accel
+
+        # --- NEW: Record Foot Positions for Trails ---
+        for name, gid in self.foot_geom_ids.items():
+            # Append a copy of the current global 3D position of the foot geom
+            self.foot_trails[name].append(self.data.geom_xpos[gid].copy())
+        # ==========================================
+
+        # ==========================================
+        # 6. RENDERING & ROS
+        # ==========================================
+        if self.has_viewer:
+            self.render()
+        if self.enable_ros:
+            self._handle_ros_feedback()
+        
+
+            
+        feedback = {
+            # "time": self.total_time,
+            # "energy_consumed": self.total_energy_consumed,
+            "cpg_output": np.array(self.joint_cpg_output),
+            
+            "joint_names": self.joint_names,
+            "joint_commands": np.array(self.joint_angles_cmd),
+            "joint_angle_fb": np.array(self.joint_angle_fb),
+            "joint_velocity_fb": np.array(self.joint_velocity_fb),
+            "joint_torque_output_fb": np.array(self.joint_torque_output_fb),
+            "joint_torque_feedforward_fb": np.array(self.joint_torque_feedforward_fb),
+            "joint_stiffness_fb": np.array(self.joint_stiffness_fb),
+            "joint_damping_fb": np.array(self.joint_damping_fb),
+            "power_damping": np.array(self.joint_damping_power_fb),
+        
+            "foot_force": np.array(self.grf_fb),
+            "leg_stiffness_fb": np.array(self.leg_stiffness_fb),
+            "leg_damping_fb": np.array(self.leg_damping_fb),
+            "leg_torque_feedforward_fb": np.array(self.leg_torque_feedforward_fb)
+        }
+            
+        return feedback
+
+    def render(self):
+        """Handles GUI updates and drawing custom hydrodynamic & GRF arrows."""
+        if not self.viewer.is_running():
+            return
+            
+        with self.viewer.lock():
+            # Turn OFF the buggy built-in contact forces so they don't interfere
+            self.viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT]     = False
+            self.viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE]     = False
+            self.viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_COM]              = True
+            self.viewer.opt.frame = mujoco.mjtFrame.mjFRAME_WORLD
+
+            # Reset custom drawing queue for this frame
+            self.viewer.user_scn.ngeom = 0
+            
+            # ==========================================
+            # VISUAL SCALING
+            # ==========================================
+            FORCE_SCALE = 0.05       # Size of the Red Water arrows
+            GRF_SCALE = -0.005         # Size of the Green Ground arrows (Increase if too small!)
+            ARROW_THICKNESS = 0.01   # How fat the arrow shaft is
+            
+            torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "robot")
+            
+            # ------------------------------------------
+            # 1. DRAW LINEAR DRAG & BUOYANCY (RED ARROWS)
+            # ------------------------------------------
+            for i in range(1, self.model.nbody):
+                if i == torso_id:
+                    continue
+
+                pos = self.data.xpos[i]
+                force = np.array([
+                    self.hydro_forces_snapshot[i][0], 
+                    self.hydro_forces_snapshot[i][1], 
+                    self.hydro_forces_snapshot[i][2]
+                ])
+                
+                if np.linalg.norm(force) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
+                    pt2_force = pos + (force * FORCE_SCALE)
+                    
+                    mujoco.mjv_connector(
+                        self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
+                        mujoco.mjtGeom.mjGEOM_ARROW, 
+                        ARROW_THICKNESS, 
+                        pos, 
+                        pt2_force
+                    )
+                    # Color it Bright Red
+                    self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
+                    self.viewer.user_scn.ngeom += 1
+
+
+            # ------------------------------------------
+            # 2. DRAW GROUND REACTION FORCES (GREEN ARROWS)
+            # ------------------------------------------
+            # Loop through all active collisions happening right now
+            # for c_idx in range(self.data.ncon):
+            #     contact = self.data.contact[c_idx]
+                
+            #     # Check if this collision involves one of the feet
+            #     geom1_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_GEOM, contact.geom1)
+            #     geom2_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_GEOM, contact.geom2)
+                
+            #     if (geom1_name and 'FOOT' in geom1_name) or (geom2_name and 'FOOT' in geom2_name):
+                    
+            #         # Extract the 6D force from the physics engine
+            #         force_6d = np.zeros(6, dtype=np.float64)
+            #         mujoco.mj_contactForce(self.model, self.data, c_idx, force_6d)
+                    
+            #         # MuJoCo stores forces in a local contact frame. 
+            #         # We must rotate it to the world frame using the contact's 3x3 matrix.
+            #         c_frame = contact.frame.reshape(3, 3)
+            #         world_force = c_frame @ force_6d[:3]
+                    
+            #         # If the force is meaningful, draw it!
+            #         if np.linalg.norm(world_force) > 0.1 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
+                        
+            #             # Calculate where the tip of the arrow should be
+            #             pt2_grf = contact.pos + (world_force * GRF_SCALE)
+                        
+            #             mujoco.mjv_connector(
+            #                 self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom],
+            #                 mujoco.mjtGeom.mjGEOM_ARROW,
+            #                 ARROW_THICKNESS,
+            #                 contact.pos,  # Start exactly at the collision point
+            #                 pt2_grf
+            #             )
+            #             # Color it Bright Green
+            #             self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([0.0, 1.0, 0.0, 1.0])
+            #             self.viewer.user_scn.ngeom += 1
+            # ------------------------------------------
+            # 3. DRAW FOOT TRAILS
+            # ------------------------------------------
+            for name, trail in self.foot_trails.items():
+                if len(trail) > 1:
+                    color = self.trail_colors[name]
+                    for i in range(len(trail) - 1):
+                        # Prevent overflow of maximum allowed custom geoms in viewer
+                        if self.viewer.user_scn.ngeom >= self.viewer.user_scn.maxgeom:
+                            break
+                        
+                        geom = self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom]
+                        
+                        # Initialize a geometry for the line segment
+                        mujoco.mjv_initGeom(
+                            geom, 
+                            type=mujoco.mjtGeom.mjGEOM_LINE, 
+                            size=np.zeros(3), 
+                            pos=np.zeros(3), 
+                            mat=np.zeros(9), 
+                            rgba=color 
+                        )
+                        
+                        # Connect point A to point B (width = 3.0)
+                        mujoco.mjv_connector(
+                            geom, 
+                            mujoco.mjtGeom.mjGEOM_LINE, 
+                            3.0,          # width
+                            trail[i],     # from_
+                            trail[i+1]    # to
+                        )
+                        
+                        self.viewer.user_scn.ngeom += 1
+
+        self.viewer.sync()
+
+    def close(self):
+            """Safely clean up the MuJoCo viewer and ROS node."""
+            # 1. Close the MuJoCo viewer if it exists and is running
+            if self.has_viewer and hasattr(self, 'viewer'):
+                if self.viewer.is_running():
+                    self.viewer.close()
+                    
+            # 2. Shut down the ROS node safely
+            if self.enable_ros and rclpy.ok():
+                self.ros_node.destroy_node()
+                rclpy.shutdown()
+                
+    def _handle_ros_feedback(self):
+        """Keep your ROS logic cleanly separated for when you need telemetry."""
+        # rclpy.spin_once(self.ros_node, timeout_sec=0.0)
+
+        self.ros_node.publish_joint_cmd(self.joint_angles_cmd)
+        self.ros_node.publish_joint_angle(self.joint_angle_fb)
+        self.ros_node.publish_joint_velocity(self.joint_velocity_fb)
+        self.ros_node.publish_joint_stiffness(self.joint_stiffness_fb)
+        self.ros_node.publish_joint_damping(self.joint_damping_fb)
+        self.ros_node.publish_joint_torque_ff(self.joint_torque_feedforward_fb)
+        self.ros_node.publish_joint_torque_output(self.joint_torque_output_fb)
+        self.ros_node.publish_joint_damping_power(self.joint_damping_power_fb)
+
+        self.ros_node.publish_leg_stiffness(self.leg_stiffness_fb)
+        self.ros_node.publish_leg_damping(self.leg_damping_fb)
+        self.ros_node.publish_leg_torque_ff(self.leg_torque_feedforward_fb)
+
+
+        self.ros_node.publish_grf(self.grf_fb)
+        self.ros_node.publish_cpg(self.joint_cpg_output)
+
+        self.ros_node.publish_termination_status(False)
+    
+    def feedback_clear(self):
+        """Clears all feedback lists to prepare for the next episode."""
+        self.joint_cpg_output.clear()
+        self.joint_angles_cmd.clear()
+        self.joint_angle_fb.clear()
+        self.joint_velocity_fb.clear()
+        self.joint_stiffness_fb.clear()
+        self.joint_damping_fb.clear()
+        self.joint_torque_feedforward_fb.clear()
+        self.joint_torque_output_fb.clear()
+        self.joint_damping_power_fb.clear()
+        self.joint_names.clear()
+        self.leg_stiffness_fb.clear()
+        self.leg_damping_fb.clear()
+        self.leg_torque_feedforward_fb.clear()
+
+    def calculate_fitness(self):
+        # ==========================================
+        # 1. EARLY SAFEGUARD (Must execute first)
+        # ==========================================
+        # roll, pitch, yaw = self.quat_to_euler(self.data.qpos[3:7])
+        
+        # # Catch explosions or flips instantly
+        # if (np.isnan(self.data.qpos).any() or 
+        #     np.isnan(self.data.qvel).any() or 
+        #     self.data.qpos[2] > 3.0 or 
+        #     abs(roll) > 1.5 or 
+        #     abs(pitch) > 1.5):
+            
+        #     return {
+        #         "distance_walked": 0.0,
+        #         "instability": 0.0,
+        #         "collision": 0.0,
+        #         "slippage": 0.0,
+        #         "total_reward": -1000.0
+        #     }
+
+        # ==========================================
+        # 2. CALCULATE METRICS
+        # ==========================================
+        # Forward Distance & Y-Axis Drift
+        distance_walked = (self.data.qpos[0] - self.start_pos[0])
+        drift_y = abs(self.data.qpos[1] - self.start_pos[1])
+        
+        # Instability 
+        std_z = np.std(self.history_z) if len(self.history_z) > 0 else 0
+        
+        mean_roll = np.mean(self.history_roll) if len(self.history_roll) > 0 else 0
+        mean_pitch = np.mean(self.history_pitch) if len(self.history_pitch) > 0 else 0
+        mean_yaw = np.mean(self.history_yaw) if len(self.history_yaw) > 0 else 0
+        
+        # Now std_z will only be ~50 instead of ~5000 if it sinks
+        instability = std_z + mean_roll + mean_pitch + mean_yaw
+        
+        # Averages for penalties
+        if self.step_count > 0:
+            avg_torque_ripple = self.accumulated_torque_ripple / self.step_count
+            avg_joint_accel   = self.accumulated_joint_accel / self.step_count
+            
+            # --- NEW: Calculate Average Collision ---
+            avg_collision     = self.accumulated_collision / self.step_count
+        else:
+            avg_torque_ripple = 0.0
+            avg_joint_accel   = 0.0
+            avg_collision     = 0.0
+
+        # ==========================================
+        # 3. TOTAL REWARD COMPUTATION
+        # ==========================================
+        w1 = 10.0      # Distance weight
+        w2 = 3.0      # Instability weight
+        w4 = 5.0      # Y-Drift penalty weight
+        
+        w_collision = 1000.0  # NEW: Collision penalty weight
+        w_ripple    = 0.0 
+        w_accel     = 0.0  
+        
+
+        total_reward = (w1 * distance_walked) - (w2 * instability) - (w4 * drift_y) - (w_collision * avg_collision) - (w_ripple * avg_torque_ripple) - (w_accel * avg_joint_accel)
+        
+        return {
+            "distance_walked":  (w1 * distance_walked),
+            "instability":      -(w2 * instability),
+            "collision":        -(w_collision * avg_collision),        
+            "slippage":         -(w4 * drift_y) - (w_ripple * avg_torque_ripple) - (w_accel * avg_joint_accel),  
+            "total_reward":     total_reward
+        }
+    
+    def calculate_gait_metrics(self):
+            """
+            Calculates biomechanical and performance metrics for the current episode.
+            Call this at the end of an episode to evaluate the gait.
+            """
+            # Calculate total weight (Newtons)
+            mass = sum([self.model.body_mass[i] for i in range(1, self.model.nbody)])
+            gravity = abs(self.model.opt.gravity[2])
+            weight = mass * gravity
+            
+            # Calculate distances
+            distance_walked = self.data.qpos[0] - self.start_pos[0]
+            drift_y = abs(self.data.qpos[1] - self.start_pos[1])
+            
+            # Prevent divide-by-zero if the robot didn't move or time is 0
+            safe_distance = max(distance_walked, 1e-4)
+            safe_time = max(self.total_time, 1e-4)
+
+            # ---------------------------------------------------------
+            # 1. Cost of Transport (COT)
+            # Dimensionless metric of energy efficiency. Lower is better.
+            # ---------------------------------------------------------
+            cot = self.total_energy_consumed / (weight * safe_distance)
+
+            # ---------------------------------------------------------
+            # 2. Path Straightness
+            # Ratio of forward movement to total movement. Max is 1.0.
+            # ---------------------------------------------------------
+            total_xy_distance = distance_walked + drift_y
+            path_straightness = distance_walked / max(total_xy_distance, 1e-4)
+            
+            # If the robot walked backward, cap straightness to 0
+            path_straightness = max(path_straightness, 0.0)
+
+            # ---------------------------------------------------------
+            # 3. Average Speed & Mechanical Power
+            # ---------------------------------------------------------
+            avg_speed = distance_walked / safe_time
+            avg_power = self.total_energy_consumed / safe_time
+
+            # ---------------------------------------------------------
+            # 4. Gait Stability Index
+            # Variance in torso rotation. Lower variance = smoother ride.
+            # ---------------------------------------------------------
+            roll_var = np.var(self.history_roll) if len(self.history_roll) > 0 else 0
+            pitch_var = np.var(self.history_pitch) if len(self.history_pitch) > 0 else 0
+            yaw_var = np.var(self.history_yaw) if len(self.history_yaw) > 0 else 0
+            stability_index = roll_var + pitch_var + yaw_var
+
+            return {
+                "Cost_of_Transport": cot,
+                "Average_Speed_m_s": avg_speed,
+                "Path_Straightness": path_straightness,
+                "Average_Power_W": avg_power,
+                "Stability_Index": stability_index,
+                "Total_Energy_J": self.total_energy_consumed
+            }
+
+    def quat_to_euler(self, quat):
+        """Convert MuJoCo quaternion (w, x, y, z) to Euler angles (roll, pitch, yaw)."""
+        w, x, y, z = quat
+        t0 = +2.0 * (w * x + y * z)
+        t1 = +1.0 - 2.0 * (x * x + y * y)
+        roll_x = math.atan2(t0, t1)
+        
+        t2 = +2.0 * (w * y - z * x)
+        t2 = +1.0 if t2 > +1.0 else t2
+        t2 = -1.0 if t2 < -1.0 else t2
+        pitch_y = math.asin(t2)
+        
+        t3 = +2.0 * (w * z + x * y)
+        t4 = +1.0 - 2.0 * (y * y + z * z)
+        yaw_z = math.atan2(t3, t4)
+        
+        return roll_x, pitch_y, yaw_z

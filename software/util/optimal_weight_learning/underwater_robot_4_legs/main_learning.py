@@ -248,8 +248,11 @@ if __name__ == "__main__":
             right_key = f"{index}R{joint}" 
             left_key = f"{index}L{joint}"
             
-            right_weights = np.array(prior_knowledge[right_key])
-            left_weights = np.array(prior_knowledge[left_key])
+            # right_weights = np.array(prior_knowledge[right_key])
+            # left_weights = np.array(prior_knowledge[left_key])
+            
+            right_weights = np.zeros(NUM_KERNELS)
+            left_weights = np.zeros(NUM_KERNELS)
             
             # Base parameters for PIBB
             base_parameters.extend(right_weights)

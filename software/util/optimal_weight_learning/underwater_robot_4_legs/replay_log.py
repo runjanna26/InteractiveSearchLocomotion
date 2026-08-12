@@ -19,7 +19,7 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260808_222002.json" # <-- Paste your actual log filename here
+LOG_FILE = "data/pibb_logs/pibb_training_20260810_001513.json" # <-- Paste your actual log filename here
 TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
 SIMULATION_STEPS = 100000000
 CPG_PHI = 0.05

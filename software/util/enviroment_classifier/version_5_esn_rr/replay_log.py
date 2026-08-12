@@ -28,7 +28,7 @@ TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number 
 SIMULATION_STEPS = 2000 # 12000 (1min.) 
 CPG_PHI = 0.05
 
-gait = "water_surface"
+gait = "water_surface_new"
 environment_setup = "solid_ground"
 
 SAVE_ROS_BAG = False
@@ -42,7 +42,7 @@ MATRIC_FILE = f"terrain_dataset/metric/{gait}_gait_on_{environment_setup}"
 SAVE_EXTRACTED_WEIGHTS = False 
 EXTRACTED_WEIGHTS_FILE = f"learned_weight_set/{gait}/extracted_weights.npz" 
 
-RECORD_TRAJECTORY = True
+RECORD_TRAJECTORY = True  
 recorded_trajectory = {}  # Will store lists of angles for each joint
 EXTRACTED_TRAJ_FILE = f"learned_weight_set/{gait}/target_trajectory.json"
 
@@ -440,7 +440,7 @@ if __name__ == "__main__":
 
         target_duration = env.model.opt.timestep
         while (time.perf_counter() - step_start) < target_duration:
-            pass # Busy-wait ensures perfect timing
+            time.sleep(0.0001) # Yields the CPU instead of locking it
     # ========================================================================================================================================================================
     print("Replay finished.")
     
@@ -490,7 +490,8 @@ if __name__ == "__main__":
             bag_process.wait() # Wait for the file to finish saving
             print("✅ ROS bag successfully saved!")
     # ==========================================
-        
+    env.close()
+    print("Simulation safely closed.")
 
     # metric = env.calculate_gait_metrics()
     # if save_to_file:
