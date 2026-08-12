@@ -60,7 +60,8 @@ class TerrainGenerator:
                           box_size=0.125, 
                           h_base=0.1,  # Set > 0 so the box has some physical thickness
                           spacing=0.25, 
-                          start_pos=(2.5, 0, 1.5)):
+                          start_pos=(2.5, 0, 1.5),
+                          slope_deg=0.0):
         """
         Generates a MuJoCo XML string for a single monolithic block of flat terrain.
         """
@@ -82,7 +83,7 @@ class TerrainGenerator:
         xml_lines = []
         
         # Body wrapper for the entire terrain block
-        xml_lines.append(f'<body name="{name}" pos="{start_pos[0]} {start_pos[1]} {start_pos[2]}">')
+        xml_lines.append(f'<body name="{name}" pos="{start_pos[0]} {start_pos[1]} {start_pos[2]}" euler="0 {-slope_deg} 0">')
 
         # The single monolithic box
         geom_name = f"{name}_geom"
@@ -198,23 +199,15 @@ class TerrainGenerator:
         return "\n".join(xml_lines)
     
     def generate_muddy_terrain(self,
-                           name='generated_terrain', 
-                           n_rows=10, 
-                           n_cols=3, 
-                           h_base=0.2, 
-                           spacing=0.25, 
-                           start_pos=(2.5, 0, 1.5)):
+                               name='generated_terrain', 
+                               n_rows=10, 
+                               n_cols=3, 
+                               h_base=0.2, 
+                               spacing=0.25, 
+                               start_pos=(2.5, 0, 1.5),
+                               slope_deg=-0.0): # <-- 🚨 NEW: 10 degree slope
         """
         Generates a MuJoCo XML string for a single monolithic block of muddy terrain.
-        
-        Args:
-            n_rows: Length multiplier
-            n_cols: Width multiplier
-            h_base: Total box thickness
-            spacing: Used to scale the total size based on grid parameters
-            start_pos: Tuple (x, y, z) for the start of the terrain block
-            
-            solref/solimp: Tuned specifically for a softer, viscous, muddy contact dynamic.
         """
         # 1. Calculate total dimensions based on the grid parameters
         total_length_x = n_rows * spacing
@@ -232,8 +225,10 @@ class TerrainGenerator:
 
         xml_lines = []
         
-        # Body wrapper for the entire terrain block
-        xml_lines.append(f'<body name="{name}" pos="{start_pos[0]} {start_pos[1]} {start_pos[2]}">')
+        # 🚨 THE FIX: Added euler rotation to tilt the entire body.
+        # (Note: A negative Y rotation tilts the +X axis UP, creating an uphill climb. 
+        #  If you want downhill, remove the minus sign).
+        xml_lines.append(f'<body name="{name}" pos="{start_pos[0]} {start_pos[1]} {start_pos[2]}" euler="0 {-slope_deg} 0">')
 
         # The single monolithic muddy box
         geom_name = f"{name}_geom"

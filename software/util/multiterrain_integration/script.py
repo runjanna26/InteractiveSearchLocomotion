@@ -1,3 +1,4 @@
+import queue
 import threading
 import time
 import numpy as np
@@ -55,6 +56,13 @@ class StickInsectEnv:
             self.ros_thread = threading.Thread(target=self.executor.spin, daemon=True)
             self.ros_thread.start()
             
+            # 1. Create a queue for telemetry
+            self.telemetry_queue = queue.Queue(maxsize=10)
+            
+            # 2. Start the background publisher thread
+            self.pub_thread = threading.Thread(target=self._telemetry_worker, daemon=True)
+            self.pub_thread.start()
+            
         # 4. Viewer Initialization
         if self.has_viewer:
             self.viewer = mujoco.viewer.launch_passive(self.model, self.data, show_left_ui=False, show_right_ui=False)
@@ -78,6 +86,8 @@ class StickInsectEnv:
         self.leg_torque_feedforward_fb = []
 
         self.grf_fb = []
+        
+        self.all_probabilities = []
 
         # ['FR_J1', 'FR_J2', 'FR_J3', 'FR_J4', 
         #  'BR_J1', 'BR_J2', 'BR_J3', 'BR_J4', 
@@ -102,13 +112,20 @@ class StickInsectEnv:
         x_start = -1
         tg = TerrainGenerator()
         solid_terrain_xml                = tg.generate_flat_terrain(  name = 'flat_terrain_1',            n_rows=25,    n_cols=50,            start_pos=(x_start, 0, 1.0))
-        soft_terrain_xml                 = tg.generate_soft_terrain(  name = 'soft_terrain_1',            n_rows=25,    n_cols=50,            start_pos=(x_start+(6.25)*3, 0, 0.90))
-        muddy_terrain_xml                = tg.generate_muddy_terrain( name = 'muddy_terrain_1',           n_rows=25,    n_cols=50,             start_pos=(x_start+(6.25)*2, 0, 0.93))
+        muddy_terrain_xml                = tg.generate_muddy_terrain( name = 'muddy_terrain_1',           n_rows=25,    n_cols=50,             start_pos=(x_start+(6.25)*2-0.05, 0, 0.96))
         slippery_terrain_xml             = tg.generate_slippery_terrain ( name = 'slippery_terrain_1',    n_rows=25,    n_cols=50,     start_pos=(x_start+(6.25)*1, 0, 0.90))
+        # soft_terrain_xml                 = tg.generate_soft_terrain(  name = 'soft_terrain_1',            n_rows=25,    n_cols=50,            start_pos=(x_start+(6.25)*2, 0, 0.90))
         # rough_terrain_xml                = tg.generate_rough_terrain(     name = 'rough_terrain_1',   n_rows=25, n_cols=25,         start_pos=(x_start+(6.25)*2, 0, 1.0))
         # water_terrain_xml                = tg.generate_flat_terrain(  name = 'flat_terrain_1',    n_rows=25,  n_cols=25,            start_pos=(x_start, 0, 10.0))
         
-        terrain_xml = solid_terrain_xml  + muddy_terrain_xml + slippery_terrain_xml + soft_terrain_xml
+        
+        water_terrain_xml                = tg.generate_flat_terrain(  name = 'slope',            
+                                                                    n_rows=50,    
+                                                                    n_cols=50,            
+                                                                    start_pos=(x_start+(6.25)*3-0.10, 0, 1.0),
+                                                                    slope_deg=-2.5)
+        
+        terrain_xml = solid_terrain_xml  + muddy_terrain_xml + slippery_terrain_xml + water_terrain_xml
         
         # terrain_xml  = water_terrain_xml
 
@@ -237,7 +254,7 @@ class StickInsectEnv:
         # Array to hold the torques from the previous timestep
         self.prev_ctrl = np.zeros(self.model.nu)
 
-    def step(self, targets, cpg_outputs):
+    def step(self, targets, cpg_outputs, all_probabilities):
         """
         Takes target joint positions (e.g. from CPG-RBF network), 
         applies MuscleModel math, handles hydrodynamics, and steps physics.
@@ -249,7 +266,7 @@ class StickInsectEnv:
         self.feedback_clear()
         step_energy = 0.0 # NEW
 
-        
+        self.all_probabilities = all_probabilities
         for name, ctrl in self.controllers.items():
             q = self.data.qpos[self.qpos_ids[name]]
             dq = self.data.qvel[self.qvel_ids[name]]
@@ -572,28 +589,76 @@ class StickInsectEnv:
                 self.ros_node.destroy_node()
                 rclpy.shutdown()
                 
+    def _telemetry_worker(self):
+        """Runs in the background, publishing data without blocking MuJoCo."""
+        while True:
+            data = self.telemetry_queue.get()
+            
+            if data is None:  # Exit signal
+                break
+                
+            # Publish all arrays
+            self.ros_node.publish_joint_cmd(data['joint_cmd'])
+            self.ros_node.publish_joint_angle(data['joint_angle'])
+            self.ros_node.publish_joint_velocity(data['joint_velocity'])
+            self.ros_node.publish_joint_stiffness(data['joint_stiffness'])
+            self.ros_node.publish_joint_damping(data['joint_damping'])
+            self.ros_node.publish_joint_torque_ff(data['joint_torque_ff'])
+            self.ros_node.publish_joint_torque_output(data['joint_torque_out'])
+            self.ros_node.publish_joint_damping_power(data['joint_damping_power'])
+            
+            self.ros_node.publish_leg_stiffness(data['leg_stiffness'])
+            self.ros_node.publish_leg_damping(data['leg_damping'])
+            self.ros_node.publish_leg_torque_ff(data['leg_torque_ff'])
+            
+            self.ros_node.publish_class_possibility(data['class_possibility'])
+            self.ros_node.publish_grf(data['grf'])
+            self.ros_node.publish_cpg(data['cpg'])
+            
+            self.ros_node.publish_termination_status(data['termination'])
+            
+            # Notify the queue that the task is complete
+            self.telemetry_queue.task_done()
+
+        
     def _handle_ros_feedback(self):
-        """Keep your ROS logic cleanly separated for when you need telemetry."""
-        # rclpy.spin_once(self.ros_node, timeout_sec=0.0)
+        """Pushes telemetry data to the background queue instantly."""
+        
+        # ==========================================
+        # ⏱️ THROTTLE TO 10 Hz
+        # ==========================================
+        target_ros_hz = 10 
+        physics_hz = int(1.0 / self.model.opt.timestep)
+        
+        # If physics is 500Hz, this forces it to skip 49 steps and only push on the 50th
+        if self.step_count % max(1, physics_hz // target_ros_hz) != 0:
+            return
+        # ==========================================
 
-        self.ros_node.publish_joint_cmd(self.joint_angles_cmd)
-        self.ros_node.publish_joint_angle(self.joint_angle_fb)
-        self.ros_node.publish_joint_velocity(self.joint_velocity_fb)
-        self.ros_node.publish_joint_stiffness(self.joint_stiffness_fb)
-        self.ros_node.publish_joint_damping(self.joint_damping_fb)
-        self.ros_node.publish_joint_torque_ff(self.joint_torque_feedforward_fb)
-        self.ros_node.publish_joint_torque_output(self.joint_torque_output_fb)
-        self.ros_node.publish_joint_damping_power(self.joint_damping_power_fb)
-
-        self.ros_node.publish_leg_stiffness(self.leg_stiffness_fb)
-        self.ros_node.publish_leg_damping(self.leg_damping_fb)
-        self.ros_node.publish_leg_torque_ff(self.leg_torque_feedforward_fb)
-
-
-        self.ros_node.publish_grf(self.grf_fb)
-        self.ros_node.publish_cpg(self.joint_cpg_output)
-
-        self.ros_node.publish_termination_status(False)
+        telemetry_data = {
+            'joint_cmd': self.joint_angles_cmd.copy(),
+            'joint_angle': self.joint_angle_fb.copy(),
+            'joint_velocity': self.joint_velocity_fb.copy(),
+            'joint_stiffness': self.joint_stiffness_fb.copy(),
+            'joint_damping': self.joint_damping_fb.copy(),
+            'joint_torque_ff': self.joint_torque_feedforward_fb.copy(),
+            'joint_torque_out': self.joint_torque_output_fb.copy(),
+            'joint_damping_power': self.joint_damping_power_fb.copy(),
+            
+            'leg_stiffness': self.leg_stiffness_fb.copy(),
+            'leg_damping': self.leg_damping_fb.copy(),
+            'leg_torque_ff': self.leg_torque_feedforward_fb.copy(),
+            
+            'class_possibility': self.all_probabilities.copy(),
+            'grf': self.grf_fb.copy(),
+            'cpg': self.joint_cpg_output.copy(),
+            'termination': False
+        }
+        
+        try:
+            self.telemetry_queue.put_nowait(telemetry_data)
+        except queue.Full:
+            pass # Drop ROS frame if the network is lagging behind
     
     def feedback_clear(self):
         """Clears all feedback lists to prepare for the next episode."""
@@ -606,6 +671,7 @@ class StickInsectEnv:
         self.joint_torque_feedforward_fb.clear()
         self.joint_torque_output_fb.clear()
         self.joint_damping_power_fb.clear()
+        self.all_probabilities = []
         self.joint_names.clear()
         self.leg_stiffness_fb.clear()
         self.leg_damping_fb.clear()

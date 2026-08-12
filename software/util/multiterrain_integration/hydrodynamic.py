@@ -108,14 +108,29 @@ class Hydrodynamics:
             f_buoy_mag = self.density * self.gravity * (props['vol'] * submerged_ratio)
             data.xfrc_applied[i][2] += f_buoy_mag
 
+            # # ==========================================
+            # # 4. GET EXACT VELOCITY AT CENTER OF PRESSURE
+            # # ==========================================
+            # obj_vel = np.zeros(6)
+            # mujoco.mj_objectVelocity(self.model, data, mujoco.mjtObj.mjOBJ_BODY, i, obj_vel, 0)
+            
+            # ang_vel = obj_vel[0:3]
+            # com_vel = obj_vel[3:6]
+            
+            # # Velocity at the Paddle = CoM Velocity + (Angular Velocity × Lever Arm)
+            # vel = com_vel + np.cross(ang_vel, r_vector)
+            # speed = np.linalg.norm(vel)
+            
             # ==========================================
             # 4. GET EXACT VELOCITY AT CENTER OF PRESSURE
             # ==========================================
-            obj_vel = np.zeros(6)
+            obj_vel = np.zeros(6, dtype=np.float64)
             mujoco.mj_objectVelocity(self.model, data, mujoco.mjtObj.mjOBJ_BODY, i, obj_vel, 0)
             
-            ang_vel = obj_vel[0:3]
-            com_vel = obj_vel[3:6]
+            # Explicitly cast to standard numpy arrays to prevent 'moveaxis' dimension crashes
+            ang_vel = np.array(obj_vel[0:3], dtype=np.float64)
+            com_vel = np.array(obj_vel[3:6], dtype=np.float64)
+            r_vector = np.array(cop_pos, dtype=np.float64) - np.array(data.xipos[i], dtype=np.float64)
             
             # Velocity at the Paddle = CoM Velocity + (Angular Velocity × Lever Arm)
             vel = com_vel + np.cross(ang_vel, r_vector)

@@ -29,6 +29,8 @@ class StickInsectNode(Node):
         self.ros2_node_started_pub      = self.create_publisher( Bool, '/diving_beetle/started_cmd', 1 )
         self.execute_control_pub        = self.create_publisher( Bool, '/diving_beetle/execute_control_cmd', 1 )
         
+        self.class_possibility_pub        = self.create_publisher( Float32MultiArray, '/diving_beetle/class_possibility_fb', 1 )
+        
 
         self.joint_cmd = {'FR': [0.0, 0.0, 0.0, 0.0],
                           'BR': [0.0, 0.0, 0.0, 0.0],
@@ -120,3 +122,8 @@ class StickInsectNode(Node):
         msg = Float32MultiArray()
         msg.data = [float(t) for t in torques]
         self.leg_torque_ff_pub.publish(msg)
+        
+    def publish_class_possibility(self, probabilities):
+        msg = Float32MultiArray()
+        msg.data = [float(p) for p in probabilities]
+        self.class_possibility_pub.publish(msg)

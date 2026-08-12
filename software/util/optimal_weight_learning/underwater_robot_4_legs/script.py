@@ -1,3 +1,4 @@
+import random
 import time
 import numpy as np
 import mujoco
@@ -21,7 +22,7 @@ JOINT_GROUPS = ['FR', 'BR', 'FL', 'BL']
 NUM_JOINTS_PER_GROUP = 4
 
 class StickInsectEnv:
-    def __init__(self, start_time=1.0, enable_ros=False, render=False):
+    def __init__(self, start_time=1.0, enable_ros=False, render=False, randomize_env=False):
         """
         Object-oriented wrapper for the MuJoCo simulation to allow for rapid 
         episodic resets during PIBB optimization.
@@ -30,6 +31,7 @@ class StickInsectEnv:
         self.enable_ros = enable_ros
         self.has_viewer = render
         self.robot_fixed = False
+        self.randomize_env = randomize_env  # 🚨 NEW: Store randomization flag
 
         self.frame_skip = 1
         
@@ -53,35 +55,89 @@ class StickInsectEnv:
             self._setup_camera()
 
     def _build_environment(self):
-        x_start = -20
+        x_start = -5.0
         tg = TerrainGenerator()
-        # terrain_xml             = tg.generate_rough_terrain(    name = 'rough_terrain_1',   n_rows=100, n_cols=100, start_pos=(x_start+15, 0, 1.5))
-        # terrain_xml                 = tg.generate_flat_terrain(     name = 'flat_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
-        # terrain_xml                 = tg.generate_soft_terrain(     name = 'soft_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
-        # terrain_xml                 = tg.generate_muddy_terrain(     name = 'muddy_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
-        # terrain_xml                 = tg.generate_slippery_terrain (     name = 'slippery_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
         
-        terrain_xml                 = tg.generate_flat_terrain(     name = 'water_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, -1.5))
-
-        # rough_water_terrain_xml       = tg.generate_rough_terrain(    name = 'rough_water_terrain_1',   n_rows=36, n_cols=36, start_pos=(-16.25 + x_start, 0, 0.25), h_dev=0.05)
-        # flat_water_terrain_xml        = tg.generate_flat_terrain(     name = 'flat_water_terrain_1',    n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 9, 0, 0.25))
-        # sponge_water_terrain_xml      = tg.generate_sponge_terrain(   name = 'sponge_water_terrain_1',  n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 18, 0, 0.25))
-        # sandy_water_terrain_xml       = tg.generate_sandy_terrain(    name = 'sandy_water_terrain_1',   n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 27, 0, 0.25))
-        # muddy_water_terrain_xml       = tg.generate_muddy_terrain(    name = 'muddy_water_terrain_1',   n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 36, 0, 0.25))
-
+        # ==========================================
+        # 🚨 RANDOMIZE TERRAIN GENERATION
+        # ==========================================
+        if self.randomize_env:
+            # Randomly pick a terrain type for this specific rollout
+            terrain_choice = 'flat'
+            
+            # Randomize slope between -10 (downhill) and +10 (uphill) degrees
+            slope = random.uniform(-10.0, 10.0)
+            
+            if terrain_choice == 'flat':
+                # Randomize standard friction (Normal is ~2.0)
+                fric = random.uniform(0.8, 3.0)
+                
+                terrain_xml = tg.generate_flat_terrain(
+                    name='terrain', n_rows=100, n_cols=100, start_pos=(x_start, 0, 2.0), 
+                    slope_deg=slope, 
+                    friction=(fric, 0.05, 0.01)
+                )
+                
+            elif terrain_choice == 'rough':
+                h_dev = random.uniform(0.02, 0.08)
+                fric = random.uniform(0.8, 3.0)
+                
+                terrain_xml = tg.generate_rough_terrain(
+                    name='terrain', n_rows=100, n_cols=100, start_pos=(x_start, 0, 2.0), 
+                    h_dev=h_dev, 
+                    slope_deg=slope, 
+                    friction=(fric, 0.05, 0.01)
+                )
+                
+            elif terrain_choice == 'slippery':
+                # Randomize extremely low sliding friction
+                fric = random.uniform(0.001, 0.08)
+                
+                terrain_xml = tg.generate_slippery_terrain(
+                    name='terrain', n_rows=100, n_cols=100, start_pos=(x_start, 0, 2.0), 
+                    slope_deg=slope, 
+                    friction=(fric, 0.005, 0.0001)
+                )
+                
+            elif terrain_choice == 'muddy':
+                fric = random.uniform(0.5, 1.5)
+                # Mud physics: Overdamped (dampratio > 1.0) makes it sticky/viscous
+                timeconst = random.uniform(0.15, 0.4) # Higher = slower to react
+                dampratio = random.uniform(2.0, 5.0)  # High = very viscous
+                width = random.uniform(0.1, 0.25)     # Depth of the mud penetration
+                
+                terrain_xml = tg.generate_muddy_terrain(
+                    name='terrain', n_rows=100, n_cols=100, start_pos=(x_start, 0, 2.0), 
+                    slope_deg=slope, 
+                    friction=(fric, 0.05, 0.01),
+                    solref=(timeconst, dampratio), 
+                    solimp=(0.0, 0.99, width)
+                )
+                
+            elif terrain_choice == 'soft':
+                fric = random.uniform(0.8, 2.0)
+                # Sponge physics: Underdamped (dampratio < 1.0) makes it bouncy/springy
+                timeconst = random.uniform(0.05, 0.15) # Quick responsiveness
+                dampratio = random.uniform(0.4, 0.9)   # Low = bouncy/springy return
+                width = random.uniform(0.05, 0.15)     # Depth of the sponge deformation
+                
+                terrain_xml = tg.generate_soft_terrain(
+                    name='terrain', n_rows=100, n_cols=100, start_pos=(x_start, 0, 2.0), 
+                    slope_deg=slope, 
+                    friction=(fric, 0.05, 0.01),
+                    solref=(timeconst, dampratio), 
+                    solimp=(0.1, 0.99, width)
+                )
+        else:
+            # Default static behavior if randomization is off
+            terrain_xml = tg.generate_flat_terrain(name='water_terrain_1', n_rows=500, n_cols=500, start_pos=(x_start, 0, -1.5))
 
         with open("main_scene.xml", "r") as f:
             base_xml = f.read()
         complete_xml = base_xml.replace("INCLUDE_TERRAIN", terrain_xml, 1)
         self.model = mujoco.MjModel.from_xml_string(complete_xml)
 
-        # self.model = mujoco.MjModel.from_binary_path("fast_rough_scene.mjb")
-
-
         self.data = mujoco.MjData(self.model)
-
-        # mujoco.mj_saveModel(self.model, "fast_rough_scene.mjb", None)
-        # print("Binary model saved!")
 
     def _get_actuator_name(self, idx):
         addr = self.model.name_actuatoradr[idx]

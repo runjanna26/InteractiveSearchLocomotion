@@ -125,7 +125,7 @@ class ESN_RR_Classification:
         probabilities = torch.softmax(raw_scores, dim=0).cpu().numpy()
         
         predicted_class = int(np.argmax(probabilities))
-        return predicted_class, float(probabilities[predicted_class])
+        return predicted_class, float(probabilities[predicted_class]), probabilities
 
     def save_model(self, filepath="esn_model_params.pt"):
         save_dict = {

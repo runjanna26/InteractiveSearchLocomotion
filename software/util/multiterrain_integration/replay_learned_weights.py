@@ -6,12 +6,8 @@ import subprocess
 import signal
 import datetime
 
-# import dash
-# from dash import dcc, html
-# from dash.dependencies import Input, Output
-# import plotly.graph_objects as go
-# from plotly.subplots import make_subplots
-# import threading
+import threading
+import queue
 
 from script import StickInsectEnv
 from cpg_rbf.cpg_so2 import CPG_SO2, CPG_LOCO
@@ -23,13 +19,13 @@ from classification_model_training.models.model_1_esn_rr.env_pred import ESN_RR_
 # CONFIGURATION
 # ======================================================
 
-# 0: 'solid_ground', 
-# 1: 'soft_ground', 
-# 2: 'slippery_ground', 
-# 3: 'rough_ground', 
-# 4: 'muddy_ground', 
-# 5: 'water_surface'
-   
+# 'solid_ground', 
+# 'soft_ground', 
+# 'slippery_ground', 
+# 'rough_ground', 
+# 'muddy_ground', 
+# 'water_surface'
+
 gait = "solid_ground"
 environment_setup = "water_surface"
 
@@ -171,17 +167,111 @@ if __name__ == "__main__":
     # Load ESN Model
     environment_classifier_model = ESN_RR_Classification()
     environment_classifier_model.load_model("classification_model_training/trained_models_final/model_1_esn_config_11_w_cma_es.pt")
-    print(environment_classifier_model.ignore_time_column)
+    
+    all_probabilities = []
     
     # Terrain Mapping Dictionary for printing the prediction
     ID_TO_TERRAIN = {0: 'solid_ground',
                     1: 'slippery_ground',
                     2: 'muddy_ground',
                     3: 'water_surface'}
+    
+    # Map terrain IDs directly to their loaded weights for dynamic switching
+    ID_TO_WEIGHTS = {
+        0: weights_solid,
+        1: weights_slip,
+        2: weights_muddy,
+        3: weights_water
+    }
+        
+        
+    # ==========================================
+    # 4. THREADING ARCHITECTURE SETUP
+    # ==========================================
+    cycle_queue = queue.Queue(maxsize=5)
+    state_lock = threading.Lock()
+    
+    # This dictionary securely shares state between the classifier thread and physics loop
+    shared_state = {
+        'active_weights_target': weights_solid,
+        'trigger_slowdown': False,
+        'all_probabilities': []
+    }
+    
+    REQUIRED_CONSECUTIVE_PREDS = 2
+    
+    def classifier_worker():
+        current_gait_class = 0          
+        last_predicted_class = -1       
+        consecutive_pred_count = 0      
+        
+        while True:
+            item = cycle_queue.get()
+            if item is None:  # Exit signal
+                break
+                
+            normalized_cycle_dict, sim_time = item
+            
+            # --- Reconstruct the 2D Matrix (NO DUMMY TIME COLUMN) ---
+            time_col = np.linspace(0, 1, 100).reshape(-1, 1) 
+            
+            esn_input_list = []
+            for s in sensors_to_segment:
+                sensor_data = normalized_cycle_dict[s]
+                if len(sensor_data.shape) == 1:
+                    sensor_data = sensor_data.reshape(-1, 1)
+                
+                # Re-add the time column to match the offline dataset's shape (124 columns total)
+                sensor_w_time = np.hstack([sensor_data, time_col])
+                esn_input_list.append(sensor_w_time)
+                
+            esn_input = np.concatenate(esn_input_list, axis=1)
+            
+            # --- Inference ---
+            predicted_class, confidence, all_probabilities = environment_classifier_model.predict(esn_input)
+            predicted_terrain_name = ID_TO_TERRAIN.get(predicted_class, "Unknown Terrain")
+            
+            print(f"\n🤖 [Time: {sim_time:.2f}s] ESN Predicts: {predicted_terrain_name.upper()} (Class {predicted_class}) with {confidence:.2f}% confidence.")
+            
+            # --- Debounce & Reflex Logic ---
+            trigger_slowdown = False
+            new_weights = None
+            
+            if predicted_class == last_predicted_class:
+                consecutive_pred_count += 1
+            else:
+                consecutive_pred_count = 1
+                last_predicted_class = predicted_class
+                
+                # Instant cautious reflex on terrain boundary
+                if predicted_class != current_gait_class:
+                    trigger_slowdown = True
+                    
+            print(f"   [Prediction Counter: {consecutive_pred_count} / {REQUIRED_CONSECUTIVE_PREDS}]")
+
+            if consecutive_pred_count >= REQUIRED_CONSECUTIVE_PREDS and confidence >= 0.1:
+                if predicted_class in ID_TO_WEIGHTS and current_gait_class != predicted_class:
+                    new_weights = ID_TO_WEIGHTS[predicted_class]
+                    current_gait_class = predicted_class
+                    print(f"🔄 Consistent predictions reached! Adapting gait target to: {predicted_terrain_name.upper()}...")
+            
+            # --- Update Shared State Safely ---
+            with state_lock:
+                shared_state['all_probabilities'] = all_probabilities
+                if trigger_slowdown:
+                    shared_state['trigger_slowdown'] = True
+                if new_weights is not None:
+                    shared_state['active_weights_target'] = new_weights
+                    
+            cycle_queue.task_done()
+
+    # Start the background thread
+    classifier_thread = threading.Thread(target=classifier_worker, daemon=True)
+    classifier_thread.start()
     # ==========================================
     # 4. INITIALIZE ENVIRONMENT
     # ==========================================
-    env = StickInsectEnv(enable_ros=True, render=ENABLE_RENDERING) 
+    env = StickInsectEnv(enable_ros=False, render=ENABLE_RENDERING) 
     env.reset()
     
     # Calculate exact steps needed for 20 seconds based on MuJoCo timestep
@@ -205,75 +295,21 @@ if __name__ == "__main__":
             stderr=subprocess.DEVNULL
         )
 
-    # # ==========================================
-    # # 🚨 LIVE PLOTLY DASHBOARD INITIALIZATION
-    # # ==========================================
-    # # 1. Global dictionary to share data between the Physics Loop and the Web Server
-    # live_plotly_data = {
-    #     'foot_force': np.zeros(100),
-    #     'joint_angle_fb': np.zeros(100),
-    #     'joint_velocity_fb': np.zeros(100),
-    #     'prediction': "WAITING FOR CYCLE..."
-    # }
-
-    # # 2. Build the Dash App
-    # app = dash.Dash(__name__)
-
-    # app.layout = html.Div([
-    #     html.H2(id='live-title', style={'textAlign': 'center', 'fontFamily': 'Arial', 'color': 'darkred'}),
-    #     dcc.Graph(id='live-graph'),
-    #     # This timer triggers the graph to request new data every 250 milliseconds
-    #     dcc.Interval(id='graph-update', interval=250, n_intervals=0) 
-    # ])
-
-    # # 3. Define how the graph updates
-    # @app.callback(
-    #     [Output('live-graph', 'figure'), Output('live-title', 'children')],
-    #     [Input('graph-update', 'n_intervals')]
-    # )
-    # def update_graph(n):
-    #     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
-    #                         subplot_titles=("Foot Force (Front-Right)", "Joint Angle (Front-Right)", "Joint Velocity (Front-Right)"))
-
-    #     x_data = np.linspace(0, 100, 100)
-
-    #     # Pull the latest data from our global dictionary
-    #     fig.add_trace(go.Scatter(x=x_data, y=live_plotly_data['foot_force'], mode='lines', line=dict(color='blue', width=2)), row=1, col=1)
-    #     fig.add_trace(go.Scatter(x=x_data, y=live_plotly_data['joint_angle_fb'], mode='lines', line=dict(color='green', width=2)), row=2, col=1)
-    #     fig.add_trace(go.Scatter(x=x_data, y=live_plotly_data['joint_velocity_fb'], mode='lines', line=dict(color='red', width=2)), row=3, col=1)
-
-    #     fig.update_layout(height=800, showlegend=False, template="plotly_white")
-    #     fig.update_xaxes(title_text="Normalized Gait Cycle (%)", row=3, col=1)
-
-    #     title = f"Live ESN Prediction: {live_plotly_data['prediction']}"
-    #     return fig, title
-
-    # def run_dash_server():
-    #     # Run the web server (reloader must be False to play nicely with MuJoCo threading)
-    #     app.run(debug=False, use_reloader=False, port=8050)
-
-    # # 4. Start the Web Server in a background thread
-    # dash_thread = threading.Thread(target=run_dash_server, daemon=True)
-    # dash_thread.start()
-    # print("\n📈 Live Plotly Dashboard running! Open your browser to: http://127.0.0.1:8050\n")
-    # ==========================================
-
-    # Map terrain IDs directly to their loaded weights for dynamic switching
-    ID_TO_WEIGHTS = {
-        0: weights_solid,
-        1: weights_slip,
-        2: weights_muddy,
-        3: weights_water
-    }
+  
     
     # Set the initial default gait (e.g., solid ground) before the loop starts
     active_weights_target = weights_solid
     
     # --- DEBOUNCE / ROBUSTNESS TRACKERS ---
-    current_gait_class = 0          # Tracks the gait the robot is physically executing right now
-    last_predicted_class = -1       # Tracks the last ESN prediction
-    consecutive_pred_count = 0      # Counts how many times in a row it was predicted
-    REQUIRED_CONSECUTIVE_PREDS = 2  # Change to 10 if you want it to wait longer
+    current_gait_class = 0          
+    last_predicted_class = -1       
+    consecutive_pred_count = 0      
+    REQUIRED_CONSECUTIVE_PREDS = 2  
+
+    # --- NOVEL CAUTIOUS STEPPING REFLEX ---
+    current_phi = CPG_PHI           # Track the live speed
+    phi_recovery_rate = 0.5      # Tune this to control how fast it speeds back up
+    # --------------------------------------
     
     TRANSTION_RATE = 0.005
     # --------------------------------------
@@ -292,7 +328,7 @@ if __name__ == "__main__":
         # --------------------------------------------------
         
         # if gait == "solid_ground":
-        #     active_weights_target = weights_solid
+        #     active_weights_target = weights_soslid
         # elif gait == "water_surface":
         #     active_weights_target = weights_water
         # elif gait == "soft_ground":
@@ -307,15 +343,9 @@ if __name__ == "__main__":
         #     print(f"Error: Unknown gait '{gait}'. Please choose a valid gait.")
         #     exit()
             
-        # Update CPGs
-        for side in LEG_SIDE:
-            for index in LEG_INDEX:
-                cpg_output[f'{index}{side}'] = cpg_modulated[f'{index}{side}'].modulate_cpg(
-                    cpg_mod_cmd[f'{index}{side}']['phi'], 
-                    cpg_mod_cmd[f'{index}{side}']['pause_input'], 
-                    cpg_mod_cmd[f'{index}{side}']['rewind_input']
-                )
         
+    
+    
         joint_targets = {}
         cpg_outputs = {}
         feedback_t = {}
@@ -348,108 +378,72 @@ if __name__ == "__main__":
                     cpg_outputs[actuator_name] = cpg_output[f'{index}{side}']['cpg_output_0']
             
         # Pass the flat dictionary to the environment
-        feedback_t = env.step(joint_targets, cpg_outputs)
+        feedback_t = env.step(joint_targets, cpg_outputs, all_probabilities)
         
         
         # ==================================================
         # 🚨 ONLINE GAIT SEGMENTATION & CLASSIFICATION
         # ==================================================
-        # 1. Get the Front-Right Leg's CPG output as our "master clock"
         current_cpg_ref = feedback_t['cpg_output'][0]
         
         cycle_completed_this_step = False
         normalized_cycle_dict = {}
 
-        # 2. Feed the ENTIRE time-step arrays into the segmenters simultaneously
-        # (Assuming you initialized `segmenters` as a dict: {sensor: OnlineGaitSegmenter()})
         for sensor_key in sensors_to_segment:
             raw_cycle = segmenters[sensor_key].add_data_point(
                 current_cpg_ref, 
                 feedback_t[sensor_key]  # <-- This passes the full array (length 4 or 16) at once
             )
             
-            # 3. If the cycle just finished right now, normalize it to 100 points
             if raw_cycle is not None:
                 cycle_completed_this_step = True
                 normalized_cycle_dict[sensor_key] = OnlineGaitSegmenter.normalize_cycle(raw_cycle, num_points=100)
                 
-        # # 4. Trigger the ESN Prediction!
-        # if cycle_completed_this_step and len(normalized_cycle_dict) == len(sensors_to_segment):
-        #     print(f"\n[Time: {sim_time:.2f}s] ✅ Full Gait Cycle Segmented!")
-            
-        #     # Reconstruct the 54-column shape by prepending a dummy 'Time' column
-        #     time_col = np.linspace(0, 1, 100).reshape(-1, 1) 
-            
-        #     esn_input_list = []
-        #     for s in sensors_to_segment:
-        #         sensor_w_time = np.hstack([time_col, normalized_cycle_dict[s]])
-        #         esn_input_list.append(sensor_w_time)
-                
-        #     # Stack horizontally to create the final 2D matrix (100 x 54)
-        #     esn_input = np.concatenate(esn_input_list, axis=1)
-            
-        #     # Predict the terrain 
-        #     predicted_class, confidence = environment_classifier_model.predict(esn_input)
-        #     predicted_terrain_name = ID_TO_TERRAIN.get(predicted_class, "Unknown Terrain")
-            
-        #     print(f"🤖 ESN Predicts: {predicted_terrain_name.upper()} (Class {predicted_class}) with {confidence:.2f}% confidence.")
-        # # ==================================================
-
-        # 4. Trigger the ESN Prediction!
+        # --------------------------------------------------
+        # PUSH TO CLASSIFIER THREAD
+        # --------------------------------------------------
         if cycle_completed_this_step and len(normalized_cycle_dict) == len(sensors_to_segment):
-            # print(f"\n[Time: {sim_time:.2f}s] ✅ Full Gait Cycle Segmented!")
-            
-            # Reconstruct the 54-column shape by prepending a dummy 'Time' column
-            time_col = np.linspace(0, 1, 100).reshape(-1, 1) 
-            
-            esn_input_list = []
-            for s in sensors_to_segment:
-                sensor_w_time = np.hstack([normalized_cycle_dict[s], time_col])
-                esn_input_list.append(sensor_w_time)
-                
-            # Stack horizontally to create the final 2D matrix (100 x 54)
-            esn_input = np.concatenate(esn_input_list, axis=1)
-            
-            # Predict the terrain 
-            predicted_class, confidence = environment_classifier_model.predict(esn_input)
-            predicted_terrain_name = ID_TO_TERRAIN.get(predicted_class, "Unknown Terrain")
-            
-            print(f"🤖 ESN Predicts: {predicted_terrain_name.upper()} (Class {predicted_class}) with {confidence:.2f}% confidence.")
-            
-            # ==================================================
-            # 🚨 DYNAMIC GAIT SWITCHING WITH DEBOUNCE
-            # ==================================================
-            # 1. Update the consecutive prediction counter
-            if predicted_class == last_predicted_class:
-                consecutive_pred_count += 1
-            else:
-                consecutive_pred_count = 1
-                last_predicted_class = predicted_class
-                
-            print(f"   [Prediction Counter: {consecutive_pred_count} / {REQUIRED_CONSECUTIVE_PREDS}]")
+            try:
+                # Put a copy of the dict in the queue so the segmenter can keep working safely
+                cycle_queue.put_nowait((normalized_cycle_dict.copy(), sim_time))
+            except queue.Full:
+                print("⚠️ Classifier thread is busy! Dropping frame to maintain real-time performance.")
 
-            # 2. Check if we hit the required consecutive threshold AND confidence
-            if consecutive_pred_count >= REQUIRED_CONSECUTIVE_PREDS and confidence >= 0.1:
-                
-                # 3. Only execute the transition if we aren't ALREADY using this gait
-                if predicted_class in ID_TO_WEIGHTS and current_gait_class != predicted_class:
-                    active_weights_target = ID_TO_WEIGHTS[predicted_class]
-                    current_gait_class = predicted_class
-                    print(f"🔄 Consistent predictions reached! Adapting gait target to: {predicted_terrain_name.upper()}...")
-            # ==================================================
-            # ==================================================
-            # 🚨 PUSH DATA TO PLOTLY SERVER
-            # ==================================================
-            # Extract the first column (Front-Right leg/joint) and push to the dictionary
-            # live_plotly_data['foot_force'] = normalized_cycle_dict['cpg_output'][:, 0]
-            # live_plotly_data['joint_angle_fb'] = normalized_cycle_dict['joint_angle_fb'][:, 0]
-            # live_plotly_data['joint_velocity_fb'] = normalized_cycle_dict['joint_velocity_fb'][:, 0]
             
-            # # Push the prediction string so the dashboard title updates
-            # live_plotly_data['prediction'] = f"{predicted_terrain_name.upper()} ({confidence:.2f}%)"
-            # ==================================================
+        # ==================================================
+        # 🚨 CAUTIOUS STEPPING RECOVERY
+        # ==================================================
+        # If we are currently slowed down, gradually increase back to base speed
+        # if current_phi < CPG_PHI:
+        #     current_phi = min(CPG_PHI, current_phi + phi_recovery_rate)
+            
+        #     # Apply the recovering speed to the command dictionaries
+        #     for side in LEG_SIDE:
+        #         for index in LEG_INDEX:
+        #             cpg_mod_cmd[f'{index}{side}']['phi'] = current_phi
 
+        # Update CPGs (This is your existing code)
+        for side in LEG_SIDE:
+            for index in LEG_INDEX:
+                cpg_output[f'{index}{side}'] = cpg_modulated[f'{index}{side}'].modulate_cpg(
+                    cpg_mod_cmd[f'{index}{side}']['phi'], 
+                    cpg_mod_cmd[f'{index}{side}']['pause_input'], 
+                    cpg_mod_cmd[f'{index}{side}']['rewind_input']
+                )
 
+        # --------------------------------------------------
+        # THREAD-SAFE STATE RETRIEVAL
+        # --------------------------------------------------
+        with state_lock:
+            active_weights_target = shared_state['active_weights_target']
+            all_probabilities = shared_state['all_probabilities']
+            
+            # # Check if the classifier triggered a cautious stepping reflex
+            # if shared_state['trigger_slowdown']:
+            #     current_phi = CPG_PHI * 0.2
+            #     print(f"⚠️ Possible terrain change detected! Engaging cautious stepping (Speed dropped).")
+            #     # Reset the flag so it only triggers once
+            #     shared_state['trigger_slowdown'] = False
 
         # Maintain real-time loop execution
         while (time.perf_counter() - step_start) < dt:
@@ -458,6 +452,8 @@ if __name__ == "__main__":
             
 
 
+    cycle_queue.put(None)
+    classifier_thread.join(timeout=1.0)
     print("Replay finished.")
     env.close()
     
