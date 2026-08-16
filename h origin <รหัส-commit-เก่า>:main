@@ -1,0 +1,122 @@
+[33m34bf8cf[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m update final test
+[33m9a214ba[m complete transition in different terrains!!
+[33mf0f37e0[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m update random env PIBB
+[33m8cdf246[m integration module update
+[33mb8f2f12[m update swimming learning weight
+[33m7eb302e[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion into main
+[33m9bf446c[m update swimming learning using paddle by HERO PC
+[33m2520dd6[m update new swimming learning with paddle by RunJs PC
+[33mca3a0c6[m upupdate re-imitate pattern learning and add paddle at the foot of dave robot
+[33mecbd212[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion
+[33m738a33f[m update replay for paper
+[33m42d12af[m update dave station and rmd torque control for the wrong version of motor
+[33md9d7e79[m plot accuracy bars
+[33md8e75a8[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion
+[33m302ca4a[m update haptr trained with noise model
+[33m322afa7[m update trained with noise model cnn/esn/tcn
+[33mdfc1418[m update pongbot walking (not walking yet)
+[33m8ace665[m update learn esn-rr with noise conf 1,2 and 3
+[33md07b418[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion into main
+[33mc7da992[m update training with noise augmentation
+[33m76a3b1b[m update pongbot training
+[33m99281b8[m update training esn_rr more config
+[33m1541831[m update training config6,7,8
+[33m5841bc7[m Update code and ignore large .pt model files
+[33mca44e1c[m[33m ([m[1;32magents/watery-parrot[m[33m, [m[1;32magents/project-environment-classifier-review[m[33m, [m[1;32magents/lively-sheep[m[33m)[m update test accuracy plots
+[33mf1abcc4[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion into main
+[33mc143a9a[m update new tcn models
+[33mf87ef3e[m update new cnn-rnn models
+[33m76029cf[m update plot
+[33m269810e[m update cnn-rnn and tcn model for training again (scaler mistake and GRU Slicing Bug)
+[33m3a253d3[m update full rolling model and real time classification
+[33m9550cf7[m merge
+[33m7d29665[m learned cnn rnn model
+[33m934f670[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion
+[33m8526044[m learned TCN
+[33m9faabbf[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion into main
+[33m9a45edf[m update learned haptr model
+[33m9bac03c[m update trained esn model
+[33mdd620e2[m update cnn_rnn training
+[33ma0774e4[m training esn
+[33mca86f04[m time to train but need to collect dataset with different gait first!!
+[33m9761c2f[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion into main
+[33m50bf104[m update figure
+[33m4d9ac31[m update collect data for terrain classification
+[33me018017[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion into main
+[33mb6d3621[m update for pulling
+[33mfa6f7f7[m update learning joint 1 sets
+[33md8809af[m update main learning: learn joint index 1
+[33m705b601[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion
+[33m1b9066f[m update learn to swim with trot
+[33m06a8626[m update swimming learnings
+[33mb872fc9[m update swimming gait learning complete!!, we will re-experiment!!
+[33med51db7[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion into main
+[33m73b7ac5[m update learning swimming gait
+[33m59134c0[m update re-experiment for
+[33mbf9eefa[m update  swimming learning (not finish)
+[33me1dce07[m Update underwater robot scene and add rough_terrain.xml
+[33m2956b64[m Finally, learn walking on solid ground!!
+[33m1a67eac[m update
+[33m02628fd[m update PIBB CPG-RBF training
+[33m604c0ba[m update plot env classification
+[33mc6e0877[m update env_pred version 2-5
+[33m1851fec[m update dtw-k-mean classifuier
+[33m22c1a53[m update muscle model
+[33m663bf45[m test motors with sine waves
+[33m4695e8b[m Test Motor
+[33m3e8232d[m Test Motor
+[33m4d5c82c[m update lastest version
+[33m54be447[m update new design 4-dof 4 leg robot and diving beetle pattern
+[33mf3c26b0[m update cpg rbg to the underwater pkg
+[33mc7595d6[m update encoder reading and integrate with rmd can motor
+[33m89bbd35[m test on rpi5
+[33mf3ffac0[m update try to develop swimming gait 2
+[33mefa3607[m update walking pattern plot compared air and water env.
+[33mdb90e53[m 1234
+[33mfe5417b[m update control node and create walking weights and feed back energy
+[33m29b3da6[m update execute ros2 node and sim script
+[33m9803a98[m update plot
+[33m662348b[m update plot air-water simulation plots
+[33ma6c4e4f[m update
+[33m67a7284[m update
+[33mc1517fa[m add water!! in mujuco
+[33m4790b80[m update publishers and plotjuggler
+[33m8f4d073[m Merge remote-tracking branch 'refs/remotes/origin/main'
+[33md2d412e[m update muscle with stick insect simualtion (mujoco)
+[33m8123cce[m update before new year holiday
+[33m4fe8f51[m update underwater full sensors test with helic joint
+[33m0a159ca[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion
+[33mb5702c2[m update tuning muscle
+[33m7a5b9f2[m merge
+[33mef5ecb2[m update
+[33mca09ccc[m update rmd_x_motor ros pkg and muscle model
+[33m6499b17[m update plot classify within cpg cycle
+[33md7422ef[m update classify plots
+[33m16456e7[m update plot
+[33m2c595d6[m test iterative learning control for motor dynamic modeling
+[33m24ed1b8[m update plot
+[33m4262532[m update plot stiffness
+[33mb6f1993[m update plot damping underwater experiments
+[33mc3d1e87[m update water experiment
+[33mc7bc051[m update plotjuggler latest version
+[33mf88ba37[m update
+[33m6f68e8e[m update muscle
+[33m649c127[m update muscle test
+[33m29a86b1[m update muscle model
+[33mf823c74[m Merge branch 'main' of github.com:runjanna26/InteractiveSearchLocomotion into main
+[33mbff3f7b[m update gripper sim
+[33m8c4f2f7[m update self-org with DIL and shift phase error
+[33m691fb55[m update
+[33m2ed1ca4[m update self-org with DIL
+[33m9bd1e60[m update pdf
+[33m0983872[m update README
+[33m62ef874[m update README
+[33mad62a63[m update to adjust phi and phase (pause_input) in progress
+[33m999cb6f[m update full individial cpg and ros2 interface and learn from pattern with footforces
+[33m858b10b[m update cpg-rbf pattern to stick insect sim
+[33m2210bc8[m small commit update
+[33m467f9dd[m update cpg pause resume rewind
+[33maf44019[m update imitated traj. and pause-resume feature
+[33m7a5b017[m update first commit again
+[33m47ffcf0[m update first commit
+[33m1e08709[m Initial commit

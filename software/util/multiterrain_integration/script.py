@@ -8,6 +8,7 @@ import rclpy
 import math
 from collections import deque
 
+import cv2
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
@@ -23,8 +24,12 @@ FOOT_NAMES = ['FOOT_FR', 'FOOT_BR', 'FOOT_FL', 'FOOT_BL']
 JOINT_GROUPS = ['FR', 'BR', 'FL', 'BL']
 NUM_JOINTS_PER_GROUP = 4
 
+CAM_DISTANCE = 2.5
+CAM_AZIMUTH = -90       # Rotate left/right (degrees)
+CAM_ELEVATE = -15       # Tilt up/down (degrees)
+
 class StickInsectEnv:
-    def __init__(self, start_time=1.0, enable_ros=False, render=False):
+    def __init__(self, start_time=1.0, enable_ros=False, render=False, record_video=False):
         """
         Object-oriented wrapper for the MuJoCo simulation to allow for rapid 
         episodic resets during PIBB optimization.
@@ -36,8 +41,13 @@ class StickInsectEnv:
 
         self.frame_skip = 1
         
+   
+        
         # 1. Generate Terrain and Load Model
         self._build_environment()
+        
+        
+        
         
         # 2. Initialize Custom Physics and Controllers
         self.hydro = Hydrodynamics(self.model, water_level=0.8)
@@ -67,6 +77,38 @@ class StickInsectEnv:
         if self.has_viewer:
             self.viewer = mujoco.viewer.launch_passive(self.model, self.data, show_left_ui=False, show_right_ui=False)
             self._setup_camera()
+            
+        
+        # --- CUSTOM VIDEO CAMERA SETUP ---
+        self.record_cam = mujoco.MjvCamera()
+        mujoco.mjv_defaultFreeCamera(self.model, self.record_cam)
+        
+        # 1. Get the robot's body ID
+        robot_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "robot")
+        
+        # 2. Apply your exact tracking and angle settings
+        self.record_cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+        self.record_cam.trackbodyid = robot_body_id
+        self.record_cam.distance = CAM_DISTANCE
+        self.record_cam.azimuth = CAM_AZIMUTH
+        self.record_cam.elevation = CAM_ELEVATE
+        
+        self.record_video = record_video
+        if self.record_video:
+            # Initialize headless renderer
+            self.vid_width = 1280
+            self.vid_height = 1080
+            self.renderer = mujoco.Renderer(self.model, height=self.vid_height, width=self.vid_width)
+            
+            # Setup OpenCV VideoWriter
+            video_name = 'video/diving_beetle_simulation.mp4'
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            self.video_fps = 30.0
+            self.video_writer = cv2.VideoWriter(video_name, fourcc, self.video_fps, (self.vid_width, self.vid_height))
+            
+            # Calculate frame skip to match 60 FPS
+            self.video_render_skip = max(1, int((1.0 / self.video_fps) / self.model.opt.timestep))
+            print("Video renderer recorded.")
 
         # ROS2 parameters
         self.joint_angles_cmd = []
@@ -88,6 +130,7 @@ class StickInsectEnv:
         self.grf_fb = []
         
         self.all_probabilities = []
+        self.online_cot = 0.0
 
         # ['FR_J1', 'FR_J2', 'FR_J3', 'FR_J4', 
         #  'BR_J1', 'BR_J2', 'BR_J3', 'BR_J4', 
@@ -107,33 +150,41 @@ class StickInsectEnv:
             'FOOT_FL': np.array([0.0, 0.0, 1.0, 1.0]), # Blue
             'FOOT_BL': np.array([1.0, 0.0, 1.0, 1.0])  # Magenta
         }
+        
+        # Target 60 FPS for rendering
+        self.render_fps = 60
+        self.render_step_skip = max(1, int((1.0 / self.render_fps) / self.model.opt.timestep))
 
     def _build_environment(self):
         x_start = -1
         tg = TerrainGenerator()
-        solid_terrain_xml                = tg.generate_flat_terrain(  name = 'flat_terrain_1',            n_rows=25,    n_cols=50,            start_pos=(x_start, 0, 1.0))
-        muddy_terrain_xml                = tg.generate_muddy_terrain( name = 'muddy_terrain_1',           n_rows=25,    n_cols=50,             start_pos=(x_start+(6.25)*2-0.05, 0, 0.96))
-        slippery_terrain_xml             = tg.generate_slippery_terrain ( name = 'slippery_terrain_1',    n_rows=25,    n_cols=50,     start_pos=(x_start+(6.25)*1, 0, 0.90))
-        # soft_terrain_xml                 = tg.generate_soft_terrain(  name = 'soft_terrain_1',            n_rows=25,    n_cols=50,            start_pos=(x_start+(6.25)*2, 0, 0.90))
-        # rough_terrain_xml                = tg.generate_rough_terrain(     name = 'rough_terrain_1',   n_rows=25, n_cols=25,         start_pos=(x_start+(6.25)*2, 0, 1.0))
-        # water_terrain_xml                = tg.generate_flat_terrain(  name = 'flat_terrain_1',    n_rows=25,  n_cols=25,            start_pos=(x_start, 0, 10.0))
         
+        n_row = 25
+        n_col = 100
+        
+        solid_terrain_xml                = tg.generate_flat_terrain(  name = 'flat_terrain_1',            n_rows=n_row,    n_cols=n_col,  start_pos=(x_start              , 0, 1.0))
+        muddy_terrain_xml                = tg.generate_muddy_terrain( name = 'muddy_terrain_1',           n_rows=n_row,    n_cols=n_col,  start_pos=(x_start+(6.25)*2-0.1, 0, 0.97))
+        slippery_terrain_xml             = tg.generate_slippery_terrain ( name = 'slippery_terrain_1',    n_rows=n_row,    n_cols=n_col,  start_pos=(x_start+(6.25)*1     , 0, 0.90))
+        # soft_terrain_xml                 = tg.generate_soft_terrain(  name = 'soft_terrain_1',            n_rows=n_row,    n_cols=n_col,  start_pos=(x_start+(6.25)*2     , 0, 0.90))
+        
+        slippery_terrain_xml_2             = tg.generate_slippery_terrain ( name = 'slippery_terrain_2',    n_rows=n_row,    n_cols=n_col,  start_pos=(x_start+(6.25)*3 -0.10     , 0, 0.93))
+
         
         water_terrain_xml                = tg.generate_flat_terrain(  name = 'slope',            
-                                                                    n_rows=50,    
-                                                                    n_cols=50,            
-                                                                    start_pos=(x_start+(6.25)*3-0.10, 0, 1.0),
+                                                                    n_rows=2*n_row,    
+                                                                    n_cols=n_col,            
+                                                                    start_pos=(x_start+(6.25)*4-0.1, 0, 1.0),
                                                                     slope_deg=-2.5)
         
-        terrain_xml = solid_terrain_xml  + muddy_terrain_xml + slippery_terrain_xml + water_terrain_xml
-        
-        # terrain_xml  = water_terrain_xml
+        terrain_xml = solid_terrain_xml  + muddy_terrain_xml + slippery_terrain_xml + water_terrain_xml + slippery_terrain_xml_2
+        # terrain_xml = tg.generate_soft_terrain(  name = 'flat_terrain_1', n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.0))
+        # terrain_xml = water_terrain_xml
 
         
         
         with open("main_scene.xml", "r") as f:
             base_xml = f.read()
-        complete_xml = base_xml.replace("INCLUDE_TERRAIN", terrain_xml, 1)
+        complete_xml = base_xml.replace("INCLUDE_TERRAIN", terrain_xml, 1) 
         self.model = mujoco.MjModel.from_xml_string(complete_xml)
 
         # self.model = mujoco.MjModel.from_binary_path("fast_rough_scene.mjb")
@@ -188,10 +239,9 @@ class StickInsectEnv:
         self.viewer.cam.trackbodyid = robot_body_id
         
         # 3. Set the default starting angle (Optional but highly recommended)
-        self.viewer.cam.distance = 2    # How far away to start (meters)
-        self.viewer.cam.azimuth = 135      # Rotate left/right (degrees)
-        # self.viewer.cam.elevation = -90   # Tilt up/down (degrees)
-        self.viewer.cam.elevation = -45   # Tilt up/down (degrees)
+        self.viewer.cam.distance = CAM_DISTANCE    # How far away to start (meters)
+        self.viewer.cam.azimuth = CAM_AZIMUTH      # Rotate left/right (degrees)
+        self.viewer.cam.elevation = CAM_ELEVATE  # Tilt up/down (degrees)
 
     def get_grf(self):
         grf = {name: 0.0 for name in FOOT_NAMES}
@@ -250,11 +300,16 @@ class StickInsectEnv:
 
         self.total_energy_consumed = 0.0
         self.total_time = 0.0
+        
+        # --- NEW: Pre-calculate weight for online COT ---
+        mass = sum([self.model.body_mass[i] for i in range(1, self.model.nbody)])
+        gravity = abs(self.model.opt.gravity[2])
+        self.robot_weight = mass * gravity
 
         # Array to hold the torques from the previous timestep
         self.prev_ctrl = np.zeros(self.model.nu)
 
-    def step(self, targets, cpg_outputs, all_probabilities):
+    def step(self, targets, cpg_outputs, all_probabilities, phi_list):
         """
         Takes target joint positions (e.g. from CPG-RBF network), 
         applies MuscleModel math, handles hydrodynamics, and steps physics.
@@ -296,6 +351,8 @@ class StickInsectEnv:
             step_energy += abs(torque * dq) * self.model.opt.timestep
         self.grf_fb = self.get_grf()
 
+        self.leg_phi = phi_list
+
         self.leg_stiffness_fb = [sum(self.joint_stiffness_fb[0:4]), 
                                     sum(self.joint_stiffness_fb[4:8]), 
                                     sum(self.joint_stiffness_fb[8:12]), 
@@ -313,6 +370,18 @@ class StickInsectEnv:
         
         self.total_energy_consumed += step_energy
         self.total_time += self.model.opt.timestep 
+        
+        # ==========================================
+        # 🚨 ONLINE COST OF TRANSPORT (COT)
+        # ==========================================
+        # Calculate current forward distance
+        current_distance = self.data.qpos[0] - self.start_pos[0]
+        
+        # Prevent division by zero during the first few milliseconds
+        safe_distance = max(current_distance, 1e-4) 
+        
+        # Calculate Live COT
+        self.online_cot = self.total_energy_consumed / (self.robot_weight * safe_distance)
 
         # ==========================================
         # 🚨 THE ONLY PHYSICS STEP YOU NEED
@@ -420,16 +489,34 @@ class StickInsectEnv:
         # ==========================================
         # 6. RENDERING & ROS
         # ==========================================
-        if self.has_viewer:
+        if self.has_viewer and (self.step_count % self.render_step_skip == 0):
             self.render()
         if self.enable_ros:
             self._handle_ros_feedback()
         
+        
+        
+        
+        # --- WRITE OPENCV VIDEO FRAME ---
+        if self.record_video and (self.step_count % self.video_render_skip == 0):
+            # Update the scene
+            self.renderer.update_scene(self.data, camera=self.record_cam)
+            
+            # Render the pixels (MuJoCo outputs RGB)
+            rgb_pixels = self.renderer.render()
+            
+            # Convert RGB to BGR for OpenCV
+            bgr_pixels = cv2.cvtColor(rgb_pixels, cv2.COLOR_RGB2BGR)
+            
+            # Stream directly to the file
+            self.video_writer.write(bgr_pixels)
 
             
         feedback = {
             # "time": self.total_time,
             # "energy_consumed": self.total_energy_consumed,
+            "cot": np.array(self.online_cot),
+            
             "cpg_output": np.array(self.joint_cpg_output),
             
             "joint_names": self.joint_names,
@@ -474,115 +561,83 @@ class StickInsectEnv:
             
             torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "robot")
             
-            # ------------------------------------------
-            # 1. DRAW LINEAR DRAG & BUOYANCY (RED ARROWS)
-            # ------------------------------------------
-            for i in range(1, self.model.nbody):
-                if i == torso_id:
-                    continue
+            # # ------------------------------------------
+            # # 1. DRAW LINEAR DRAG & BUOYANCY (RED ARROWS)
+            # # ------------------------------------------
+            # for i in range(1, self.model.nbody):
+            #     if i == torso_id:
+            #         continue
 
-                pos = self.data.xpos[i]
-                force = np.array([
-                    self.hydro_forces_snapshot[i][0], 
-                    self.hydro_forces_snapshot[i][1], 
-                    self.hydro_forces_snapshot[i][2]
-                ])
+            #     pos = self.data.xpos[i]
+            #     force = np.array([
+            #         self.hydro_forces_snapshot[i][0], 
+            #         self.hydro_forces_snapshot[i][1], 
+            #         self.hydro_forces_snapshot[i][2]
+            #     ])
                 
-                if np.linalg.norm(force) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
-                    pt2_force = pos + (force * FORCE_SCALE)
+            #     if np.linalg.norm(force) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
+            #         pt2_force = pos + (force * FORCE_SCALE)
                     
-                    mujoco.mjv_connector(
-                        self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
-                        mujoco.mjtGeom.mjGEOM_ARROW, 
-                        ARROW_THICKNESS, 
-                        pos, 
-                        pt2_force
-                    )
-                    # Color it Bright Red
-                    self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
-                    self.viewer.user_scn.ngeom += 1
+            #         mujoco.mjv_connector(
+            #             self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
+            #             mujoco.mjtGeom.mjGEOM_ARROW, 
+            #             ARROW_THICKNESS, 
+            #             pos, 
+            #             pt2_force
+            #         )
+            #         # Color it Bright Red
+            #         self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
+            #         self.viewer.user_scn.ngeom += 1
 
 
-            # ------------------------------------------
-            # 2. DRAW GROUND REACTION FORCES (GREEN ARROWS)
-            # ------------------------------------------
-            # Loop through all active collisions happening right now
-            # for c_idx in range(self.data.ncon):
-            #     contact = self.data.contact[c_idx]
-                
-            #     # Check if this collision involves one of the feet
-            #     geom1_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_GEOM, contact.geom1)
-            #     geom2_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_GEOM, contact.geom2)
-                
-            #     if (geom1_name and 'FOOT' in geom1_name) or (geom2_name and 'FOOT' in geom2_name):
-                    
-            #         # Extract the 6D force from the physics engine
-            #         force_6d = np.zeros(6, dtype=np.float64)
-            #         mujoco.mj_contactForce(self.model, self.data, c_idx, force_6d)
-                    
-            #         # MuJoCo stores forces in a local contact frame. 
-            #         # We must rotate it to the world frame using the contact's 3x3 matrix.
-            #         c_frame = contact.frame.reshape(3, 3)
-            #         world_force = c_frame @ force_6d[:3]
-                    
-            #         # If the force is meaningful, draw it!
-            #         if np.linalg.norm(world_force) > 0.1 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
+            # # ------------------------------------------
+            # # 3. DRAW FOOT TRAILS
+            # # ------------------------------------------
+            # for name, trail in self.foot_trails.items():
+            #     if len(trail) > 1:
+            #         color = self.trail_colors[name]
+            #         for i in range(len(trail) - 1):
+            #             # Prevent overflow of maximum allowed custom geoms in viewer
+            #             if self.viewer.user_scn.ngeom >= self.viewer.user_scn.maxgeom:
+            #                 break
                         
-            #             # Calculate where the tip of the arrow should be
-            #             pt2_grf = contact.pos + (world_force * GRF_SCALE)
+            #             geom = self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom]
                         
-            #             mujoco.mjv_connector(
-            #                 self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom],
-            #                 mujoco.mjtGeom.mjGEOM_ARROW,
-            #                 ARROW_THICKNESS,
-            #                 contact.pos,  # Start exactly at the collision point
-            #                 pt2_grf
+            #             # Initialize a geometry for the line segment
+            #             mujoco.mjv_initGeom(
+            #                 geom, 
+            #                 type=mujoco.mjtGeom.mjGEOM_LINE, 
+            #                 size=np.zeros(3), 
+            #                 pos=np.zeros(3), 
+            #                 mat=np.zeros(9), 
+            #                 rgba=color 
             #             )
-            #             # Color it Bright Green
-            #             self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([0.0, 1.0, 0.0, 1.0])
+                        
+            #             # Connect point A to point B (width = 3.0)
+            #             mujoco.mjv_connector(
+            #                 geom, 
+            #                 mujoco.mjtGeom.mjGEOM_LINE, 
+            #                 3.0,          # width
+            #                 trail[i],     # from_
+            #                 trail[i+1]    # to
+            #             )
+                        
             #             self.viewer.user_scn.ngeom += 1
-            # ------------------------------------------
-            # 3. DRAW FOOT TRAILS
-            # ------------------------------------------
-            for name, trail in self.foot_trails.items():
-                if len(trail) > 1:
-                    color = self.trail_colors[name]
-                    for i in range(len(trail) - 1):
-                        # Prevent overflow of maximum allowed custom geoms in viewer
-                        if self.viewer.user_scn.ngeom >= self.viewer.user_scn.maxgeom:
-                            break
-                        
-                        geom = self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom]
-                        
-                        # Initialize a geometry for the line segment
-                        mujoco.mjv_initGeom(
-                            geom, 
-                            type=mujoco.mjtGeom.mjGEOM_LINE, 
-                            size=np.zeros(3), 
-                            pos=np.zeros(3), 
-                            mat=np.zeros(9), 
-                            rgba=color 
-                        )
-                        
-                        # Connect point A to point B (width = 3.0)
-                        mujoco.mjv_connector(
-                            geom, 
-                            mujoco.mjtGeom.mjGEOM_LINE, 
-                            3.0,          # width
-                            trail[i],     # from_
-                            trail[i+1]    # to
-                        )
-                        
-                        self.viewer.user_scn.ngeom += 1
 
         self.viewer.sync()
 
     def close(self):
             """Safely clean up the MuJoCo viewer and ROS node."""
             # 1. Close the MuJoCo viewer if it exists and is running
-            if self.has_viewer and hasattr(self, 'viewer'):
-                if self.viewer.is_running():
-                    self.viewer.close()
+            # if self.has_viewer and hasattr(self, 'viewer'):
+            #     if self.viewer.is_running():
+            #         self.viewer.close()
+            
+            # --- RELEASE OPENCV VIDEO ---
+            if self.record_video:
+                print("🎬 Finalizing and saving MP4 video...")
+                self.video_writer.release()
+                print("✅ Video saved successfully!")
                     
             # 2. Shut down the ROS node safely
             if self.enable_ros and rclpy.ok():
@@ -607,6 +662,7 @@ class StickInsectEnv:
             self.ros_node.publish_joint_torque_output(data['joint_torque_out'])
             self.ros_node.publish_joint_damping_power(data['joint_damping_power'])
             
+            self.ros_node.publish_leg_phi(data['leg_phi'])
             self.ros_node.publish_leg_stiffness(data['leg_stiffness'])
             self.ros_node.publish_leg_damping(data['leg_damping'])
             self.ros_node.publish_leg_torque_ff(data['leg_torque_ff'])
@@ -614,6 +670,8 @@ class StickInsectEnv:
             self.ros_node.publish_class_possibility(data['class_possibility'])
             self.ros_node.publish_grf(data['grf'])
             self.ros_node.publish_cpg(data['cpg'])
+            
+            self.ros_node.publish_cot(data['cot'])
             
             self.ros_node.publish_termination_status(data['termination'])
             
@@ -624,16 +682,16 @@ class StickInsectEnv:
     def _handle_ros_feedback(self):
         """Pushes telemetry data to the background queue instantly."""
         
-        # ==========================================
-        # ⏱️ THROTTLE TO 10 Hz
-        # ==========================================
-        target_ros_hz = 10 
-        physics_hz = int(1.0 / self.model.opt.timestep)
+        # # ==========================================
+        # # ⏱️ THROTTLE TO 10 Hz
+        # # ==========================================
+        # target_ros_hz = 100 
+        # physics_hz = int(1.0 / self.model.opt.timestep)
         
-        # If physics is 500Hz, this forces it to skip 49 steps and only push on the 50th
-        if self.step_count % max(1, physics_hz // target_ros_hz) != 0:
-            return
-        # ==========================================
+        # # If physics is 500Hz, this forces it to skip 49 steps and only push on the 50th
+        # if self.step_count % max(1, physics_hz // target_ros_hz) != 0:
+        #     return
+        # # ==========================================
 
         telemetry_data = {
             'joint_cmd': self.joint_angles_cmd.copy(),
@@ -645,6 +703,7 @@ class StickInsectEnv:
             'joint_torque_out': self.joint_torque_output_fb.copy(),
             'joint_damping_power': self.joint_damping_power_fb.copy(),
             
+            'leg_phi': self.leg_phi.copy(),
             'leg_stiffness': self.leg_stiffness_fb.copy(),
             'leg_damping': self.leg_damping_fb.copy(),
             'leg_torque_ff': self.leg_torque_feedforward_fb.copy(),
@@ -652,7 +711,9 @@ class StickInsectEnv:
             'class_possibility': self.all_probabilities.copy(),
             'grf': self.grf_fb.copy(),
             'cpg': self.joint_cpg_output.copy(),
-            'termination': False
+            'termination': False,
+            
+            'cot': self.online_cot
         }
         
         try:

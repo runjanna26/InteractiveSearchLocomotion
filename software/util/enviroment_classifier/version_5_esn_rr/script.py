@@ -96,11 +96,11 @@ class StickInsectEnv:
         tg = TerrainGenerator()
         # terrain_xml                 = tg.generate_flat_terrain(     name = 'flat_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
         # terrain_xml                 = tg.generate_soft_terrain(     name = 'soft_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
-        # terrain_xml                 = tg.generate_muddy_terrain(     name = 'muddy_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
+        terrain_xml                 = tg.generate_muddy_terrain(     name = 'muddy_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
         # terrain_xml                 = tg.generate_slippery_terrain (     name = 'slippery_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.5))
         # terrain_xml             = tg.generate_rough_terrain(    name = 'rough_terrain_1',   n_rows=100, n_cols=100, start_pos=(x_start+15, 0, 1.5))
         
-        terrain_xml                 = tg.generate_flat_terrain(     name = 'water_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, -1.5))
+        # terrain_xml                 = tg.generate_flat_terrain(     name = 'water_terrain_1',    n_rows=500, n_cols=500, start_pos=(x_start, 0, -1.5))
 
         # rough_water_terrain_xml       = tg.generate_rough_terrain(    name = 'rough_water_terrain_1',   n_rows=36, n_cols=36, start_pos=(-16.25 + x_start, 0, 0.25), h_dev=0.05)
         # flat_water_terrain_xml        = tg.generate_flat_terrain(     name = 'flat_water_terrain_1',    n_rows=36, n_cols=36, start_pos=(-16.25 + x_start - 9, 0, 0.25))
@@ -481,33 +481,33 @@ class StickInsectEnv:
             
             torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "robot")
             
-            # ------------------------------------------
-            # 1. DRAW LINEAR DRAG & BUOYANCY (RED ARROWS)
-            # ------------------------------------------
-            for i in range(1, self.model.nbody):
-                if i == torso_id:
-                    continue
+            # # ------------------------------------------
+            # # 1. DRAW LINEAR DRAG & BUOYANCY (RED ARROWS)
+            # # ------------------------------------------
+            # for i in range(1, self.model.nbody):
+            #     if i == torso_id:
+            #         continue
 
-                pos = self.data.xpos[i]
-                force = np.array([
-                    self.hydro_forces_snapshot[i][0], 
-                    self.hydro_forces_snapshot[i][1], 
-                    self.hydro_forces_snapshot[i][2]
-                ])
+            #     pos = self.data.xpos[i]
+            #     force = np.array([
+            #         self.hydro_forces_snapshot[i][0], 
+            #         self.hydro_forces_snapshot[i][1], 
+            #         self.hydro_forces_snapshot[i][2]
+            #     ])
                 
-                if np.linalg.norm(force) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
-                    pt2_force = pos + (force * FORCE_SCALE)
+            #     if np.linalg.norm(force) > 1e-2 and self.viewer.user_scn.ngeom < self.viewer.user_scn.maxgeom:
+            #         pt2_force = pos + (force * FORCE_SCALE)
                     
-                    mujoco.mjv_connector(
-                        self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
-                        mujoco.mjtGeom.mjGEOM_ARROW, 
-                        ARROW_THICKNESS, 
-                        pos, 
-                        pt2_force
-                    )
-                    # Color it Bright Red
-                    self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
-                    self.viewer.user_scn.ngeom += 1
+            #         mujoco.mjv_connector(
+            #             self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom], 
+            #             mujoco.mjtGeom.mjGEOM_ARROW, 
+            #             ARROW_THICKNESS, 
+            #             pos, 
+            #             pt2_force
+            #         )
+            #         # Color it Bright Red
+            #         self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom].rgba = np.array([1.0, 0.0, 0.0, 1.0])
+            #         self.viewer.user_scn.ngeom += 1
 
 
             # ------------------------------------------
@@ -551,36 +551,36 @@ class StickInsectEnv:
             # ------------------------------------------
             # 3. DRAW FOOT TRAILS
             # ------------------------------------------
-            for name, trail in self.foot_trails.items():
-                if len(trail) > 1:
-                    color = self.trail_colors[name]
-                    for i in range(len(trail) - 1):
-                        # Prevent overflow of maximum allowed custom geoms in viewer
-                        if self.viewer.user_scn.ngeom >= self.viewer.user_scn.maxgeom:
-                            break
+            # for name, trail in self.foot_trails.items():
+            #     if len(trail) > 1:
+            #         color = self.trail_colors[name]
+            #         for i in range(len(trail) - 1):
+            #             # Prevent overflow of maximum allowed custom geoms in viewer
+            #             if self.viewer.user_scn.ngeom >= self.viewer.user_scn.maxgeom:
+            #                 break
                         
-                        geom = self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom]
+            #             geom = self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom]
                         
-                        # Initialize a geometry for the line segment
-                        mujoco.mjv_initGeom(
-                            geom, 
-                            type=mujoco.mjtGeom.mjGEOM_LINE, 
-                            size=np.zeros(3), 
-                            pos=np.zeros(3), 
-                            mat=np.zeros(9), 
-                            rgba=color 
-                        )
+            #             # Initialize a geometry for the line segment
+            #             mujoco.mjv_initGeom(
+            #                 geom, 
+            #                 type=mujoco.mjtGeom.mjGEOM_LINE, 
+            #                 size=np.zeros(3), 
+            #                 pos=np.zeros(3), 
+            #                 mat=np.zeros(9), 
+            #                 rgba=color 
+            #             )
                         
-                        # Connect point A to point B (width = 3.0)
-                        mujoco.mjv_connector(
-                            geom, 
-                            mujoco.mjtGeom.mjGEOM_LINE, 
-                            3.0,          # width
-                            trail[i],     # from_
-                            trail[i+1]    # to
-                        )
+            #             # Connect point A to point B (width = 3.0)
+            #             mujoco.mjv_connector(
+            #                 geom, 
+            #                 mujoco.mjtGeom.mjGEOM_LINE, 
+            #                 3.0,          # width
+            #                 trail[i],     # from_
+            #                 trail[i+1]    # to
+            #             )
                         
-                        self.viewer.user_scn.ngeom += 1
+            #             self.viewer.user_scn.ngeom += 1
 
         self.viewer.sync()
 

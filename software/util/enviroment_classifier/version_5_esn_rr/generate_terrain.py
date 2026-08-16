@@ -240,7 +240,7 @@ class TerrainGenerator:
         line = (f'<geom name="{geom_name}" type="box" size="{size_x:.3f} {size_y:.3f} {size_z:.3f}" '
                 f'pos="{pos_x:.3f} {pos_y:.3f} {pos_z:.3f}" '
                 f'rgba="0.445 0.171 0.075 1" friction="1.0 0.05 0.01" '
-                f'material="muddy_ground" solref="0.2 3.0" solimp="0.0 0.99 0.15"/>')  
+                f'material="muddy_ground" solref="0.2 1.0" solimp="0.0 0.99 0.15"/>')  
         xml_lines.append(line)
 
         xml_lines.append('</body>')

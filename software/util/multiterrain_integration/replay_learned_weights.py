@@ -5,7 +5,8 @@ import os
 import subprocess
 import signal
 import datetime
-
+import itertools
+import random
 import threading
 import queue
 
@@ -22,21 +23,24 @@ from classification_model_training.models.model_1_esn_rr.env_pred import ESN_RR_
 # 'solid_ground', 
 # 'soft_ground', 
 # 'slippery_ground', 
-# 'rough_ground', 
 # 'muddy_ground', 
 # 'water_surface'
 
-gait = "solid_ground"
+gait = "water_surface"
 environment_setup = "water_surface"
 
+ENABLE_VIDEO_REC = False
+
+ENABLE_ROS = True
 SAVE_ROS_BAG = False
-ROS_BAG_FILE = f"classification_model_training/rosbags/{gait}_gait_on_{environment_setup}"
+ROS_BAG_FILE = f"final_transition/attemp_15"
+# ROS_BAG_FILE = f"classification_model_training/dataset_for_esn/{gait}_gait_on_{environment_setup}_set_2"
 
 SAVE_METRIC_CSV = False
-METRIC_FILE = f"classification_model_training/metric/{gait}_gait_on_{environment_setup}"
+METRIC_FILE = f"metric/{gait}_gait_on_{environment_setup}"
 
 ENABLE_RENDERING = True
-
+ENABLE_ESN = True
 
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
@@ -44,7 +48,7 @@ JOINT_NAMES = [0, 1, 2, 3]
 NUM_KERNELS = 20 
 
 CPG_PHI = 0.05 
-SIM_DURATION = 90.0  # seconds
+SIM_DURATION = 160.0 # seconds
 
 # ======================================================
 # 1. HELPER: LOAD JSON WEIGHTS
@@ -159,8 +163,6 @@ if __name__ == "__main__":
         'joint_velocity_fb'
     ]
     
-    
-
     # Create one independent segmenter for each sensor array
     segmenters = {sensor: OnlineGaitSegmenter() for sensor in sensors_to_segment}
     
@@ -184,7 +186,6 @@ if __name__ == "__main__":
         3: weights_water
     }
         
-        
     # ==========================================
     # 4. THREADING ARCHITECTURE SETUP
     # ==========================================
@@ -198,7 +199,7 @@ if __name__ == "__main__":
         'all_probabilities': []
     }
     
-    REQUIRED_CONSECUTIVE_PREDS = 2
+    REQUIRED_CONSECUTIVE_PREDS = 3
     
     def classifier_worker():
         current_gait_class = 0          
@@ -266,12 +267,13 @@ if __name__ == "__main__":
             cycle_queue.task_done()
 
     # Start the background thread
-    classifier_thread = threading.Thread(target=classifier_worker, daemon=True)
-    classifier_thread.start()
+    if ENABLE_ESN:
+        classifier_thread = threading.Thread(target=classifier_worker, daemon=True)
+        classifier_thread.start()
     # ==========================================
     # 4. INITIALIZE ENVIRONMENT
     # ==========================================
-    env = StickInsectEnv(enable_ros=False, render=ENABLE_RENDERING) 
+    env = StickInsectEnv(enable_ros=ENABLE_ROS, render=ENABLE_RENDERING, record_video=ENABLE_VIDEO_REC) 
     env.reset()
     
     # Calculate exact steps needed for 20 seconds based on MuJoCo timestep
@@ -295,8 +297,6 @@ if __name__ == "__main__":
             stderr=subprocess.DEVNULL
         )
 
-  
-    
     # Set the initial default gait (e.g., solid ground) before the loop starts
     active_weights_target = weights_solid
     
@@ -304,15 +304,44 @@ if __name__ == "__main__":
     current_gait_class = 0          
     last_predicted_class = -1       
     consecutive_pred_count = 0      
-    REQUIRED_CONSECUTIVE_PREDS = 2  
 
     # --- NOVEL CAUTIOUS STEPPING REFLEX ---
     current_phi = CPG_PHI           # Track the live speed
-    phi_recovery_rate = 0.5      # Tune this to control how fast it speeds back up
+    
+    # phi_recovery_rate = 0.0000075     
+    phi_recovery_rate = 0.000005     
+    # phi_recovery_rate = 0.00005     
+    slow_phi_target = CPG_PHI * 0.5 # Drops speed to 50% during transition
     # --------------------------------------
     
-    TRANSTION_RATE = 0.005
     # --------------------------------------
+    TRANSTION_RATE = 0.0025
+    # --------------------------------------
+    
+    print("Starting adaptive simulation with smooth weight transitions...")
+    
+    base_gaits = [
+        "solid_ground", 
+        "muddy_ground", 
+        "slippery_ground", 
+        "water_surface", 
+        "soft_ground"
+    ]
+    
+    # 1. Generate every possible 2-gait transition (20 total pairs)
+    all_pairs = list(itertools.permutations(base_gaits, 2))
+    
+    # 2. Shuffle the pairs so the transitions happen in a random order
+    random.shuffle(all_pairs)
+    
+    # 3. Flatten the pairs into a single continuous sequence
+    # This creates a list of 40 gaits (20 pairs * 2 gaits per pair)
+    gait_sequence = []
+    for pair in all_pairs:
+        gait_sequence.extend(pair)
+    
+    gait_phase = 0
+    switch_interval = 10.0  # Switch gait every 10 seconds
     
     print("Starting adaptive simulation with smooth weight transitions...")
     
@@ -328,7 +357,7 @@ if __name__ == "__main__":
         # --------------------------------------------------
         
         # if gait == "solid_ground":
-        #     active_weights_target = weights_soslid
+        #     active_weights_target = weights_solid
         # elif gait == "water_surface":
         #     active_weights_target = weights_water
         # elif gait == "soft_ground":
@@ -342,7 +371,36 @@ if __name__ == "__main__":
         # else:
         #     print(f"Error: Unknown gait '{gait}'. Please choose a valid gait.")
         #     exit()
+        
+        # --------------------------------------------------
+        # GAIT TARGET SELECTION BASED ON TIME
+        # --------------------------------------------------
+        # if step % int(switch_interval / dt) == 0:
             
+        #     # Ensure we haven't run out of combinations
+        #     if gait_phase < len(gait_sequence):
+        #         current_gait = gait_sequence[gait_phase]
+                
+        #         if current_gait == "solid_ground":
+        #             active_weights_target = weights_solid
+        #         elif current_gait == "water_surface":
+        #             active_weights_target = weights_water
+        #         elif current_gait == "soft_ground":
+        #             active_weights_target = weights_soft
+        #         elif current_gait == "slippery_ground":
+        #             active_weights_target = weights_slip
+        #         elif current_gait == "muddy_ground":
+        #             active_weights_target = weights_muddy
+                
+        #         print(f"⏱️ [{sim_time:.2f}s] Transitioning to: {current_gait.upper()} (Phase {gait_phase + 1}/{len(gait_sequence)})")
+                
+        #         # 🚨 TRIGGER CAUTIOUS STEPPING
+        #         current_phi = slow_phi_target
+        #         print(f"   [Reflex Triggered: Speed dropped to {current_phi:.3f} for safe transition]")
+                
+        #         gait_phase += 1
+        #     else:
+        #         print(f"✅ [{sim_time:.2f}s] All combinations completed! Maintaining final gait.")
         
     
     
@@ -377,12 +435,14 @@ if __name__ == "__main__":
                     joint_targets[actuator_name] = target_angle
                     cpg_outputs[actuator_name] = cpg_output[f'{index}{side}']['cpg_output_0']
             
+        phi_list = [data['phi'] for data in cpg_mod_cmd.values()]
         # Pass the flat dictionary to the environment
-        feedback_t = env.step(joint_targets, cpg_outputs, all_probabilities)
+        feedback_t = env.step(joint_targets, cpg_outputs, all_probabilities, phi_list)
+        
         
         
         # ==================================================
-        # 🚨 ONLINE GAIT SEGMENTATION & CLASSIFICATION
+        #  ONLINE GAIT SEGMENTATION & CLASSIFICATION
         # ==================================================
         current_cpg_ref = feedback_t['cpg_output'][0]
         
@@ -402,25 +462,26 @@ if __name__ == "__main__":
         # --------------------------------------------------
         # PUSH TO CLASSIFIER THREAD
         # --------------------------------------------------
-        if cycle_completed_this_step and len(normalized_cycle_dict) == len(sensors_to_segment):
-            try:
-                # Put a copy of the dict in the queue so the segmenter can keep working safely
-                cycle_queue.put_nowait((normalized_cycle_dict.copy(), sim_time))
-            except queue.Full:
-                print("⚠️ Classifier thread is busy! Dropping frame to maintain real-time performance.")
+        if ENABLE_ESN:
+            if cycle_completed_this_step and len(normalized_cycle_dict) == len(sensors_to_segment):
+                try:
+                    # Put a copy of the dict in the queue so the segmenter can keep working safely
+                    cycle_queue.put_nowait((normalized_cycle_dict.copy(), sim_time))
+                except queue.Full:
+                    print("⚠️ Classifier thread is busy! Dropping frame to maintain real-time performance.")
 
             
         # ==================================================
         # 🚨 CAUTIOUS STEPPING RECOVERY
         # ==================================================
         # If we are currently slowed down, gradually increase back to base speed
-        # if current_phi < CPG_PHI:
-        #     current_phi = min(CPG_PHI, current_phi + phi_recovery_rate)
+        if current_phi < CPG_PHI:
+            current_phi = min(CPG_PHI, current_phi + phi_recovery_rate)
             
-        #     # Apply the recovering speed to the command dictionaries
-        #     for side in LEG_SIDE:
-        #         for index in LEG_INDEX:
-        #             cpg_mod_cmd[f'{index}{side}']['phi'] = current_phi
+            # Apply the recovering speed to the command dictionaries
+            for side in LEG_SIDE:
+                for index in LEG_INDEX:
+                    cpg_mod_cmd[f'{index}{side}']['phi'] = current_phi
 
         # Update CPGs (This is your existing code)
         for side in LEG_SIDE:
@@ -435,15 +496,18 @@ if __name__ == "__main__":
         # THREAD-SAFE STATE RETRIEVAL
         # --------------------------------------------------
         with state_lock:
-            active_weights_target = shared_state['active_weights_target']
+            # ONLY let the classifier override the target if the ESN is actually running!
+            if ENABLE_ESN:
+                active_weights_target = shared_state['active_weights_target']
+                
             all_probabilities = shared_state['all_probabilities']
             
-            # # Check if the classifier triggered a cautious stepping reflex
-            # if shared_state['trigger_slowdown']:
-            #     current_phi = CPG_PHI * 0.2
-            #     print(f"⚠️ Possible terrain change detected! Engaging cautious stepping (Speed dropped).")
-            #     # Reset the flag so it only triggers once
-            #     shared_state['trigger_slowdown'] = False
+            # Check if the classifier triggered a cautious stepping reflex
+            if shared_state['trigger_slowdown']:
+                current_phi = slow_phi_target
+                print(f"⚠️ Possible terrain change detected! Engaging cautious stepping (Speed dropped).")
+                # Reset the flag so it only triggers once
+                shared_state['trigger_slowdown'] = False
 
         # Maintain real-time loop execution
         while (time.perf_counter() - step_start) < dt:
@@ -451,9 +515,9 @@ if __name__ == "__main__":
             
             
 
-
-    cycle_queue.put(None)
-    classifier_thread.join(timeout=1.0)
+    if ENABLE_ESN:
+        cycle_queue.put(None)
+        classifier_thread.join(timeout=1.0)
     print("Replay finished.")
     env.close()
     

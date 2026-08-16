@@ -21,6 +21,7 @@ class StickInsectNode(Node):
         self.joint_torque_output_pub    = self.create_publisher( Float32MultiArray, '/diving_beetle/joint_torque_output_fb', 1 )
         self.joint_damping_power_pub   = self.create_publisher( Float32MultiArray, '/diving_beetle/joint_damping_power_fb', 1 )
 
+        self.leg_phi_pub              = self.create_publisher( Float32MultiArray, '/diving_beetle/leg_phi', 1 )
         self.leg_stiffness_pub        = self.create_publisher( Float32MultiArray, '/diving_beetle/leg_stiffness_fb', 1 )
         self.leg_damping_pub          = self.create_publisher( Float32MultiArray, '/diving_beetle/leg_damping_fb', 1 )
         self.leg_torque_ff_pub        = self.create_publisher( Float32MultiArray, '/diving_beetle/leg_torque_feedforward_fb', 1 )
@@ -30,6 +31,7 @@ class StickInsectNode(Node):
         self.execute_control_pub        = self.create_publisher( Bool, '/diving_beetle/execute_control_cmd', 1 )
         
         self.class_possibility_pub        = self.create_publisher( Float32MultiArray, '/diving_beetle/class_possibility_fb', 1 )
+        self.cot_pub                        = self.create_publisher( Float32MultiArray, '/diving_beetle/cost_of_transport', 1 )
         
 
         self.joint_cmd = {'FR': [0.0, 0.0, 0.0, 0.0],
@@ -110,6 +112,10 @@ class StickInsectNode(Node):
         msg.data = status
         self.execute_control_pub.publish(msg)
 
+    def publish_leg_phi(self, phies):
+        msg = Float32MultiArray()
+        msg.data = [float(t) for t in phies]
+        self.leg_phi_pub.publish(msg)
     def publish_leg_stiffness(self, stiffnesses):
         msg = Float32MultiArray()
         msg.data = [float(s) for s in stiffnesses]
@@ -127,3 +133,8 @@ class StickInsectNode(Node):
         msg = Float32MultiArray()
         msg.data = [float(p) for p in probabilities]
         self.class_possibility_pub.publish(msg)
+        
+    def publish_cot(self, cot):
+        msg = Float32MultiArray()
+        msg.data = [float(cot)]
+        self.cot_pub.publish(msg)

@@ -19,7 +19,7 @@ Set TARGET_ITERATION = 349 to watch the highly optimized, smooth walking pattern
 # ======================================================
 # CONFIGURATION
 # ======================================================
-LOG_FILE = "data/pibb_logs/pibb_training_20260810_001513.json" # <-- Paste your actual log filename here
+LOG_FILE = "data/pibb_logs/pibb_training_20260813_133932.json" # <-- Paste your actual log filename here
 TARGET_ITERATION = -1  # Set to -1 for the last iteration, or a specific number (e.g., 150)
 SIMULATION_STEPS = 100000000
 CPG_PHI = 0.05
@@ -58,74 +58,74 @@ if __name__ == "__main__":
     print(f"Replaying Iteration {selected_data['iteration']} | Max Fitness: {fitness_score:.4f}")
 
     
-    # ===============================================================
-    # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior)
-    # ===============================================================
-    print("Loading Prior Knowledge to reconstruct Left offsets...")
-    prior_knowledge = np.load('imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
-
-    imitated_weights = {}
-    
-    joint_index = 0
-    for index in LEG_INDEX: 
-        for joint in JOINT_NAMES:
-            start_idx = joint_index * NUM_KERNELS
-            end_idx = start_idx + NUM_KERNELS
-            
-            # 1. Get the Original Priors first so we can use them for the freeze
-            right_key = f"{index}R{joint}"
-            left_key = f"{index}L{joint}"
-            
-            right_prior = np.array(prior_knowledge[right_key])
-            left_prior = np.array(prior_knowledge[left_key])
-            
-            # ==========================================
-            # 🚨 THE FIX: FREEZE JOINT 1 
-            # ==========================================
-            # if joint == 1:
-            #     # FREEZE: Ignore the JSON log. Force it to be the original prior.
-            #     learned_weights = np.copy(right_prior)
-            # else:
-            #     # LEARN: Get the optimized weights from the JSON log
-            #     learned_weights = np.array(trained_weights[start_idx:end_idx])
-            learned_weights = np.array(trained_weights[start_idx:end_idx])
-            
-            # Calculate the exact difference (Left - Right)
-            offset_weights = left_prior - right_prior
-            
-            # 3. Assign the pure weights to the RIGHT side
-            imitated_weights[right_key] = learned_weights
-            
-            # 4. Assign the Weights + Original Offset to the LEFT side
-            imitated_weights[left_key] = learned_weights + offset_weights
-            
-            joint_index += 1
-    # ===============================================================
-
     # # ===============================================================
-    # # WEIGHT SYMMETRY LOGIC
+    # # RESIDUAL SYMMETRY LOGIC (Reconstructs Left offsets from Prior)
     # # ===============================================================
+    # print("Loading Prior Knowledge to reconstruct Left offsets...")
+    # prior_knowledge = np.load('imitated_diving_beetle_swim_forward_weights_20_kernels.npz')
+
     # imitated_weights = {}
     
-    # # 1. We only loop through the Front ('F') and Back ('B') indices
     # joint_index = 0
     # for index in LEG_INDEX: 
     #     for joint in JOINT_NAMES:
     #         start_idx = joint_index * NUM_KERNELS
     #         end_idx = start_idx + NUM_KERNELS
             
-    #         # Extract the 20 weights for this specific joint
-    #         extracted_weights = trained_weights[start_idx:end_idx]
-            
-    #         # 2. Assign these weights to the RIGHT side
+    #         # 1. Get the Original Priors first so we can use them for the freeze
     #         right_key = f"{index}R{joint}"
-    #         imitated_weights[right_key] = extracted_weights
-            
-    #         # 3. MIRROR them exactly to the LEFT side!
     #         left_key = f"{index}L{joint}"
-    #         imitated_weights[left_key] = extracted_weights
+            
+    #         right_prior = np.array(prior_knowledge[right_key])
+    #         left_prior = np.array(prior_knowledge[left_key])
+            
+    #         # ==========================================
+    #         # 🚨 THE FIX: FREEZE JOINT 1 
+    #         # ==========================================
+    #         # if joint == 1:
+    #         #     # FREEZE: Ignore the JSON log. Force it to be the original prior.
+    #         #     learned_weights = np.copy(right_prior)
+    #         # else:
+    #         #     # LEARN: Get the optimized weights from the JSON log
+    #         #     learned_weights = np.array(trained_weights[start_idx:end_idx])
+    #         learned_weights = np.array(trained_weights[start_idx:end_idx])
+            
+    #         # Calculate the exact difference (Left - Right)
+    #         offset_weights = left_prior - right_prior
+            
+    #         # 3. Assign the pure weights to the RIGHT side
+    #         imitated_weights[right_key] = learned_weights
+            
+    #         # 4. Assign the Weights + Original Offset to the LEFT side
+    #         imitated_weights[left_key] = learned_weights + offset_weights
             
     #         joint_index += 1
+    # # ===============================================================
+
+    # # ===============================================================
+    # # WEIGHT SYMMETRY LOGIC
+    # # ===============================================================
+    imitated_weights = {}
+    
+    # 1. We only loop through the Front ('F') and Back ('B') indices
+    joint_index = 0
+    for index in LEG_INDEX: 
+        for joint in JOINT_NAMES:
+            start_idx = joint_index * NUM_KERNELS
+            end_idx = start_idx + NUM_KERNELS
+            
+            # Extract the 20 weights for this specific joint
+            extracted_weights = trained_weights[start_idx:end_idx]
+            
+            # 2. Assign these weights to the RIGHT side
+            right_key = f"{index}R{joint}"
+            imitated_weights[right_key] = extracted_weights
+            
+            # 3. MIRROR them exactly to the LEFT side!
+            left_key = f"{index}L{joint}"
+            imitated_weights[left_key] = extracted_weights
+            
+            joint_index += 1
     # ===============================================================
 
     # # ===============================================================
@@ -186,14 +186,14 @@ if __name__ == "__main__":
         cpg_output['BR'] = cpg_modulated['BR'].modulate_cpg(CPG_PHI, 0.0, 1.0)
 
     # 4. Initialize Environment WITH Rendering (and ROS if you want to record bags)
-    env = StickInsectEnv(enable_ros=True, render=True) 
+    env = StickInsectEnv(enable_ros=True, render=True, randomize_env=True) 
     env.reset()
     
     print("Starting replay...")
     
     # 5. Run the Simulation Loop
     for step in range(SIMULATION_STEPS):
-        # Update CPGs
+        # Update CPGs       
         for side in LEG_SIDE:
             for index in LEG_INDEX:
                 cpg_output[f'{index}{side}'] = cpg_modulated[f'{index}{side}'].modulate_cpg(
@@ -227,15 +227,15 @@ if __name__ == "__main__":
                         network_output = -network_output 
                         
                     # # for walking
-                    # # if side == 'L' and joint == 1:
-                    # #     network_output = -network_output 
-                    # # for swimming
                     if side == 'L' and joint == 1:
-                        network_output = -network_output - np.pi
+                        network_output = -network_output 
+                    # # for swimming
+                    # if side == 'L' and joint == 1:
+                    #     network_output = -network_output - np.pi
                     
                     # 2. Add it to your standing pose
                     baseline_angle = STANDING_POSE[f'{index}{side}'][joint]
-                    target_angle =  network_output
+                    target_angle =  network_output + baseline_angle
                     
                     # 3. Store it using the exact string format your MuJoCo XML actuators use
                     actuator_name = f"{index}{side}_J{joint+1}"  

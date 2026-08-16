@@ -66,7 +66,7 @@ class StickInsectEnv:
             terrain_choice = 'flat'
             
             # Randomize slope between -10 (downhill) and +10 (uphill) degrees
-            slope = random.uniform(-10.0, 10.0)
+            slope = random.uniform(-5.0, 5.0)
             
             if terrain_choice == 'flat':
                 # Randomize standard friction (Normal is ~2.0)

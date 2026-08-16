@@ -11,6 +11,7 @@
 
 
     <visual>
+        <global offwidth="1920" offheight="1080"/>
         <quality shadowsize="4096" />
         <!-- <headlight diffuse="0.8 0.8 0.8" ambient="0.5 0.5 0.5" specular="0.2 0.2 0.2"/> -->
         <!-- <rgba haze="0.15 0.25 0.35 1"/> -->
@@ -34,11 +35,11 @@
         
 
         <!-- <body name="robot" pos="0 0 3.5" euler="-10 0 0">   -->
-        <body name="robot" pos="20.0 0 1.0" euler="0 0 -90">  
+        <body name="robot" pos="1.0 0 1.15" euler="0 0 -90">  
             <freejoint name="space" />
 
             <light directional="true" diffuse="0.6 0.6 0.6" specular="0.8 0.8 0.8" pos="0 0 10" dir="0 0 -1" castshadow="true"/>
-            <camera name="tracking_cam" mode="track" pos="0 -4 2" xyaxes="1 0 0 0 1 2"/>
+            <camera name="tracking_cam" mode="track" pos="1 -3 2" euler="60 0 0"/>
 
             <include file="robot/four_legs_diving_beetle_robot/robot.xml"/>
         </body>
