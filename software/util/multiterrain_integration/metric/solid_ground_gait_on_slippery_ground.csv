@@ -1,0 +1,2 @@
+Timestamp,Total_Steps,Imitation_Status,Cost_of_Transport,Average_Speed_m_s,Path_Straightness,Average_Power_W,Stability_Index,Total_Energy_J
+2026-08-17 03:20:43,12000,Adaptive_Transition,0.000077,0.192038,0.945020,454.158462,0.011067,27249.507748

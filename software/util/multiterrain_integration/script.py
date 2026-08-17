@@ -25,7 +25,7 @@ JOINT_GROUPS = ['FR', 'BR', 'FL', 'BL']
 NUM_JOINTS_PER_GROUP = 4
 
 CAM_DISTANCE = 2.5
-CAM_AZIMUTH = -90       # Rotate left/right (degrees)
+CAM_AZIMUTH = 60       # Rotate left/right (degrees)
 CAM_ELEVATE = -15       # Tilt up/down (degrees)
 
 class StickInsectEnv:
@@ -140,7 +140,7 @@ class StickInsectEnv:
         # ['FR', 'BR', 'FL', 'BL']
         
         # --- NEW: Foot Trails Initialization ---
-        self.trail_length = 50
+        self.trail_length = 10
         self.foot_trails = {name: deque(maxlen=self.trail_length) for name in FOOT_NAMES}
         
         # Colors for the feet trails (RGBA)
@@ -171,13 +171,13 @@ class StickInsectEnv:
 
         
         water_terrain_xml                = tg.generate_flat_terrain(  name = 'slope',            
-                                                                    n_rows=2*n_row,    
-                                                                    n_cols=n_col,            
+                                                                    n_rows=2*n_row,      # 2*n_row,
+                                                                    n_cols=n_col,        # n_col        
                                                                     start_pos=(x_start+(6.25)*4-0.1, 0, 1.0),
                                                                     slope_deg=-2.5)
         
         terrain_xml = solid_terrain_xml  + muddy_terrain_xml + slippery_terrain_xml + water_terrain_xml + slippery_terrain_xml_2
-        # terrain_xml = tg.generate_soft_terrain(  name = 'flat_terrain_1', n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.0))
+        # terrain_xml = tg.generate_muddy_terrain(  name = 'flat_terrain_1', n_rows=500, n_cols=500, start_pos=(x_start, 0, 1.0))
         # terrain_xml = water_terrain_xml
 
         
@@ -280,6 +280,9 @@ class StickInsectEnv:
 
 
         self.start_pos = np.copy(self.data.qpos[:3])
+        
+        self.total_path_distance = 0.0
+        self.prev_pos = np.copy(self.data.qpos[:2]) # Just X and Y
 
         self.step_count = 0
         
@@ -372,16 +375,31 @@ class StickInsectEnv:
         self.total_time += self.model.opt.timestep 
         
         # ==========================================
-        # 🚨 ONLINE COST OF TRANSPORT (COT)
+        # 🚨 ONLINE COST OF TRANSPORT (COT) (Displacement-Based)
         # ==========================================
-        # Calculate current forward distance
-        current_distance = self.data.qpos[0] - self.start_pos[0]
+        # 1. Calculate straight-line distance from the starting point
+        current_x = self.data.qpos[0]
+        current_y = self.data.qpos[1]
         
-        # Prevent division by zero during the first few milliseconds
-        safe_distance = max(current_distance, 1e-4) 
+        displacement_x = current_x - self.start_pos[0]
+        displacement_y = current_y - self.start_pos[1]
+        useful_distance = math.hypot(displacement_x, displacement_y)
         
-        # Calculate Live COT
-        self.online_cot = self.total_energy_consumed / (self.robot_weight * safe_distance)
+        # 2. Calculate Live Power and Useful Speed
+        safe_time = max(self.total_time, 1e-4)
+        live_power = self.total_energy_consumed / safe_time
+        live_speed = useful_distance / safe_time
+        
+        # 3. Calculate Live COT 
+        safe_speed = max(live_speed, 1e-4)
+        self.online_cot = safe_speed
+        # self.online_cot = live_power / (self.robot_weight * safe_speed)
+        
+        # (You can optionally keep self.total_path_distance updating here 
+        # just for the Path Straightness metric later!)
+        self.total_path_distance += math.hypot(current_x - self.prev_pos[0], current_y - self.prev_pos[1])
+        self.prev_pos[0] = current_x
+        self.prev_pos[1] = current_y
 
         # ==========================================
         # 🚨 THE ONLY PHYSICS STEP YOU NEED
@@ -481,9 +499,10 @@ class StickInsectEnv:
         self.accumulated_joint_accel += step_accel
 
         # --- NEW: Record Foot Positions for Trails ---
-        for name, gid in self.foot_geom_ids.items():
-            # Append a copy of the current global 3D position of the foot geom
-            self.foot_trails[name].append(self.data.geom_xpos[gid].copy())
+        if self.step_count % 5 == 0:
+            for name, gid in self.foot_geom_ids.items():
+                # Append a copy of the current global 3D position of the foot geom
+                self.foot_trails[name].append(self.data.geom_xpos[gid].copy())
         # ==========================================
 
         # ==========================================
@@ -499,13 +518,45 @@ class StickInsectEnv:
         
         # --- WRITE OPENCV VIDEO FRAME ---
         if self.record_video and (self.step_count % self.video_render_skip == 0):
-            # Update the scene
+            # 1. Update the base scene with the robot's current physics state
             self.renderer.update_scene(self.data, camera=self.record_cam)
             
-            # Render the pixels (MuJoCo outputs RGB)
+            # 2. 🚨 THE FIX: Inject the foot trails directly into the renderer's scene
+            for name, trail in self.foot_trails.items():
+                recent_trail = list(trail) 
+                
+                if len(recent_trail) > 1:
+                    color = self.trail_colors[name]
+                    for i in range(len(recent_trail) - 1):
+                        # Prevent overflow in the renderer's scene
+                        if self.renderer.scene.ngeom >= self.renderer.scene.maxgeom:
+                            break
+                        
+                        geom = self.renderer.scene.geoms[self.renderer.scene.ngeom]
+                        
+                        mujoco.mjv_initGeom(
+                            geom, 
+                            type=mujoco.mjtGeom.mjGEOM_LINE, 
+                            size=np.zeros(3), 
+                            pos=np.zeros(3), 
+                            mat=np.zeros(9), 
+                            rgba=color 
+                        )
+                        
+                        mujoco.mjv_connector(
+                            geom, 
+                            mujoco.mjtGeom.mjGEOM_LINE, 
+                            3.0,               # width
+                            recent_trail[i],   # from_
+                            recent_trail[i+1]  # to
+                        )
+                        
+                        self.renderer.scene.ngeom += 1
+            
+            # 3. Render the pixels (now including your custom lines)
             rgb_pixels = self.renderer.render()
             
-            # Convert RGB to BGR for OpenCV
+            # 4. Convert RGB to BGR for OpenCV
             bgr_pixels = cv2.cvtColor(rgb_pixels, cv2.COLOR_RGB2BGR)
             
             # Stream directly to the file
@@ -590,39 +641,46 @@ class StickInsectEnv:
             #         self.viewer.user_scn.ngeom += 1
 
 
-            # # ------------------------------------------
-            # # 3. DRAW FOOT TRAILS
-            # # ------------------------------------------
-            # for name, trail in self.foot_trails.items():
-            #     if len(trail) > 1:
-            #         color = self.trail_colors[name]
-            #         for i in range(len(trail) - 1):
-            #             # Prevent overflow of maximum allowed custom geoms in viewer
-            #             if self.viewer.user_scn.ngeom >= self.viewer.user_scn.maxgeom:
-            #                 break
+            # ------------------------------------------
+            # 3. DRAW FOOT TRAILS
+            # ------------------------------------------
+            # Define how many line segments to keep visible (e.g., 100 points)
+            
+            for name, trail in self.foot_trails.items():
+                
+                # 🚨 THE FIX: Just cast the deque to a list. 
+                # It is already perfectly constrained to self.trail_length!
+                recent_trail = list(trail) 
+                
+                if len(recent_trail) > 1:
+                    color = self.trail_colors[name]
+                    for i in range(len(recent_trail) - 1):
+                        # Prevent overflow of maximum allowed custom geoms in viewer
+                        if self.viewer.user_scn.ngeom >= self.viewer.user_scn.maxgeom:
+                            break
                         
-            #             geom = self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom]
+                        geom = self.viewer.user_scn.geoms[self.viewer.user_scn.ngeom]
                         
-            #             # Initialize a geometry for the line segment
-            #             mujoco.mjv_initGeom(
-            #                 geom, 
-            #                 type=mujoco.mjtGeom.mjGEOM_LINE, 
-            #                 size=np.zeros(3), 
-            #                 pos=np.zeros(3), 
-            #                 mat=np.zeros(9), 
-            #                 rgba=color 
-            #             )
+                        # Initialize a geometry for the line segment
+                        mujoco.mjv_initGeom(
+                            geom, 
+                            type=mujoco.mjtGeom.mjGEOM_LINE, 
+                            size=np.zeros(3), 
+                            pos=np.zeros(3), 
+                            mat=np.zeros(9), 
+                            rgba=color 
+                        )
                         
-            #             # Connect point A to point B (width = 3.0)
-            #             mujoco.mjv_connector(
-            #                 geom, 
-            #                 mujoco.mjtGeom.mjGEOM_LINE, 
-            #                 3.0,          # width
-            #                 trail[i],     # from_
-            #                 trail[i+1]    # to
-            #             )
+                        # Connect point A to point B (width = 3.0)
+                        mujoco.mjv_connector(
+                            geom, 
+                            mujoco.mjtGeom.mjGEOM_LINE, 
+                            3.0,               # width
+                            recent_trail[i],   # from_
+                            recent_trail[i+1]  # to
+                        )
                         
-            #             self.viewer.user_scn.ngeom += 1
+                        self.viewer.user_scn.ngeom += 1
 
         self.viewer.sync()
 
@@ -820,35 +878,40 @@ class StickInsectEnv:
             gravity = abs(self.model.opt.gravity[2])
             weight = mass * gravity
             
-            # Calculate distances
-            distance_walked = self.data.qpos[0] - self.start_pos[0]
-            drift_y = abs(self.data.qpos[1] - self.start_pos[1])
+            # 1. Calculate straight-line displacement
+            displacement_x = self.data.qpos[0] - self.start_pos[0]
+            displacement_y = self.data.qpos[1] - self.start_pos[1]
+            useful_distance = displacement_x
+            # useful_distance = math.hypot(displacement_x, displacement_y)
             
-            # Prevent divide-by-zero if the robot didn't move or time is 0
-            safe_distance = max(distance_walked, 1e-4)
+            # Prevent divide-by-zero
+            safe_useful_distance = max(useful_distance, 1e-4)
             safe_time = max(self.total_time, 1e-4)
 
             # ---------------------------------------------------------
-            # 1. Cost of Transport (COT)
-            # Dimensionless metric of energy efficiency. Lower is better.
+            # 1. Average Speed & Mechanical Power
             # ---------------------------------------------------------
-            cot = self.total_energy_consumed / (weight * safe_distance)
-
-            # ---------------------------------------------------------
-            # 2. Path Straightness
-            # Ratio of forward movement to total movement. Max is 1.0.
-            # ---------------------------------------------------------
-            total_xy_distance = distance_walked + drift_y
-            path_straightness = distance_walked / max(total_xy_distance, 1e-4)
-            
-            # If the robot walked backward, cap straightness to 0
-            path_straightness = max(path_straightness, 0.0)
-
-            # ---------------------------------------------------------
-            # 3. Average Speed & Mechanical Power
-            # ---------------------------------------------------------
-            avg_speed = distance_walked / safe_time
+            # Speed is now based ONLY on useful directional travel
+            useful_speed = safe_useful_distance / safe_time
             avg_power = self.total_energy_consumed / safe_time
+
+            # ---------------------------------------------------------
+            # 2. Cost of Transport (COT) 
+            # ---------------------------------------------------------
+            safe_speed = max(useful_speed, 1e-4)
+            
+            cot = self.total_energy_consumed/ (weight * safe_useful_distance)
+            # cot = avg_power / (weight * safe_speed)
+
+            # ---------------------------------------------------------
+            # 3. Path Straightness
+            # Ratio of forward displacement to total path distance. Max is 1.0.
+            # ---------------------------------------------------------
+            displacement_x = self.data.qpos[0] - self.start_pos[0]
+            displacement_y = self.data.qpos[1] - self.start_pos[1]
+            displacement_from_start = math.hypot(displacement_x, displacement_y)
+            
+            path_straightness = displacement_from_start / useful_distance
 
             # ---------------------------------------------------------
             # 4. Gait Stability Index
@@ -861,7 +924,7 @@ class StickInsectEnv:
 
             return {
                 "Cost_of_Transport": cot,
-                "Average_Speed_m_s": avg_speed,
+                "Average_Speed_m_s": useful_speed,  
                 "Path_Straightness": path_straightness,
                 "Average_Power_W": avg_power,
                 "Stability_Index": stability_index,

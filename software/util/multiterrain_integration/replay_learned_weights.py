@@ -21,32 +21,33 @@ from classification_model_training.models.model_1_esn_rr.env_pred import ESN_RR_
 # ======================================================
 
 # 'solid_ground', 
-# 'soft_ground', 
+# 'soft_ground', ## No sof
 # 'slippery_ground', 
 # 'muddy_ground', 
 # 'water_surface'
 
-gait = "water_surface"
+gait = "solid_ground"
 environment_setup = "water_surface"
 
 ENABLE_VIDEO_REC = False
 
 ENABLE_ROS = True
-SAVE_ROS_BAG = False
-ROS_BAG_FILE = f"final_transition/attemp_15"
+SAVE_ROS_BAG = True
+ROS_BAG_FILE = f"final_transition/new_cot_1_no_esn"
 # ROS_BAG_FILE = f"classification_model_training/dataset_for_esn/{gait}_gait_on_{environment_setup}_set_2"
 
-SAVE_METRIC_CSV = False
+SAVE_METRIC_CSV = True
 METRIC_FILE = f"metric/{gait}_gait_on_{environment_setup}"
 
 ENABLE_RENDERING = True
-ENABLE_ESN = True
+ENABLE_ESN = False
 
 LEG_SIDE    = ['R', 'L']
 LEG_INDEX   = ["F", "B"]
 JOINT_NAMES = [0, 1, 2, 3]
 NUM_KERNELS = 20 
 
+# CPG_PHI = 0.025 
 CPG_PHI = 0.05 
 SIM_DURATION = 160.0 # seconds
 
@@ -355,53 +356,54 @@ if __name__ == "__main__":
         # --------------------------------------------------
         # GAIT TARGET SELECTION BASED ON TIME
         # --------------------------------------------------
-        
-        # if gait == "solid_ground":
-        #     active_weights_target = weights_solid
-        # elif gait == "water_surface":
-        #     active_weights_target = weights_water
-        # elif gait == "soft_ground":
-        #     active_weights_target = weights_soft
-        # elif gait == "rough_ground":
-        #     active_weights_target = weights_rough
-        # elif gait == "slippery_ground":
-        #     active_weights_target = weights_slip
-        # elif gait == "muddy_ground":
-        #     active_weights_target = weights_muddy
-        # else:
-        #     print(f"Error: Unknown gait '{gait}'. Please choose a valid gait.")
-        #     exit()
+        # if ENABLE_ESN is not True:
+        #     if gait == "solid_ground":
+        #         active_weights_target = weights_solid
+        #     elif gait == "water_surface":
+        #         active_weights_target = weights_water
+        #     elif gait == "soft_ground":
+        #         active_weights_target = weights_soft
+        #     elif gait == "rough_ground":
+        #         active_weights_target = weights_rough
+        #     elif gait == "slippery_ground":
+        #         active_weights_target = weights_slip
+        #     elif gait == "muddy_ground":
+        #         active_weights_target = weights_muddy
+        #     else:
+        #         print(f"Error: Unknown gait '{gait}'. Please choose a valid gait.")
+        #         exit()
         
         # --------------------------------------------------
         # GAIT TARGET SELECTION BASED ON TIME
         # --------------------------------------------------
-        # if step % int(switch_interval / dt) == 0:
+        # if ENABLE_ESN is not True:
+        #     if step % int(switch_interval / dt) == 0:
+                
+        #         # Ensure we haven't run out of combinations
+        #         if gait_phase < len(gait_sequence):
+        #             current_gait = gait_sequence[gait_phase]
+                    
+        #             if current_gait == "solid_ground":
+        #                 active_weights_target = weights_solid
+        #             elif current_gait == "water_surface":
+        #                 active_weights_target = weights_water
+        #             elif current_gait == "soft_ground":
+        #                 active_weights_target = weights_soft
+        #             elif current_gait == "slippery_ground":
+        #                 active_weights_target = weights_slip
+        #             elif current_gait == "muddy_ground":
+        #                 active_weights_target = weights_muddy
+                    
+        #             print(f"⏱️ [{sim_time:.2f}s] Transitioning to: {current_gait.upper()} (Phase {gait_phase + 1}/{len(gait_sequence)})")
+                    
+        #             # 🚨 TRIGGER CAUTIOUS STEPPING
+        #             current_phi = slow_phi_target
+        #             print(f"   [Reflex Triggered: Speed dropped to {current_phi:.3f} for safe transition]")
+                    
+        #             gait_phase += 1
+        #         else:
+        #             print(f"✅ [{sim_time:.2f}s] All combinations completed! Maintaining final gait.")
             
-        #     # Ensure we haven't run out of combinations
-        #     if gait_phase < len(gait_sequence):
-        #         current_gait = gait_sequence[gait_phase]
-                
-        #         if current_gait == "solid_ground":
-        #             active_weights_target = weights_solid
-        #         elif current_gait == "water_surface":
-        #             active_weights_target = weights_water
-        #         elif current_gait == "soft_ground":
-        #             active_weights_target = weights_soft
-        #         elif current_gait == "slippery_ground":
-        #             active_weights_target = weights_slip
-        #         elif current_gait == "muddy_ground":
-        #             active_weights_target = weights_muddy
-                
-        #         print(f"⏱️ [{sim_time:.2f}s] Transitioning to: {current_gait.upper()} (Phase {gait_phase + 1}/{len(gait_sequence)})")
-                
-        #         # 🚨 TRIGGER CAUTIOUS STEPPING
-        #         current_phi = slow_phi_target
-        #         print(f"   [Reflex Triggered: Speed dropped to {current_phi:.3f} for safe transition]")
-                
-        #         gait_phase += 1
-        #     else:
-        #         print(f"✅ [{sim_time:.2f}s] All combinations completed! Maintaining final gait.")
-        
     
     
         joint_targets = {}
